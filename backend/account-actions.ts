@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { sql } from '@vercel/postgres';
 import type { User } from '@/types/definitions';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getUser(email: string): Promise<User | undefined> {
   try {
@@ -102,3 +103,29 @@ export async function deleteUser(email: string) {
   }
 }
 
+export async function fetchLoggedInUser(email: string) {
+  noStore();
+
+  try {
+    const user = await sql`SELECT * FROM users WHERE email = ${email}`;
+    return user.rows[0] as User;
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    throw new Error('Failed to fetch user.');
+  }
+}
+
+import { signOut } from '@/auth';
+
+/**
+ * 로그아웃을 수행하는 함수
+ */
+export async function performLogout() {
+  'use server'; // Next.js 서버 사이드 코드 표시
+  try {
+    await signOut(); // 로그아웃 실행
+    console.log('Successfully logged out');
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
+}
