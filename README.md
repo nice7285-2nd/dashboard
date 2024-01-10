@@ -34,6 +34,48 @@
 - **eslint-config-prettier, prettier**: 코드 포맷팅 및 린팅 도구
 - **prettier-plugin-tailwindcss**: Tailwind CSS와 함께 사용하기 위한 Prettier 플러그인
 
+## 필요한 환경 변수
+
+"LevelUp-Dashboard" 프로젝트를 실행하기 위해서는 다음 환경 변수가 필요합니다. 이 변수들은 프로젝트의 데이터베이스 연결, 인증, 분석 기능 등에 사용됩니다.
+
+### 데이터베이스 관련 변수:
+- `POSTGRES_URL`: PostgreSQL 데이터베이스에 접속하기 위한 URL
+- `POSTGRES_PRISMA_URL`: Prisma를 사용하여 PostgreSQL 데이터베이스에 접속하기 위한 URL
+- `POSTGRES_URL_NON_POOLING`: 풀링이 비활성화된 PostgreSQL 데이터베이스 접속 URL
+- `POSTGRES_USER`: 데이터베이스 사용자 이름
+- `POSTGRES_HOST`: 데이터베이스 호스트 주소
+- `POSTGRES_PASSWORD`: 데이터베이스 접속을 위한 비밀번호
+- `POSTGRES_DATABASE`: 사용할 데이터베이스의 이름
+
+### 인증 관련 변수:
+- `AUTH_SECRET`: 인증에 사용되는 비밀 키. `openssl rand -base64 32` 명령어로 생성할 수 있습니다.
+- `AUTH_URL`: 인증 관련 API의 URL. (예: `http://localhost:3000/api/auth`)
+
+### 분석 관련 변수:
+- `NEXT_PUBLIC_ANALYTICS_URL`: 클라이언트 측에서 사용할 분석 API의 URL
+- `ANALYTICS_URL`: 분석 데이터를 수집하기 위한 서버 측 API URL
+- `ANALYTICS_USER`: 분석 서비스를 사용하는 사용자의 이메일 주소
+- `ANALYTICS_KEY`: 분석 서비스를 위한 API 키
+- `ANALYTICS_PROJECT`: 분석 대상 프로젝트 이름
+
+### 프로젝트에서 환경 변수 설정 방법
+
+본 프로젝트를 로컬 환경에서 개발하기 위해서는 환경 변수가 필요합니다. 이를 위해 제공된 `.env.example` 파일을 참고하세요.
+
+#### 설정 방법
+1. 프로젝트의 루트 디렉토리에서 `.env.example` 파일을 찾습니다.
+2. 이 파일을 `.env.local`로 복사합니다.
+   ```
+   cp .env.example .env.local
+   ```
+3. `.env.local` 파일을 열고 필요한 환경 변수들을 실제 환경에 맞게 채웁니다.
+4. `.env.local` 파일에 입력한 환경 변수들은 로컬 개발 환경에 적용됩니다.
+
+#### 주의 사항
+- `.env.local` 파일에는 민감한 정보가 포함될 수 있으므로 이를 공개하지 않도록 주의해야 합니다.
+- 실제 배포 환경에서는 적절한 방법으로 환경 변수를 설정해야 합니다.
+
+
 
 ## 설치 및 실행 방법
 1. 필요한 소프트웨어: Node.js, npm
@@ -42,11 +84,12 @@
    ```
    npm install
    ```
-4. 로컬 서버 실행
+4. 환경 변수 설정
+5. 로컬 서버 실행
    ```
    npm run dev
    ```
-5. 브라우저에서 `http://localhost:3000` 접속
+6. 브라우저에서 `http://localhost:3000` 접속
 
 
 ## 기능 설명
@@ -87,5 +130,6 @@
 - **프로젝트 관리 기능**: 사용자가 자신의 프로젝트를 관리하고 추적할 수 있는 기능
 - **웹 바이탈 지표 추출 및 수집**: 웹 성능의 중요한 지표인 웹 바이탈을 추출하고 수집하는 기능
 - **웹 바이탈 지표에 대한 차트**: 추출된 웹 바이탈 지표를 시각적으로 분석하고 표시하는 차트 구현
+- **라우트 핸들러를 통한 데이터 전송 및 데이터베이스 저장**: 수집된 데이터를 서버측에서 DB로 저장
 
 이러한 추가적인 기능들은 "LevelUp-Dashboard" 프로젝트를 더욱 포괄적이고 실용적인 대시보드로 발전시키는 데 중점을 두었습니다.
