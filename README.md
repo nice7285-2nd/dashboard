@@ -1,70 +1,77 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## Getting Started
+## LevelUp-Dashboard: 프로젝트 소개
+"LevelUp-Dashboard"는 차트 중심의 대시보드를 설계하고 구현하는 예제 프로젝트입니다. 이 프로젝트는 "레벨업 리액트 프로그래밍 with Next.js" 책의 11장에서 상세하게 다루어집니다. 본 프로젝트는 Next.js와 다양한 라이브러리를 활용하여 현대적인 웹 대시보드를 개발하고 사용자 인터페이스, 데이터 관리, 웹 바이탈 지표 추출 및 수집 등에 대해 심도 있는 연습을 제공합니다.
 
-First, run the development server:
+## 라이브 데모
+이 프로젝트의 실제 동작은 [https://levelup-analytics-dashboard.vercel.app/dashboard](https://levelup-analytics-dashboard.vercel.app/dashboard)에서 확인할 수 있습니다. 여기서 프로젝트의 기능들을 실시간으로 체험하고 인터페이스와 상호작용을 경험할 수 있습니다.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 기술 스택 및 라이브러리
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+"LevelUp-Dashboard" 프로젝트는 다음과 같은 기술 스택과 라이브러리를 사용합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 주요 기술 스택:
+- **Next.js**: 현대적인 웹 애플리케이션을 위한 리액트 기반의 프레임워크
+- **React**: 사용자 인터페이스를 구축하기 위한 JavaScript 라이브러리
+- **TypeScript**: 자바스크립트에 타입을 추가하여 더 안정적인 코드 작성을 가능하게 하는 언어
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### 사용된 라이브러리:
+- **@heroicons/react**: 간결한 SVG 아이콘 컬렉션
+- **@tailwindcss/forms**: Tailwind CSS를 위한 폼 스타일링 플러그인
+- **@tremor/react**: 리액트 기반의 컴포넌트 라이브러리
+- **@vercel/postgres**: Postgres 데이터베이스와의 통신을 위한 라이브러리
+- **autoprefixer**: CSS에 자동으로 벤더 프리픽스를 추가
+- **bcrypt**: 비밀번호 해싱을 위한 라이브러리
+- **clsx**: 클래스 이름을 결합하기 위한 유틸리티
+- **next-auth@beta**: Next.js 애플리케이션을 위한 인증 라이브러리
+- **use-debounce**: 디바운스 훅을 제공하는 라이브러리
+- **uuid**: 고유 식별자 생성을 위한 라이브러리
+- **zod**: 타입스크립트를 위한 데이터 검증 라이브러리
 
-## Learn More
+### 개발 의존성:
+- **@types/bcrypt, @types/uuid**: 각각 bcrypt와 uuid 라이브러리의 TypeScript 타입 정의
+- **@vercel/style-guide**: Vercel의 스타일 가이드
+- **dotenv**: 환경 변수 관리
+- **eslint-config-prettier, prettier**: 코드 포맷팅 및 린팅 도구
+- **prettier-plugin-tailwindcss**: Tailwind CSS와 함께 사용하기 위한 Prettier 플러그인
 
-To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 설치 및 실행 방법
+1. 필요한 소프트웨어: Node.js, npm
+2. 저장소 복제
+3. 의존성 설치
+   ```
+   npm install
+   ```
+4. 로컬 서버 실행
+   ```
+   npm run dev
+   ```
+5. 브라우저에서 `http://localhost:3000` 접속
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## 기능 설명
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **웹 애플리케이션 스타일링과 메인 페이지 구축**: 현대적인 디자인을 적용한 스타일링과 메인 페이지의 기본 레이아웃 구축
+- **버셀 Postgres 데이터베이스 설정**: 애플리케이션의 데이터를 저장하고 관리하기 위한 데이터베이스 환경 설정
+- **사용자 인증 구현**: 회원가입 및 로그인 기능을 포함한 사용자 인증 시스템 구축
+- **대시보드 사용자 인터페이스 개선**: 사용자 경험을 향상시키기 위한 사이드 메뉴 및 다른 UI 요소 개발
+- **사용자 계정 관리 및 웹 API 키 발급**: 사용자 계정 관리 기능과 웹 API 사용을 위한 키 발급 시스템 구현
+- **프로젝트 관리 기능**: 사용자가 자신의 프로젝트를 관리할 수 있는 기능 구현
+- **웹 바이탈 지표 정보 추출 및 수집**: 웹 애플리케이션의 성능 지표를 추출하고 수집하는 기능
+- **데이터베이스와의 통합**: 라우터 핸들러를 통해 데이터를 수신하고 데이터베이스에 저장
+- **대시보드 UI 구성**: 메인 대시보드와 프로젝트별 상세 대시보드의 사용자 인터페이스 구성
+- **버셀 플랫폼 배포**: 프로젝트를 버셀 배포 플랫폼에 배포하고, 추후 업데이트를 위한 필요 사항 기록
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+이 프로젝트를 통해 사용자는 Next.js와 다양한 기술을 사용하여 실제 대시보드를 개발하는 과정을 경험할 수 있으며, 이를 통해 웹 애플리케이션 개발의 심도 있는 지식을 얻을 수 있습니다.
 
-## 주요 특징
-- 버셀(Vercel) Postgres 데이터베이스: 회원 관리, 프로젝트 관리, 웹 바이탈(Web Vitals) 성능 지표를 위한 사용.
-- 로그인: next-auth를 기반으로 한 이메일 기반의 회원 가입, 로그인, 인증 관리.
-- 대시보드 차트: tremor 라이브러리를 사용한 차트 적용.
-- 웹 성능 지표 분석: 6가지 종류의 지표를 통한 프로젝트 및 웹 페이지별 성능 지표 추이 및 점수 분석.
-- 외부 웹 애플리케이션과의 연동: 라우터 핸들러를 통해 외부 Next.js 웹 애플리케이션 지원.
-- 사용자 별 인증 키 발급: 외부 웹 애플리케이션을 위한 인증 키 관리.
-- 서스펜스(Suspense) 스트리밍: 대시보드 화면에 적용.
-- 서버 액션: 회원 관리 및 프로젝트 관리 시 사용자 폼을 통한 데이터베이스 접근.
-- 아이콘: heroicons 라이브러리를 기반으로 한 아이콘 적용.
-- 미들웨어: 인증된 사용자만이 대시보드에 접근 가능.
 
-## 라우트별 페이지
-- `/`: 메인 홈
-- `/signup`: 메인 홈
-- `/login`: 메인 홈
-- `/dashboard`: 전체 프로젝트 대시보드
-- `/dashboard/account`: 사용자 계정 관리
-- `/dashboard/projects`: 프로젝트 리스트
-- `/dashboard/projects/create`: 프로젝트 생성
-- `/dashboard/projects/[projectId]/edit`: 프로젝트 정보 수정
-- `/dashboard/projects/[projecName]/analytics`: 프로젝트 대시보드
+## 문제 해결 및 Q/A
+본 프로젝트 뿐만 아니라 "레벨업 리액트 프로그래밍 with Next.js" 책에 대한 모든 질문과 답변은 [https://reactnext-central.xyz/levelup](https://reactnext-central.xyz/levelup) 웹 페이지에서 진행됩니다. 이 페이지를 통해 궁금한 점을 해결하고 다른 사용자들과 지식을 공유할 수 있습니다.
 
-## 라우트 핸들러
-- `/api/collect/`: 분석 정보 수집(타 앱 애플리케이션에서 AuthKey와 함께 접근 가능)
-- `/api/analytics`: 분석 정보 보내기(서버에서 `/api/collect/` 정보 송신, 타 앱에서 사용하려면 이 웹 API를 타 앱에서 구현 필요)
 
-## 필요 설치 라이브러리
-```bash
-$ npm install @heroicons/react @tailwindcss/forms @tremor/react @vercel/postgres autoprefixer bcrypt clsx next-auth uuid zod
+## 라이선스 및 저작권 정보
+본 프로젝트는 MIT 라이선스 하에 제공됩니다. 자세한 내용은 `license.md` 파일을 참조하세요.
 
-$ npm install --save-dev @types/bcrypt @types/uuid @vercel/style-guide dotenv eslint-config-prettier prettier prettier-plugin-tailwindcss
-```
+
+## 참고 자료
+본 프로젝트는 사이드 메뉴 기능에 있어서 [Vercel의 app-playground](https://github.com/vercel/app-playground) 프로젝트를 참고하였습니다. 이는 우리 프로젝트의 기능 개발에 중요한 영감을 제공했으며 해당 프로젝트의 코드를 기반으로 메뉴 기능이 개발되었습니다.
