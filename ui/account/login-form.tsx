@@ -9,15 +9,15 @@ import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { Button } from '@/ui/component/button';
 import { useFormState, useFormStatus } from 'react-dom';
 import { authenticate } from '@/backend/account-actions';
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [errorMessage, dispatch] = useFormState(authenticate, undefined);
-  const searchParams = useSearchParams()
-  const signup = searchParams.get('signup')
-  const signupEmail = searchParams.get('email')
+  const searchParams = useSearchParams();
+  const signup = searchParams.get('signup');
+  const signupEmail = searchParams.get('email');
 
   // 쿼리 파라미터에서 이메일 값을 받아와서 상태를 설정합니다.
   useEffect(() => {
@@ -29,14 +29,12 @@ export default function LoginForm() {
   return (
     <form action={dispatch} className="space-y-3">
       <div className="flex-1 px-6 pt-8 pb-4 rounded-lg bg-gray-50">
-      {signup === 'success' && (
+        {signup === 'success' && (
           <div className="mb-3 text-xl text-center text-blue-600">
             회원가입이 정상적으로 완료 되었습니다.
           </div>
         )}
-        <h1 className="mb-3 text-xl">
-          대시보드를 이용하기 위해 로그인 해 주세요.
-        </h1>
+        <h1 className="mb-3 text-xl">스터디를 위해 로그인 해 주세요.</h1>
         <div className="w-full">
           <div>
             <label
