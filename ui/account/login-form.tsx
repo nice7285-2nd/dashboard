@@ -80,7 +80,7 @@ export default function LoginForm() {
         </div>
         <LoginButton />
         <div
-          className="flex items-end h-8 space-x-1"
+          className="flex items-center h-8 space-x-1"
           aria-live="polite"
           aria-atomic="true"
         >
@@ -91,7 +91,7 @@ export default function LoginForm() {
             </>
           )}
         </div>
-        <div className="flex items-end h-8 space-x-1">
+        <div className="flex items-center h-8 space-x-1">
           {/* Add form errors here */}
         </div>
       </div>

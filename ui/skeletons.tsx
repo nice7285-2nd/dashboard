@@ -1,16 +1,16 @@
-
 import { shimmer_infinite } from '@/ui/animations';
 
 export function VitalCardSkeleton() {
   return (
-    <div className={`${shimmer_infinite} relative w-full overflow-hidden md:col-span-4 bg-gray-100 rounded-xl`}>
+    <div
+      className={`${shimmer_infinite} relative w-full overflow-hidden md:col-span-4 bg-gray-100 rounded-xl`}
+    >
       <div className="p-4">
-
         <div className="h-8 mb-4 bg-gray-200 rounded-md w-36" />
         <div className="w-56 h-8 bg-gray-200 rounded-md" />
       </div>
       <div className="p-4">
-        <div className="mt-0 grid h-[410px] grid-cols-12 items-end gap-2 rounded-md bg-white p-4 sm:grid-cols-13 md:gap-4" />
+        <div className="mt-0 grid h-[410px] grid-cols-12 items-center gap-2 rounded-md bg-white p-4 sm:grid-cols-13 md:gap-4" />
       </div>
       <div className="flex items-center pt-6 pb-2">
         <div className="w-5 h-5 bg-gray-200 rounded-full" />

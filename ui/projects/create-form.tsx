@@ -37,7 +37,7 @@ export default function Form() {
               <DocumentIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
             </div>
           </div>
-          <div className="flex items-end h-8 space-x-1" aria-live="polite" aria-atomic="true">
+          <div className="flex items-center h-8 space-x-1" aria-live="polite" aria-atomic="true">
             {initialState.message && (
               <>
                 <ExclamationCircleIcon className="w-5 h-5 text-red-500" />

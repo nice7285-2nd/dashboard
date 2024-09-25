@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserPlusIcon, AtSymbolIcon, KeyIcon, ExclamationCircleIcon, UserIcon } from '@heroicons/react/24/outline';
+import {
+  UserPlusIcon,
+  AtSymbolIcon,
+  KeyIcon,
+  ExclamationCircleIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline';
 import { Button } from '@/ui/component/button';
 import { useFormState, useFormStatus } from 'react-dom';
 import { signUp } from '@/backend/account-actions';
-
 
 export default function SignUpForm() {
   const [name, setName] = useState('');
@@ -25,17 +30,17 @@ export default function SignUpForm() {
     }
   }, [password, confirmPassword]);
 
-
   return (
     <form action={dispatch} className="space-y-3">
       <div className="flex-1 px-6 pt-8 pb-4 rounded-lg bg-gray-50">
-        <h1 className="mb-3 text-2xl">
-          회원가입
-        </h1>
+        <h1 className="mb-3 text-2xl">회원가입</h1>
         <div className="w-full">
           {/* Name Input */}
           <div>
-            <label className="block mt-5 mb-3 font-medium text-gray-900 text-md" htmlFor="name">
+            <label
+              className="block mt-5 mb-3 font-medium text-gray-900 text-md"
+              htmlFor="name"
+            >
               이름
             </label>
             <div className="relative">
@@ -54,7 +59,10 @@ export default function SignUpForm() {
           </div>
           {/* Email Input */}
           <div>
-            <label className="block mt-5 text-gray-900 mb-3font-medium" htmlFor="email">
+            <label
+              className="block mt-5 text-gray-900 mb-3font-medium"
+              htmlFor="email"
+            >
               이메일
             </label>
             <div className="relative">
@@ -74,7 +82,10 @@ export default function SignUpForm() {
 
           {/* Password Input */}
           <div className="mt-4">
-            <label className="block mt-5 mb-3 font-medium text-gray-900" htmlFor="password">
+            <label
+              className="block mt-5 mb-3 font-medium text-gray-900"
+              htmlFor="password"
+            >
               암호
             </label>
             <div className="relative">
@@ -95,7 +106,10 @@ export default function SignUpForm() {
 
           {/* Confirm Password Input */}
           <div className="mt-4">
-            <label className="block mt-5 mb-3 font-medium text-gray-900" htmlFor="confirmPassword">
+            <label
+              className="block mt-5 mb-3 font-medium text-gray-900"
+              htmlFor="confirmPassword"
+            >
               암호 확인
             </label>
             <div className="relative">
@@ -118,7 +132,11 @@ export default function SignUpForm() {
           )}
         </div>
         <SignUpButton />
-        <div className="flex items-end h-8 space-x-1" aria-live="polite" aria-atomic="true">
+        <div
+          className="flex items-center h-8 space-x-1"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {errorMessage && (
             <>
               <ExclamationCircleIcon className="w-5 h-5 text-red-500" />

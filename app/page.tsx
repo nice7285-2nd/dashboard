@@ -9,7 +9,7 @@ export default function Page() {
     <main className="flex flex-col min-h-screen p-4">
       <div className={`${shimmer} relative overflow-hidden `}>
         {/* <div className="relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-shimmer before:from-transparent before:via-white/60 before:to-transparent"> */}
-        <div className="flex items-center h-20 p-2 bg-blue-500 rounded-lg">
+        <div className="flex items-center h-auto p-4 bg-blue-500 rounded-lg">
           <LevelupLogo />
         </div>
       </div>
