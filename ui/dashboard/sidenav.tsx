@@ -6,7 +6,7 @@ export default function SideNav() {
   return (
     <div className="flex flex-col h-full px-3 py-4 md:px-2">
       {/* 로고 */}
-      <div className="flex items-center justify-start h-20 p-4 mb-2 bg-blue-600 rounded-md md:h-auto">
+      <div className="flex items-center justify-start h-auto p-4 mb-2 bg-blue-600 rounded-md md:h-auto">
         <LevelupLogo />
       </div>
 

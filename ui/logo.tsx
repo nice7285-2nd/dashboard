@@ -1,11 +1,108 @@
-import { ChartBarIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function LevelupLogo() {
   return (
     <Link href="/">
       <div className="flex flex-row items-center text-white">
-        <ChartBarIcon className="w-4 h-4 mr-1 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14" />
+        <svg
+          width="120"
+          height="90"
+          viewBox="0 0 500 300"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <rect
+            x="30"
+            y="40"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="140"
+            y="40"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="250"
+            y="40"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+
+          <rect
+            x="30"
+            y="120"
+            width="80"
+            height="60"
+            fill="#FFA500"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="140"
+            y="120"
+            width="80"
+            height="60"
+            fill="#FFA500"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="250"
+            y="120"
+            width="80"
+            height="60"
+            fill="blue"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="360"
+            y="120"
+            width="80"
+            height="60"
+            fill="blue"
+            rx="10"
+            ry="10"
+          />
+
+          <rect
+            x="30"
+            y="200"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="140"
+            y="200"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+          <rect
+            x="250"
+            y="200"
+            width="80"
+            height="60"
+            fill="white"
+            rx="10"
+            ry="10"
+          />
+        </svg>
         <div>
           <p className="hidden sm:block md:text-xl lg:text-2xl xl:text-2xl hover:underline whitespace-nowrap">
             Fishbone <br />
