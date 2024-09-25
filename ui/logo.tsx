@@ -104,7 +104,7 @@ export default function LevelupLogo() {
           />
         </svg>
         <div>
-          <p className="hidden sm:block md:text-xl lg:text-2xl xl:text-2xl whitespace-nowrap">
+          <p className="hidden sm:block md:text-xl lg:text-xl xl:text-xl whitespace-nowrap">
             Fishbone <br />
             Workbooks
           </p>
