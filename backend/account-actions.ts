@@ -22,10 +22,15 @@ export async function getUser(email: string): Promise<User | undefined> {
 }
 
 const EmailSchema = z.string().email({ message: 'Invalid email address.' });
-const PasswordSchema = z.string().min(6, { message: 'Password must be at least 6 characters long.' });
+const PasswordSchema = z
+  .string()
+  .min(6, { message: 'Password must be at least 6 characters long.' });
 const NameSchema = z.string().min(1, { message: 'Name cannot be empty.' });
 
-export async function signUp(prevState: string | undefined, formData: FormData) {
+export async function signUp(
+  prevState: string | undefined,
+  formData: FormData
+) {
   // 각 필드 유효성 검사
   const emailValidation = EmailSchema.safeParse(formData.get('email'));
   const passwordValidation = PasswordSchema.safeParse(formData.get('password'));
@@ -72,7 +77,7 @@ export async function signUp(prevState: string | undefined, formData: FormData) 
 
 export async function authenticate(
   prevState: string | undefined,
-  formData: FormData,
+  formData: FormData
 ) {
   try {
     await signIn('credentials', formData);
@@ -123,9 +128,9 @@ import { signOut } from '@/auth';
 export async function performLogout() {
   'use server'; // Next.js 서버 사이드 코드 표시
   try {
-    await signOut(); // 로그아웃 실행
-    console.log('Successfully logged out');
+    await signOut({ redirectTo: '/' }); // 로그아웃 실행 및 홈페이지로 리다이렉트
   } catch (error) {
-    console.error('Logout failed:', error);
+    console.error('로그아웃 실패:', error);
+    throw new Error('로그아웃 중 오류가 발생했습니다.');
   }
 }
