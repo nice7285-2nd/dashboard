@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run open-browser && next dev",
+    "open-browser": "start http://localhost:3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,7 +17,7 @@
     "bcrypt": "^5.1.1",
     "clsx": "^2.0.0",
     "next": "14.0.4",
-    "next-auth": "^5.0.0-beta.4",
+    "next-auth": "^5.0.0-beta.21",
     "react": "^18",
     "react-dom": "^18",
     "use-debounce": "^10.0.0",
