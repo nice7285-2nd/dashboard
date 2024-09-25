@@ -128,9 +128,9 @@ import { signOut } from '@/auth';
 export async function performLogout() {
   'use server'; // Next.js 서버 사이드 코드 표시
   try {
-    await signOut({ redirectTo: '/' }); // 로그아웃 실행 및 홈페이지로 리다이렉트
+    await signOut(); // 로그아웃 실행
+    console.log('Successfully logged out');
   } catch (error) {
-    console.error('로그아웃 실패:', error);
-    throw new Error('로그아웃 중 오류가 발생했습니다.');
+    console.error('Logout failed:', error);
   }
 }
