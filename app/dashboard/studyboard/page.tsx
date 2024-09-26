@@ -267,47 +267,57 @@ const StudyBoard = () => {
     }
   };
 
-  // 터치 이벤트 핸들러 추가
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
+  const getPointerPosition = (
+    e: React.MouseEvent | React.TouchEvent | TouchEvent
+  ) => {
     const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
+    if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    let clientX, clientY;
 
-    if (tool === 'draw' || tool === 'erase') {
-      setIsDrawing(true);
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-      }
+    if ('touches' in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
     }
-    // 'move' 도구에 대한 처리는 여기에 추가할 수 있습니다.
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches[0];
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
+    const { x, y } = getPointerPosition(e);
 
-    if (isDrawing) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.lineTo(x, y);
-        if (tool === 'draw' && chalkTexture) {
-          // 기존 그리기 로직
-          // ...
-        } else {
-          // 기존 그리기 또는 지우개 로직
-          // ...
-        }
+    setIsDrawing(true);
+    const ctx = drawingCanvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+
+    const { x, y } = getPointerPosition(e);
+    const ctx = drawingCanvasRef.current?.getContext('2d');
+    if (ctx) {
+      ctx.lineTo(x, y);
+      if (tool === 'draw' && chalkTexture) {
+        // 기존 그리기 로직
+        // ...
+      } else if (tool === 'erase') {
+        // 지우개 로직
+        // ...
+      } else {
+        // 기본 그리기 로직
+        ctx.stroke();
       }
     }
 
@@ -318,9 +328,26 @@ const StudyBoard = () => {
     }
   };
 
-  const handleTouchEnd = () => {
+  const stopDrawing = () => {
     setIsDrawing(false);
   };
+
+  useEffect(() => {
+    const canvas = drawingCanvasRef.current;
+    if (canvas) {
+      canvas.addEventListener('touchstart', startDrawing as any);
+      canvas.addEventListener('touchmove', draw as any);
+      canvas.addEventListener('touchend', stopDrawing);
+    }
+
+    return () => {
+      if (canvas) {
+        canvas.removeEventListener('touchstart', startDrawing as any);
+        canvas.removeEventListener('touchmove', draw as any);
+        canvas.removeEventListener('touchend', stopDrawing);
+      }
+    };
+  }, [tool, chalkTexture]); // 의존성 배열에 필요한 상태 추가
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = drawingCanvasRef.current;
@@ -511,14 +538,12 @@ const StudyBoard = () => {
             top: 0,
             left: 0,
             zIndex: 2,
+            touchAction: 'none', // 이 줄 추가
           }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
         />
         {eraserPosition.visible && (
           <div
