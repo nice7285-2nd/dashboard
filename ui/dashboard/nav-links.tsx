@@ -11,8 +11,18 @@ import clsx from 'clsx';
 
 const links = [
   { name: '홈', href: '/dashboard', icon: HomeIcon },
+  {
+    name: '학습화면',
+    href: '/dashboard/studyboard',
+    icon: DocumentChartBarIcon,
+  },
+  {
+    name: '음성읽기',
+    href: '/dashboard/studyspeak',
+    icon: DocumentChartBarIcon,
+  },
   { name: '프로젝트', href: '/dashboard/projects', icon: DocumentChartBarIcon },
-  { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon}
+  { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
 
 export default function NavLinks() {

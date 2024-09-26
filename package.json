@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",
+    "@radix-ui/react-select": "^2.1.1",
     "@tailwindcss/forms": "^0.5.7",
     "@tremor/react": "^3.12.1",
     "@vercel/postgres": "^0.5.1",
