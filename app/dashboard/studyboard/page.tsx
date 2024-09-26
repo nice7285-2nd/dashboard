@@ -267,6 +267,61 @@ const StudyBoard = () => {
     }
   };
 
+  // 터치 이벤트 핸들러 추가
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    if (tool === 'draw' || tool === 'erase') {
+      setIsDrawing(true);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
+    }
+    // 'move' 도구에 대한 처리는 여기에 추가할 수 있습니다.
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+
+    if (isDrawing) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.lineTo(x, y);
+        if (tool === 'draw' && chalkTexture) {
+          // 기존 그리기 로직
+          // ...
+        } else {
+          // 기존 그리기 또는 지우개 로직
+          // ...
+        }
+      }
+    }
+
+    if (tool === 'erase') {
+      setEraserPosition({ x, y, visible: true });
+    } else {
+      setEraserPosition({ x: 0, y: 0, visible: false });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDrawing(false);
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = drawingCanvasRef.current;
     if (!canvas) return; // 캔버스가 null인 경우 함수 종료
@@ -311,10 +366,8 @@ const StudyBoard = () => {
       if (ctx) {
         ctx.lineTo(x, y);
         if (tool === 'draw' && chalkTexture) {
-          // 분필 효과 적용
           ctx.save();
-          ctx.strokeStyle =
-            ctx.createPattern(chalkTexture, 'repeat') || penColor;
+          ctx.strokeStyle = penColor; // 여기를 수정
           ctx.globalAlpha = 0.8;
           ctx.lineWidth = Number(lineWidth) * 1.5;
           ctx.lineCap = 'round';
@@ -463,6 +516,9 @@ const StudyBoard = () => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         />
         {eraserPosition.visible && (
           <div
