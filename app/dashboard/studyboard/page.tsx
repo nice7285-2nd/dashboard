@@ -2,16 +2,52 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 
+interface Node {
+  id: number;
+  x: number;
+  y: number;
+  text: string;
+  width: number;
+  height: number;
+}
+
+// dragging 상태의 타입을 정의합니다
+interface DraggingState {
+  node: Node;
+  offsetX: number;
+  offsetY: number;
+}
+
+interface ToolButtonProps {
+  tool: string; // 또는 tool의 실제 타입에 맞게 지정하세요
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
 const StudyBoard = () => {
-  const canvasRef = useRef(null);
-  const drawingCanvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const [nodes, setNodes] = useState([
-    { id: 1, x: 100, y: 100, text: 'Environmentalists' },
-    { id: 2, x: 400, y: 250, text: 'are' },
-    { id: 3, x: 700, y: 100, text: 'getting more worried' },
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [nodes, setNodes] = useState<Node[]>([
+    {
+      id: 1,
+      x: 100,
+      y: 100,
+      text: 'Environmentalists',
+      width: 150,
+      height: 50,
+    },
+    { id: 2, x: 400, y: 250, text: 'are', width: 50, height: 50 },
+    {
+      id: 3,
+      x: 700,
+      y: 100,
+      text: 'getting more worried',
+      width: 200,
+      height: 50,
+    },
   ]);
-  const [dragging, setDragging] = useState(null);
+  const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('draw');
   const [penColor, setPenColor] = useState('#000000');
@@ -21,6 +57,16 @@ const StudyBoard = () => {
     y: 0,
     visible: false,
   });
+  const [chalkTexture, setChalkTexture] = useState<HTMLImageElement | null>(
+    null
+  );
+
+  useEffect(() => {
+    // 분필 텍스처 이미지 로드
+    const textureImage = new Image();
+    textureImage.src = '/chalk-texture.jpg'; // 분필 텍스처 이미지 경로
+    textureImage.onload = () => setChalkTexture(textureImage);
+  }, []);
 
   useEffect(() => {
     const resizeCanvas = () => {
@@ -36,7 +82,9 @@ const StudyBoard = () => {
         drawingCanvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        redrawCanvas(ctx);
+        if (ctx) {
+          redrawCanvas(ctx);
+        }
       }
     };
 
@@ -48,15 +96,20 @@ const StudyBoard = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return; // 캔버스가 null인 경우 함수 종료
     const ctx = canvas.getContext('2d');
 
     const updateNodeSizes = () => {
       const updatedNodes = nodes.map((node) => {
-        ctx.font = 'bold 18px Arial';
-        const textWidth = ctx.measureText(node.text).width;
-        const width = Math.max(textWidth + 40, 120); // 최소 너비 120px
-        const height = 80; // 높이를 80px로 유지
-        return { ...node, width, height };
+        if (ctx) {
+          // ctx가 null이 아닌지 확인
+          ctx.font = 'bold 18px Arial';
+          const textWidth = ctx.measureText(node.text).width;
+          const width = Math.max(textWidth + 40, 120); // 최소 너비 120px
+          const height = 80; // 높이를 80px로 유지
+          return { ...node, width, height };
+        }
+        return node; // ctx가 null인 경우 원래 노드를 반환
       });
       setNodes(updatedNodes);
     };
@@ -64,10 +117,16 @@ const StudyBoard = () => {
     updateNodeSizes();
   }, []);
 
-  const redrawCanvas = (ctx) => {
+  const redrawCanvas = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    const drawRoundedRect = (x, y, width, height, radius) => {
+    const drawRoundedRect = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      radius: number
+    ) => {
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
       ctx.lineTo(x + width - radius, y);
@@ -86,12 +145,18 @@ const StudyBoard = () => {
       ctx.closePath();
     };
 
-    const drawNode = (node) => {
+    const drawNode = (node: Node) => {
       ctx.save();
 
       // 흰색 바탕
       ctx.fillStyle = '#ffffff';
-      drawRoundedRect(node.x, node.y, node.width, node.height, 5);
+      drawRoundedRect(
+        node.x ?? 0,
+        node.y ?? 0,
+        node.width ?? 0,
+        node.height ?? 0,
+        5
+      );
       ctx.fill();
 
       // 밝은 파란색 테두리
@@ -112,7 +177,12 @@ const StudyBoard = () => {
       ctx.restore();
     };
 
-    const drawRightAngleArrow = (fromX, fromY, toX, toY) => {
+    const drawRightAngleArrow = (
+      fromX: number,
+      fromY: number,
+      toX: number,
+      toY: number
+    ) => {
       const midX = (fromX + toX) / 2;
       const cornerRadius = 5;
 
@@ -145,12 +215,21 @@ const StudyBoard = () => {
 
       ctx.lineTo(toX, toY);
       ctx.strokeStyle = '#666';
-      ctx.lineWidth = Number(lineWidth);
+      // ctx.lineWidth = Number(lineWidth);
+      ctx.lineWidth = 2;
       ctx.stroke();
 
       // 화살표 머리 그리기
       const headlen = 10;
-      let angle = Math.atan2(toY - fromY, toX - fromX);
+      let angle;
+
+      if (fromX < toX) {
+        // 오른쪽으로 향하는 화살표
+        angle = 0;
+      } else {
+        // 왼쪽으로 향하는 화살표
+        angle = Math.PI;
+      }
 
       ctx.beginPath();
       ctx.moveTo(toX, toY);
@@ -188,8 +267,9 @@ const StudyBoard = () => {
     }
   };
 
-  const handleMouseDown = (e) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = drawingCanvasRef.current;
+    if (!canvas) return; // 캔버스가 null인 경우 함수 종료
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -197,8 +277,10 @@ const StudyBoard = () => {
     if (tool === 'draw' || tool === 'erase') {
       setIsDrawing(true);
       const ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      ctx.moveTo(x, y);
+      if (ctx) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+      }
     } else if (tool === 'move') {
       const draggedNode = nodes.find(
         (node) =>
@@ -217,20 +299,53 @@ const StudyBoard = () => {
     }
   };
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     if (isDrawing) {
       const ctx = canvas.getContext('2d');
-      ctx.lineTo(x, y);
-      ctx.strokeStyle = tool === 'draw' ? penColor : '#ffffff';
-      ctx.lineWidth = Number(lineWidth);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.stroke();
+      if (ctx) {
+        ctx.lineTo(x, y);
+        if (tool === 'draw' && chalkTexture) {
+          // 분필 효과 적용
+          ctx.save();
+          ctx.strokeStyle =
+            ctx.createPattern(chalkTexture, 'repeat') || penColor;
+          ctx.globalAlpha = 0.8;
+          ctx.lineWidth = Number(lineWidth) * 1.5;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+
+          // 분필 가루 효과
+          for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.arc(
+              x + (Math.random() - 0.5) * 10,
+              y + (Math.random() - 0.5) * 10,
+              Math.random() * 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.fillStyle = penColor;
+            ctx.globalAlpha = Math.random() * 0.3;
+            ctx.fill();
+          }
+
+          ctx.restore();
+        } else {
+          // 기존 그리기 또는 지우개 로직
+          ctx.strokeStyle = tool === 'draw' ? penColor : '#ffffff';
+          ctx.lineWidth = Number(lineWidth);
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+        }
+      }
     } else if (dragging) {
       const newNodes = nodes.map((node) =>
         node.id === dragging.node.id
@@ -252,7 +367,11 @@ const StudyBoard = () => {
     setDragging(null);
   };
 
-  const ToolButton = ({ tool: buttonTool, icon, onClick }) => (
+  const ToolButton: React.FC<ToolButtonProps> = ({
+    tool: buttonTool,
+    icon,
+    onClick,
+  }) => (
     <button
       onClick={onClick}
       style={{
@@ -401,8 +520,10 @@ const StudyBoard = () => {
             const canvas = drawingCanvasRef.current;
             if (canvas) {
               const ctx = canvas.getContext('2d');
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              redrawCanvas(canvasRef.current.getContext('2d'));
+              if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                redrawCanvas(ctx);
+              }
             }
           }}
         />

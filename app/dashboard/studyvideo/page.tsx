@@ -17,7 +17,7 @@ const VideoList = () => {
     {
       id: '1',
       title: '리액트 기초 강좌',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '코딩 채널',
       views: 10000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // youtube-nocookie.com 사용
@@ -25,7 +25,7 @@ const VideoList = () => {
     {
       id: '2',
       title: 'Next.js 튜토리얼',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '웹 개발 마스터',
       views: 5000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -33,7 +33,7 @@ const VideoList = () => {
     {
       id: '3',
       title: 'TypeScript 완전 정복',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: 'TS 러버',
       views: 7500,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -41,7 +41,7 @@ const VideoList = () => {
     {
       id: '4',
       title: 'CSS 트릭스 모음',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '디자인 고수',
       views: 3000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -49,7 +49,7 @@ const VideoList = () => {
     {
       id: '5',
       title: 'CSS 트릭스 모음',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '디자인 고수',
       views: 3000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -57,7 +57,7 @@ const VideoList = () => {
     {
       id: '6',
       title: 'CSS 트릭스 모음',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '디자인 고수',
       views: 3000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -65,7 +65,7 @@ const VideoList = () => {
     {
       id: '7',
       title: 'CSS 트릭스 모음',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '디자인 고수',
       views: 3000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -73,7 +73,7 @@ const VideoList = () => {
     {
       id: '8',
       title: 'CSS 트릭스 모음',
-      thumbnail: '/opengraph-image.png',
+      thumbnail: '/teacher.png',
       channelName: '디자인 고수',
       views: 3000,
       videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
@@ -163,7 +163,7 @@ const VideoList = () => {
             <iframe
               width="100%"
               height="100%"
-              src={selectedVideo.videoUrl} // 직접 youtube-nocookie.com URL 사용
+              src={`${selectedVideo.videoUrl}?autoplay=1`} // autoplay와 mute 파라미터 추가
               title={selectedVideo.title}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
