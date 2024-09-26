@@ -33,7 +33,7 @@ const StudySpeak = () => {
     let maxTextHeight = 0;
 
     // 텍스트 크기 측정 및 최대 크기 찾기
-    ctx.font = '14px Arial';
+    ctx.font = '14px Arial1';
     nodes.forEach((node) => {
       const metrics = ctx.measureText(node.text);
       maxTextWidth = Math.max(maxTextWidth, metrics.width);
