@@ -298,17 +298,6 @@ const StudyBoard = () => {
     setLineWidth(value);
   };
 
-  let lastClickTime = 0;
-  node.addEventListener('click', (event) => {
-    const currentTime = new Date().getTime();
-    const timeDiff = currentTime - lastClickTime;
-    if (timeDiff < 300) {
-      // 300ms 이내에 두 번 클릭되면 더블클릭으로 간주
-      alert('노드가 더블클릭되었습니다!');
-    }
-    lastClickTime = currentTime;
-  });
-
   return (
     <div
       style={{
@@ -403,6 +392,20 @@ const StudyBoard = () => {
           icon={<path d="M20 20H7L3 16l6-6 8 8M6 14l4 4" />}
           onClick={() => setTool('erase')}
         />
+        <ToolButton
+          tool="clear"
+          icon={
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m-6 5v6m4-6v6" />
+          }
+          onClick={() => {
+            const canvas = drawingCanvasRef.current;
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              redrawCanvas(canvasRef.current.getContext('2d'));
+            }
+          }}
+        />
         <div
           style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}
         >
@@ -425,7 +428,7 @@ const StudyBoard = () => {
           <label style={{ marginRight: '10px' }}>굵기</label>
           <select
             value={lineWidth}
-            onChange={handleLineWidthChange}
+            onChange={(e) => setLineWidth(e.target.value)}
             style={{
               padding: '5px',
               borderRadius: '4px',
@@ -434,10 +437,10 @@ const StudyBoard = () => {
               fontSize: '14px',
             }}
           >
-            <option value={1}>얇게</option>
-            <option value={2}>보통</option>
-            <option value={4}>굵게</option>
-            <option value={8}>매우 굵게</option>
+            <option value="1">얇게</option>
+            <option value="2">보통</option>
+            <option value="4">굵게</option>
+            <option value="8">매우 굵게</option>
           </select>
         </div>
       </div>

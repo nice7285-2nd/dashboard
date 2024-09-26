@@ -21,6 +21,11 @@ const links = [
     href: '/dashboard/studyspeak',
     icon: DocumentChartBarIcon,
   },
+  {
+    name: '학습영상 보기',
+    href: '/dashboard/studyvideo',
+    icon: DocumentChartBarIcon,
+  },
   { name: '프로젝트', href: '/dashboard/projects', icon: DocumentChartBarIcon },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];

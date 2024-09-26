@@ -60,8 +60,8 @@ const StudySpeak = () => {
         y: row * (nodeHeight + nodeSpacing) + nodeSpacing + nodeHeight / 2,
       };
     });
-    setNodes(updatedNodes);
 
+    // setNodes를 제거하고 drawDiagram 함수에서 직접 updatedNodes를 사용합니다.
     const drawDiagram = () => {
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -121,7 +121,7 @@ const StudySpeak = () => {
     return () => {
       canvas.removeEventListener('click', handleClick);
     };
-  }, [nodes]);
+  }, []);
 
   useEffect(() => {
     if (selectedNode) {
