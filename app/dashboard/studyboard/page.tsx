@@ -60,6 +60,7 @@ const StudyBoard = () => {
   const [chalkTexture, setChalkTexture] = useState<HTMLImageElement | null>(
     null
   );
+  const [eraserSize, setEraserSize] = useState(30); // 지우개 크기 상태 추가
 
   useEffect(() => {
     // 분필 텍스처 이미지 로드
@@ -310,38 +311,21 @@ const StudyBoard = () => {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.lineTo(x, y);
-        if (tool === 'draw' && chalkTexture) {
-          ctx.save();
-          ctx.strokeStyle = penColor; // 여기를 수정
-          ctx.globalAlpha = 0.8;
-          ctx.lineWidth = Number(lineWidth) * 1.5;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.stroke();
-
-          // 분필 가루 효과
-          for (let i = 0; i < 5; i++) {
-            ctx.beginPath();
-            ctx.arc(
-              x + (Math.random() - 0.5) * 10,
-              y + (Math.random() - 0.5) * 10,
-              Math.random() * 2,
-              0,
-              Math.PI * 2
-            );
-            ctx.fillStyle = penColor;
-            ctx.globalAlpha = Math.random() * 0.3;
-            ctx.fill();
-          }
-
-          ctx.restore();
-        } else {
-          // 기존 그리기 또는 지우개 로직
-          ctx.strokeStyle = tool === 'draw' ? penColor : '#ffffff';
+        if (tool === 'draw') {
+          ctx.strokeStyle = penColor;
           ctx.lineWidth = Number(lineWidth);
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
+        } else if (tool === 'erase') {
+          // 지우개 도구 사용 시 그리기 영역을 지우도록 수정
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeStyle = 'rgba(255,255,255,1)';
+          ctx.lineWidth = eraserSize; // 지우개 크기 사용
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+          ctx.globalCompositeOperation = 'source-over'; // 원래 상태로 복구
         }
       }
     } else if (dragging) {
@@ -466,10 +450,10 @@ const StudyBoard = () => {
           <div
             style={{
               position: 'absolute',
-              left: eraserPosition.x - Number(lineWidth) / 2,
-              top: eraserPosition.y - Number(lineWidth) / 2,
-              width: Number(lineWidth),
-              height: Number(lineWidth),
+              left: eraserPosition.x - eraserSize / 2,
+              top: eraserPosition.y - eraserSize / 2,
+              width: eraserSize,
+              height: eraserSize,
               border: '1px solid black',
               borderRadius: '50%',
               pointerEvents: 'none',
@@ -480,16 +464,12 @@ const StudyBoard = () => {
       </div>
       <div
         style={{
-          // margin: '2px',
           padding: '20px',
           borderRadius: '10px',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          // backgroundColor: 'white',
           zIndex: 10,
-          // border: '1px solid #ccc',
-          // boxShadow: '2px 2px 2px rgba(0,0,0,0.1)',
           gap: '10px',
         }}
       >
@@ -588,17 +568,23 @@ const StudyBoard = () => {
           style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}
         >
           <label style={{ marginRight: '10px' }}>색상</label>
-          <input
-            type="color"
+          <select
             value={penColor}
             onChange={(e) => setPenColor(e.target.value)}
             style={{
-              width: '30px',
-              height: '30px',
-              border: 'none',
-              cursor: 'pointer',
+              padding: '5px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              backgroundColor: 'white',
+              fontSize: '14px',
             }}
-          />
+          >
+            <option value="#000000">검정</option>
+            <option value="#FF0000">빨강</option>
+            <option value="#00FF00">초록</option>
+            <option value="#0000FF">파랑</option>
+            <option value="#FFFF00">노랑</option>
+          </select>
         </div>
         <div
           style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}
@@ -620,6 +606,19 @@ const StudyBoard = () => {
             <option value="4">굵게</option>
             <option value="8">매우 굵게</option>
           </select>
+        </div>
+        <div
+          style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}
+        >
+          <label style={{ marginRight: '10px' }}>지우개 크기</label>
+          <input
+            type="range"
+            min="10"
+            max="50"
+            value={eraserSize}
+            onChange={(e) => setEraserSize(Number(e.target.value))}
+            style={{ width: '100px' }}
+          />
         </div>
       </div>
     </div>
