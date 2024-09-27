@@ -7,7 +7,8 @@ export async function POST(request: Request) {
 
   try {
     // 데이터베이스에서 사용자 조회
-    const user = await sql`SELECT * FROM users WHERE email = ${userEmail} AND auth_key = ${authKey}`;
+    const user =
+      await sql`SELECT * FROM users WHERE email = ${userEmail} AND auth_key = ${authKey}`;
 
     // 사용자가 존재하고, authKey가 일치하는 경우
     if (user.rows.length > 0) {
