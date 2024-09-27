@@ -55,12 +55,17 @@ const ScreenRecorder = () => {
       const formData = new FormData();
       formData.append('file', blob); // 'file'이라는 키로 파일을 추가해야 합니다.
 
-      const response = await fetch('/api/upload-video', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('업로드 성공:', response.data);
+      if (!response.ok) {
+        throw new Error('업로드 실패');
+      }
+
+      const data = await response.json();
+      console.log('업로드 성공:', data);
       setRecordedChunks([]); // 업로드 후 recordedChunks 초기화
     } catch (error) {
       console.error('업로드 실패:', error);

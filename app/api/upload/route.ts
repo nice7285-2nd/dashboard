@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     console.log('FormData 파싱 완료');
 
     // FormData의 모든 키 출력
-    for (const key of formData.keys()) {
+    Array.from(formData.keys()).forEach((key) => {
       console.log('FormData 키:', key);
-    }
+    });
 
     const file = formData.get('file') as File | null;
 
@@ -42,8 +42,5 @@ export async function POST(req: Request) {
 }
 
 export async function GET(request: NextRequest) {
-  return NextResponse.json(
-    { message: 'GET 요청은 허용되지 않습니다.' },
-    { status: 405 }
-  );
+  return NextResponse.json({ message: 'GET 요청은 허용되지 않습니다.' });
 }
