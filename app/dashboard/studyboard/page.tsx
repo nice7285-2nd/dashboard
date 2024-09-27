@@ -51,7 +51,7 @@ const StudyBoard = () => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('draw');
   const [penColor, setPenColor] = useState('#000000');
-  const [lineWidth, setLineWidth] = useState<string>('2');
+  const [lineWidth, setLineWidth] = useState<string>('4');
   const [eraserPosition, setEraserPosition] = useState({
     x: 0,
     y: 0,
@@ -60,7 +60,7 @@ const StudyBoard = () => {
   const [chalkTexture, setChalkTexture] = useState<HTMLImageElement | null>(
     null
   );
-  const [eraserSize, setEraserSize] = useState(30); // 지우개 크기 상태 추가
+  const [eraserSize, setEraserSize] = useState(40); // 지우개 크기 상태 추가
 
   useEffect(() => {
     // 분필 텍스처 이미지 로드
@@ -580,7 +580,7 @@ const StudyBoard = () => {
             }}
           >
             <option value="#000000">검정</option>
-            <option value="#FF0000">빨강</option>
+            <option value="#DD1100">빨강</option>
             <option value="#00FF00">초록</option>
             <option value="#0000FF">파랑</option>
             <option value="#FFFF00">노랑</option>
@@ -614,7 +614,7 @@ const StudyBoard = () => {
           <input
             type="range"
             min="10"
-            max="50"
+            max="100"
             value={eraserSize}
             onChange={(e) => setEraserSize(Number(e.target.value))}
             style={{ width: '100px' }}
