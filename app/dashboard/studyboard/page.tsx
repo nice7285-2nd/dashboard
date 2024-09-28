@@ -9,6 +9,9 @@ interface Node {
   text: string;
   width: number;
   height: number;
+  selected?: boolean; // 선택 상태를 나타내는 속성 추가
+  rotation?: number; // 회전 각도 추가
+  group?: string; // 그룹 속성 추가
 }
 
 // dragging 상태의 타입을 정의합니다
@@ -49,7 +52,7 @@ const StudyBoard = () => {
   ]);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState('draw');
+  const [tool, setTool] = useState('move');
   const [penColor, setPenColor] = useState('#000000');
   const [lineWidth, setLineWidth] = useState<string>('4');
   const [eraserPosition, setEraserPosition] = useState({
@@ -61,6 +64,20 @@ const StudyBoard = () => {
     null
   );
   const [eraserSize, setEraserSize] = useState(40); // 지우개 크기 상태 추가
+  const [resizing, setResizing] = useState<{
+    node: Node;
+    direction: string;
+  } | null>(null);
+  const [rotating, setRotating] = useState<{
+    node: Node;
+    startAngle: number;
+  } | null>(null);
+  const [selectionArea, setSelectionArea] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+  } | null>(null);
 
   useEffect(() => {
     // 분필 텍스처 이미지 로드
@@ -94,6 +111,20 @@ const StudyBoard = () => {
 
     return () => window.removeEventListener('resize', resizeCanvas);
   }, [nodes]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const animate = () => {
+          redrawCanvas(ctx);
+          requestAnimationFrame(animate);
+        };
+        animate();
+      }
+    }
+  }, [nodes, selectionArea]); // nodes와 selectionArea가 변경될 때마다 다시 그리기
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -148,32 +179,64 @@ const StudyBoard = () => {
 
     const drawNode = (node: Node) => {
       ctx.save();
+      ctx.translate(node.x + node.width / 2, node.y + node.height / 2);
+      ctx.rotate(((node.rotation || 0) * Math.PI) / 180);
+
+      // 텍스트 측정을 위한 준비
+      ctx.font = 'bold 18px Arial';
+      const words = node.text.split(' ');
+      const lines = [];
+      let line = '';
+      const maxWidth = node.width - 20; // 여백 고려
+      const lineHeight = 20;
+
+      // 텍스트 줄바꿈 처리
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+          lines.push(line);
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      lines.push(line);
+
+      // 노드의 최소 크기 계산
+      const minWidth = Math.max(
+        node.width,
+        ctx.measureText(node.text).width + 40
+      );
+      const minHeight = Math.max(node.height, lines.length * lineHeight + 20);
 
       // 흰색 바탕
       ctx.fillStyle = '#ffffff';
-      drawRoundedRect(
-        node.x ?? 0,
-        node.y ?? 0,
-        node.width ?? 0,
-        node.height ?? 0,
-        5
-      );
+      drawRoundedRect(-minWidth / 2, -minHeight / 2, minWidth, minHeight, 5);
       ctx.fill();
 
-      // 밝은 파란색 테두리
-      ctx.strokeStyle = '#4a90e2';
+      // 테두리 색상 변경
+      ctx.strokeStyle = node.selected ? '#FF4500' : '#4a90e2';
       ctx.lineWidth = 2;
       ctx.stroke();
 
       ctx.fillStyle = '#333';
-      ctx.font = 'bold 18px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(
-        node.text,
-        node.x + node.width / 2,
-        node.y + node.height / 2
-      );
+
+      // 줄바꿈된 텍스트 그리기
+      let startY = (-lines.length * lineHeight) / 2 + lineHeight / 2;
+      for (let i = 0; i < lines.length; i++) {
+        ctx.fillText(lines[i], 0, startY);
+        startY += lineHeight;
+      }
+
+      // 선택된 노드에 대해 핸들러 그리기
+      if (node.selected) {
+        drawResizeHandles(ctx, node, minWidth, minHeight);
+        drawRotationHandle(ctx, node, minHeight);
+      }
 
       ctx.restore();
     };
@@ -266,6 +329,57 @@ const StudyBoard = () => {
         nodes[2].y + nodes[2].height / 2
       );
     }
+
+    // 선택 영역 그리기
+    if (selectionArea) {
+      const { startX, startY, endX, endY } = selectionArea;
+      ctx.strokeStyle = 'rgba(0, 0, 255, 0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]); // 점선 스타일 설정
+      ctx.strokeRect(
+        Math.min(startX, endX),
+        Math.min(startY, endY),
+        Math.abs(endX - startX),
+        Math.abs(endY - startY)
+      );
+      ctx.setLineDash([]); // 점선 스타일 초기화
+    }
+  };
+
+  const drawResizeHandles = (
+    ctx: CanvasRenderingContext2D,
+    node: Node,
+    width: number,
+    height: number
+  ) => {
+    const handleSize = 10;
+    const positions = [
+      { x: -width / 2, y: -height / 2 },
+      { x: width / 2, y: -height / 2 },
+      { x: -width / 2, y: height / 2 },
+      { x: width / 2, y: height / 2 },
+    ];
+
+    positions.forEach((pos) => {
+      ctx.fillStyle = '#FF4500';
+      ctx.fillRect(
+        pos.x - handleSize / 2,
+        pos.y - handleSize / 2,
+        handleSize,
+        handleSize
+      );
+    });
+  };
+
+  const drawRotationHandle = (
+    ctx: CanvasRenderingContext2D,
+    node: Node,
+    height: number
+  ) => {
+    ctx.beginPath();
+    ctx.arc(0, -height / 2 - 20, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#FF4500';
+    ctx.fill();
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -283,19 +397,30 @@ const StudyBoard = () => {
         ctx.moveTo(x, y);
       }
     } else if (tool === 'move') {
-      const draggedNode = nodes.find(
-        (node) =>
-          x >= node.x &&
-          x <= node.x + node.width &&
-          y >= node.y &&
-          y <= node.y + node.height
-      );
-      if (draggedNode) {
-        setDragging({
-          node: draggedNode,
-          offsetX: x - draggedNode.x,
-          offsetY: y - draggedNode.y,
-        });
+      const { node, handle } = getClickedNodeAndHandle(x, y);
+      if (node) {
+        if (handle === 'rotate') {
+          setRotating({
+            node,
+            startAngle: Math.atan2(
+              y - (node.y + node.height / 2),
+              x - (node.x + node.width / 2)
+            ),
+          });
+        } else if (handle) {
+          setResizing({ node, direction: handle });
+        } else {
+          setDragging({
+            node,
+            offsetX: x - node.x,
+            offsetY: y - node.y,
+          });
+        }
+        setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
+      } else {
+        // 노드를 클릭하지 않았을 때 선택 영역 시작
+        setSelectionArea({ startX: x, startY: y, endX: x, endY: y });
+        setNodes(nodes.map((n) => ({ ...n, selected: false })));
       }
     }
   };
@@ -329,12 +454,81 @@ const StudyBoard = () => {
         }
       }
     } else if (dragging) {
-      const newNodes = nodes.map((node) =>
-        node.id === dragging.node.id
-          ? { ...node, x: x - dragging.offsetX, y: y - dragging.offsetY }
-          : node
-      );
+      // 노드 드래그 로직 추가
+      const newNodes = nodes.map((node) => {
+        if (node.id === dragging.node.id) {
+          return {
+            ...node,
+            x: x - dragging.offsetX,
+            y: y - dragging.offsetY,
+          };
+        }
+        return node;
+      });
       setNodes(newNodes);
+    } else if (resizing) {
+      const newNodes = nodes.map((node) => {
+        if (node.id === resizing.node.id) {
+          let newWidth = node.width;
+          let newHeight = node.height;
+          let newX = node.x;
+          let newY = node.y;
+
+          const ctx = canvasRef.current?.getContext('2d');
+          if (ctx) {
+            ctx.font = 'bold 18px Arial';
+            const minWidth = Math.max(
+              120,
+              ctx.measureText(node.text).width + 40
+            );
+            const minHeight = 80; // 최소 높이 설정
+
+            if (resizing.direction.includes('e'))
+              newWidth = Math.max(minWidth, x - node.x);
+            if (resizing.direction.includes('w')) {
+              newWidth = Math.max(minWidth, node.x + node.width - x);
+              newX = Math.min(x, node.x + node.width - minWidth);
+            }
+            if (resizing.direction.includes('s'))
+              newHeight = Math.max(minHeight, y - node.y);
+            if (resizing.direction.includes('n')) {
+              newHeight = Math.max(minHeight, node.y + node.height - y);
+              newY = Math.min(y, node.y + node.height - minHeight);
+            }
+          }
+
+          return {
+            ...node,
+            x: newX,
+            y: newY,
+            width: newWidth,
+            height: newHeight,
+          };
+        }
+        return node;
+      });
+      setNodes(newNodes);
+    } else if (rotating) {
+      const centerX = rotating.node.x + rotating.node.width / 2;
+      const centerY = rotating.node.y + rotating.node.height / 2;
+      const angle = Math.atan2(y - centerY, x - centerX) - rotating.startAngle;
+      const newRotation = ((angle * 180) / Math.PI + 360) % 360;
+
+      setNodes(
+        nodes.map((node) =>
+          node.id === rotating.node.id
+            ? { ...node, rotation: newRotation }
+            : node
+        )
+      );
+    }
+
+    if (selectionArea) {
+      setSelectionArea({
+        ...selectionArea,
+        endX: x,
+        endY: y,
+      });
     }
 
     if (tool === 'erase') {
@@ -347,6 +541,81 @@ const StudyBoard = () => {
   const handleMouseUp = () => {
     setIsDrawing(false);
     setDragging(null);
+    setResizing(null);
+    setRotating(null);
+
+    if (selectionArea) {
+      const selectedNodes = nodes.map((node) => ({
+        ...node,
+        selected: isNodeInSelectionArea(node, selectionArea),
+      }));
+      setNodes(selectedNodes);
+      setSelectionArea(null);
+    }
+  };
+
+  const getClickedNodeAndHandle = (x: number, y: number) => {
+    for (const node of nodes) {
+      if (node.selected) {
+        // 회전 핸들 확인
+        const rotateHandleX = node.x + node.width / 2;
+        const rotateHandleY = node.y - 20;
+        if (
+          Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5
+        ) {
+          return { node, handle: 'rotate' };
+        }
+
+        // 크기 조절 핸들 확인
+        const handleSize = 10;
+        const handles = [
+          { x: node.x, y: node.y, dir: 'nw' },
+          { x: node.x + node.width, y: node.y, dir: 'ne' },
+          { x: node.x, y: node.y + node.height, dir: 'sw' },
+          { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
+        ];
+
+        for (const handle of handles) {
+          if (
+            x >= handle.x - handleSize / 2 &&
+            x <= handle.x + handleSize / 2 &&
+            y >= handle.y - handleSize / 2 &&
+            y <= handle.y + handleSize / 2
+          ) {
+            return { node, handle: handle.dir };
+          }
+        }
+      }
+
+      // 노드 본체 확인
+      if (
+        x >= node.x &&
+        x <= node.x + node.width &&
+        y >= node.y &&
+        y <= node.y + node.height
+      ) {
+        return { node, handle: null };
+      }
+    }
+    return { node: null, handle: null };
+  };
+
+  const isNodeInSelectionArea = (
+    node: Node,
+    area: { startX: number; startY: number; endX: number; endY: number }
+  ) => {
+    const { startX, startY, endX, endY } = area;
+    const left = Math.min(startX, endX);
+    const right = Math.max(startX, endX);
+    const top = Math.min(startY, endY);
+    const bottom = Math.max(startY, endY);
+
+    return (
+      node.x < right &&
+      node.x + node.width > left &&
+      node.y < bottom &&
+      node.y + node.height > top
+    );
   };
 
   const ToolButton: React.FC<ToolButtonProps> = ({
@@ -358,8 +627,8 @@ const StudyBoard = () => {
       onClick={onClick}
       style={{
         marginBottom: '0px',
-        width: '60px',
-        height: '60px',
+        width: '50px',
+        height: '50px',
         backgroundColor: tool === buttonTool ? '#e0e0e0' : 'white',
         border: '1px solid #ccc',
         borderRadius: '5px',
@@ -397,6 +666,27 @@ const StudyBoard = () => {
 
   const handleLineWidthChange = (value: string) => {
     setLineWidth(value);
+  };
+
+  const alignNodesVertically = () => {
+    const selectedNodes = nodes.filter((node) => node.selected);
+    if (selectedNodes.length < 2) return;
+
+    const averageY =
+      selectedNodes.reduce((sum, node) => sum + node.y + node.height / 2, 0) /
+      selectedNodes.length;
+
+    const newNodes = nodes.map((node) => {
+      if (node.selected) {
+        return {
+          ...node,
+          y: averageY - node.height / 2,
+        };
+      }
+      return node;
+    });
+
+    setNodes(newNodes);
   };
 
   return (
@@ -517,7 +807,7 @@ const StudyBoard = () => {
                 clip-rule="evenodd"
                 d="M18.4324 4C18.2266 4 18.0227 4.04055 17.8325 4.11933C17.6423 4.19811 17.4695 4.31358 17.3239 4.45914L5.25659 16.5265L4.42524 19.5748L7.47353 18.7434L19.5409 6.67608C19.6864 6.53051 19.8019 6.3577 19.8807 6.16751C19.9595 5.97732 20 5.77348 20 5.56761C20 5.36175 19.9595 5.1579 19.8807 4.96771C19.8019 4.77752 19.6864 4.60471 19.5409 4.45914C19.3953 4.31358 19.2225 4.19811 19.0323 4.11933C18.8421 4.04055 18.6383 4 18.4324 4ZM17.0671 2.27157C17.5 2.09228 17.9639 2 18.4324 2C18.9009 2 19.3648 2.09228 19.7977 2.27157C20.2305 2.45086 20.6238 2.71365 20.9551 3.04493C21.2864 3.37621 21.5492 3.7695 21.7285 4.20235C21.9077 4.63519 22 5.09911 22 5.56761C22 6.03611 21.9077 6.50003 21.7285 6.93288C21.5492 7.36572 21.2864 7.75901 20.9551 8.09029L8.69996 20.3454C8.57691 20.4685 8.42387 20.5573 8.25597 20.6031L3.26314 21.9648C2.91693 22.0592 2.54667 21.9609 2.29292 21.7071C2.03917 21.4534 1.94084 21.0831 2.03526 20.7369L3.39694 15.7441C3.44273 15.5762 3.53154 15.4231 3.6546 15.3001L15.9097 3.04493C16.241 2.71365 16.6343 2.45086 17.0671 2.27157Z"
                 fill="#000000"
-                stroke-width="0.2"
+                stroke-width="0.1"
               />
             </>
           }
@@ -530,7 +820,7 @@ const StudyBoard = () => {
               <path
                 d="M5.50506 11.4096L6.03539 11.9399L5.50506 11.4096ZM3 14.9522H2.25H3ZM9.04776 21V21.75V21ZM11.4096 5.50506L10.8792 4.97473L11.4096 5.50506ZM13.241 17.8444C13.5339 18.1373 14.0088 18.1373 14.3017 17.8444C14.5946 17.5515 14.5946 17.0766 14.3017 16.7837L13.241 17.8444ZM7.21629 9.69832C6.9234 9.40543 6.44852 9.40543 6.15563 9.69832C5.86274 9.99122 5.86274 10.4661 6.15563 10.759L7.21629 9.69832ZM17.9646 12.0601L12.0601 17.9646L13.1208 19.0253L19.0253 13.1208L17.9646 12.0601ZM6.03539 11.9399L11.9399 6.03539L10.8792 4.97473L4.97473 10.8792L6.03539 11.9399ZM6.03539 17.9646C5.18538 17.1146 4.60235 16.5293 4.22253 16.0315C3.85592 15.551 3.75 15.2411 3.75 14.9522H2.25C2.25 15.701 2.56159 16.3274 3.03 16.9414C3.48521 17.538 4.1547 18.2052 4.97473 19.0253L6.03539 17.9646ZM4.97473 10.8792C4.1547 11.6993 3.48521 12.3665 3.03 12.9631C2.56159 13.577 2.25 14.2035 2.25 14.9522H3.75C3.75 14.6633 3.85592 14.3535 4.22253 13.873C4.60235 13.3752 5.18538 12.7899 6.03539 11.9399L4.97473 10.8792ZM12.0601 17.9646C11.2101 18.8146 10.6248 19.3977 10.127 19.7775C9.64651 20.1441 9.33665 20.25 9.04776 20.25V21.75C9.79649 21.75 10.423 21.4384 11.0369 20.97C11.6335 20.5148 12.3008 19.8453 13.1208 19.0253L12.0601 17.9646ZM4.97473 19.0253C5.79476 19.8453 6.46201 20.5148 7.05863 20.97C7.67256 21.4384 8.29902 21.75 9.04776 21.75V20.25C8.75886 20.25 8.449 20.1441 7.9685 19.7775C7.47069 19.3977 6.88541 18.8146 6.03539 17.9646L4.97473 19.0253ZM17.9646 6.03539C18.8146 6.88541 19.3977 7.47069 19.7775 7.9685C20.1441 8.449 20.25 8.75886 20.25 9.04776H21.75C21.75 8.29902 21.4384 7.67256 20.97 7.05863C20.5148 6.46201 19.8453 5.79476 19.0253 4.97473L17.9646 6.03539ZM19.0253 13.1208C19.8453 12.3008 20.5148 11.6335 20.97 11.0369C21.4384 10.423 21.75 9.79649 21.75 9.04776H20.25C20.25 9.33665 20.1441 9.64651 19.7775 10.127C19.3977 10.6248 18.8146 11.2101 17.9646 12.0601L19.0253 13.1208ZM19.0253 4.97473C18.2052 4.1547 17.538 3.48521 16.9414 3.03C16.3274 2.56159 15.701 2.25 14.9522 2.25V3.75C15.2411 3.75 15.551 3.85592 16.0315 4.22253C16.5293 4.60235 17.1146 5.18538 17.9646 6.03539L19.0253 4.97473ZM11.9399 6.03539C12.7899 5.18538 13.3752 4.60235 13.873 4.22253C14.3535 3.85592 14.6633 3.75 14.9522 3.75V2.25C14.2035 2.25 13.577 2.56159 12.9631 3.03C12.3665 3.48521 11.6993 4.1547 10.8792 4.97473L11.9399 6.03539ZM14.3017 16.7837L7.21629 9.69832L6.15563 10.759L13.241 17.8444L14.3017 16.7837Z"
                 fill="#1C274C"
-                stroke-width="1"
+                stroke-width="0.4"
               />
               <path
                 d="M9 21H21"
@@ -546,7 +836,7 @@ const StudyBoard = () => {
           tool="clear"
           icon={
             <path
-              d="M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3.13878C9.39792 3.26132 9.12208 3.46013 8.90729 3.71698C8.66405 4.00784 8.53292 4.40125 8.27064 5.18807L8 6M18 6V16.2C18 17.8802 18 18.7202 17.673 19.362C17.3854 19.9265 16.9265 20.3854 16.362 20.673C15.7202 21 14.8802 21 13.2 21H10.8C9.11984 21 8.27976 21 7.63803 20.673C7.07354 20.3854 6.6146 19.9265 6.32698 19.362C6 18.7202 6 17.8802 6 16.2V6M14 10V17M10 10V17"
+              d="M4 6H20M16 6L15.7294 5.18807C15.4671 4.40125 15.3359 4.00784 15.0927 3.71698C14.8779 3.46013 14.6021 3.26132 14.2905 3.13878C13.9376 3 13.523 3 12.6936 3H11.3064C10.477 3 10.0624 3 9.70951 3C9.39792 3 9.12208 3 8.90729 3C8.66405 3 8.53292 4 8.27064 5.18807L8 6M18 6V16.2C18 17.8802 18 18.7202 17.673 19.362C17.3854 19.9265 16.9265 20.3854 16.362 20.673C15.7202 21 14.8802 21 13.2 21H10.8C9.11984 21 8.27976 21 7.63803 20.673C7.07354 20.3854 6.6146 19.9265 6.32698 19.362C6 18.7202 6 17.8802 6 16.2V6M14 10V17M10 10V17"
               stroke="#000000"
               stroke-width="2"
               stroke-linecap="round"
@@ -563,6 +853,17 @@ const StudyBoard = () => {
               }
             }
           }}
+        />
+        <ToolButton
+          tool="alignVertical"
+          icon={
+            <>
+              <rect x="7" y="4" width="10" height="4" rx="1" />
+              <rect x="7" y="10" width="10" height="4" rx="1" />
+              <rect x="7" y="16" width="10" height="4" rx="1" />
+            </>
+          }
+          onClick={alignNodesVertically}
         />
         <div
           style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}
