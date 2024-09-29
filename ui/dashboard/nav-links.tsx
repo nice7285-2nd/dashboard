@@ -12,7 +12,7 @@ import clsx from 'clsx';
 const links = [
   { name: '홈', href: '/dashboard', icon: HomeIcon },
   {
-    name: '학습화면',
+    name: '교안만들기',
     href: '/dashboard/studyboard',
     icon: DocumentChartBarIcon,
   },
