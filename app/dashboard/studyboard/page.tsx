@@ -3,6 +3,18 @@
 import React, { useRef, useEffect, useState } from 'react';
 import ToolButton from './components/ToolButton';
 
+// Tool 타입 정의 추가
+type Tool =
+  | 'move'
+  | 'draw'
+  | 'addNode'
+  | 'connect'
+  | 'erase'
+  | 'clear'
+  | 'alignVertical'
+  | 'alignHorizontal'
+  | 'select';
+
 interface Node {
   id: number;
   x: number;
