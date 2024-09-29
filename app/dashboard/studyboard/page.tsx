@@ -33,6 +33,10 @@ const StudyBoard = () => {
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  // Undo/Redo 기능을 위한 상태 추가
+  const [history, setHistory] = useState<Node[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+
   useEffect(() => {
     const textureImage = new Image();
     textureImage.src = '/chalk-texture.jpg';
@@ -126,13 +130,26 @@ const StudyBoard = () => {
         } else if (handle) {
           setResizing({ node, direction: handle });
         } else {
-          setDragging({
-            node,
-            offsetX: x - node.x,
-            offsetY: y - node.y,
-          });
+          const selectedNodes = nodes.filter((n) => n.selected);
+          if (selectedNodes.length > 1 && node.selected) {
+            // 여러 노드가 선택된 경우
+            setDragging({
+              node: { id: 'group', x: x, y: y, width: 0, height: 0 },
+              offsetX: x,
+              offsetY: y,
+              selectedNodes: selectedNodes,
+            });
+          } else {
+            setDragging({
+              node,
+              offsetX: x - node.x,
+              offsetY: y - node.y,
+            });
+            setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
+          }
         }
-        setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
+        // 노드 이동 시작 시 현재 상태를 히스토리에 추가
+        addToHistory();
       } else {
         setSelectionArea({ startX: x, startY: y, endX: x, endY: y });
         setNodes(nodes.map((n) => ({ ...n, selected: false })));
@@ -197,17 +214,40 @@ const StudyBoard = () => {
         }
       }
     } else if (dragging) {
-      const newNodes = nodes.map((node) => {
-        if (node.id === dragging.node.id) {
-          return {
-            ...node,
-            x: x - dragging.offsetX,
-            y: y - dragging.offsetY,
-          };
-        }
-        return node;
-      });
-      setNodes(newNodes);
+      if (dragging.node.id === 'group') {
+        // 여러 노드가 선택된 경우
+        const dx = x - dragging.offsetX;
+        const dy = y - dragging.offsetY;
+        const newNodes = nodes.map((node) => {
+          if (node.selected) {
+            return {
+              ...node,
+              x: node.x + dx,
+              y: node.y + dy,
+            };
+          }
+          return node;
+        });
+        setNodes(newNodes);
+        setDragging({
+          ...dragging,
+          offsetX: x,
+          offsetY: y,
+        });
+      } else {
+        // 단일 노드 이동
+        const newNodes = nodes.map((node) => {
+          if (node.id === dragging.node.id) {
+            return {
+              ...node,
+              x: x - dragging.offsetX,
+              y: y - dragging.offsetY,
+            };
+          }
+          return node;
+        });
+        setNodes(newNodes);
+      }
     } else if (resizing) {
       const newNodes = nodes.map((node) => {
         if (node.id === resizing.node.id) {
@@ -293,6 +333,9 @@ const StudyBoard = () => {
 
       setSelectionArea(null);
     }
+
+    // 상태 변경 후 히스토리에 추가
+    addToHistory();
   };
 
   const getClickedNodeAndHandle = (x: number, y: number) => {
@@ -376,6 +419,7 @@ const StudyBoard = () => {
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setNextNodeId(newId + 1);
     setMaxZIndex(newZIndex);
+    addToHistory();
   };
 
   const handleToolChange = (newTool: Tool) => {
@@ -412,6 +456,7 @@ const StudyBoard = () => {
     });
 
     setNodes(newNodes);
+    addToHistory();
   };
 
   const alignNodesHorizontally = () => {
@@ -433,11 +478,13 @@ const StudyBoard = () => {
     });
 
     setNodes(newNodes);
+    addToHistory();
   };
 
   const handleColorChange = (color: string) => {
     setPenColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => (node.selected ? { ...node, backgroundColor: color } : node)));
+    addToHistory();
   };
 
   const startRecording = async () => {
@@ -471,6 +518,30 @@ const StudyBoard = () => {
     }
   };
 
+  // Undo 기능
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setNodes(history[historyIndex - 1]);
+    }
+  };
+
+  // Redo 기능
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setNodes(history[historyIndex + 1]);
+    }
+  };
+
+  // 히스토리에 현재 상태 추가
+  const addToHistory = () => {
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push([...nodes]);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
@@ -498,6 +569,7 @@ const StudyBoard = () => {
                 redrawCanvas(ctx, nodes, selectionArea);
               }
             }
+            addToHistory();
           }}
           currentTool={tool}
         />
@@ -509,12 +581,14 @@ const StudyBoard = () => {
           onClick={isRecording ? stopRecording : startRecording}
           currentTool={tool}
         />
+        <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} />
+        <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} />
         <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
           <label style={{ marginRight: '10px' }}>색상</label>
           <select value={penColor} onChange={(e) => handleColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
             <option value="#FFFF00">노랑</option>
             <option value="#FFD700">오렌지</option>
-            <option value="#DD1100">빨강</option>
+            <option value="#FF4500">빨강</option>
             <option value="#0000FF">파랑</option>
             <option value="#000000">검정</option>
             <option value="#FFFFFF">흰색</option>

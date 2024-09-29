@@ -22,8 +22,8 @@ const links = [
     icon: DocumentChartBarIcon,
   },
   {
-    name: '학습녹화 하기',
-    href: '/dashboard/studyrecord',
+    name: '녹화영상 업로드',
+    href: '/dashboard/studyvideo',
     icon: DocumentChartBarIcon,
   },
   { name: '프로젝트', href: '/dashboard/projects', icon: DocumentChartBarIcon },
