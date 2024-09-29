@@ -30,6 +30,8 @@ const StudyBoard = () => {
   const [currentTool, setCurrentTool] = useState<Tool>('select');
   const [maxZIndex, setMaxZIndex] = useState(3);
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('solid');
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   useEffect(() => {
     const textureImage = new Image();
@@ -438,6 +440,37 @@ const StudyBoard = () => {
     setNodes((prevNodes) => prevNodes.map((node) => (node.selected ? { ...node, backgroundColor: color } : node)));
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      const chunks: BlobPart[] = [];
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'studyboard-recording.webm';
+        a.click();
+        setIsRecording(false);  // 녹화가 완료되면 isRecording 상태를 false로 변경
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error: ", err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
@@ -470,6 +503,12 @@ const StudyBoard = () => {
         />
         <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />
         <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={alignNodesHorizontally} currentTool={tool} />
+        <ToolButton
+          tool="record"
+          icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"}
+          onClick={isRecording ? stopRecording : startRecording}
+          currentTool={tool}
+        />
         <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
           <label style={{ marginRight: '10px' }}>색상</label>
           <select value={penColor} onChange={(e) => handleColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>

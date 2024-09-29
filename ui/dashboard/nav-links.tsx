@@ -17,11 +17,6 @@ const links = [
     icon: DocumentChartBarIcon,
   },
   {
-    name: '음성읽기',
-    href: '/dashboard/studyspeak',
-    icon: DocumentChartBarIcon,
-  },
-  {
     name: '학습영상 보기',
     href: '/dashboard/studyvideo',
     icon: DocumentChartBarIcon,
