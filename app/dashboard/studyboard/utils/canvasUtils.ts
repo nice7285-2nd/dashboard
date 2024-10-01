@@ -1,4 +1,4 @@
-import { Node } from '../types';
+import { Node, SelectionArea } from '../types';
 
 export const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -26,28 +26,8 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.translate(node.x + node.width / 2, node.y + node.height / 2);
   ctx.rotate(((node.rotation || 0) * Math.PI) / 180);
 
-  ctx.font = 'bold 18px Arial';
-  const words = node.text.split(' ');
-  const lines = [];
-  let line = '';
-  const maxWidth = node.width - 20;
-  const lineHeight = 20;
-
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-    if (testWidth > maxWidth && n > 0) {
-      lines.push(line);
-      line = words[n] + ' ';
-    } else {
-      line = testLine;
-    }
-  }
-  lines.push(line);
-
-  const minWidth = Math.max(node.width, ctx.measureText(node.text).width + 40);
-  const minHeight = Math.max(node.height, lines.length * lineHeight + 20);
+  const minWidth = Math.max(node.width, 200);  // 최소 너비를 200으로 설정
+  const minHeight = Math.max(node.height, 120);  // 최소 높이를 120으로 설정
 
   ctx.fillStyle = node.backgroundColor || '#ffffff';
   drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 5);
@@ -57,15 +37,27 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.fillStyle = '#000';
-  ctx.textAlign = 'center';
+  // 텍스트 그리기
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+  
+  const padding = 10;  // 왼쪽 패딩
+  const leftX = -minWidth / 2 + padding;  // 왼쪽 정렬 시작 위치
 
-  let startY = (-lines.length * lineHeight) / 2 + lineHeight / 2;
-  for (let i = 0; i < lines.length; i++) {
-    ctx.fillText(lines[i], 0, startY);
-    startY += lineHeight;
-  }
+  // 위쪽 텍스트
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = 'black';
+  ctx.fillText(node.text1 || '', leftX, -minHeight / 2 + 20);
+
+  // 가운데 텍스트 (더 크게)
+  ctx.font = 'bold 24px Arial';
+  ctx.fillStyle = '#333333';  // 약간 더 진한 색상
+  ctx.fillText(node.text2 || '', leftX, 0);
+
+  // 아래쪽 텍스트
+  ctx.font = 'bold 16px Arial';
+  ctx.fillStyle = 'black';
+  ctx.fillText(node.text3 || '', leftX, minHeight / 2 - 20);
 
   if (node.selected) {
     drawResizeHandles(ctx, node, minWidth, minHeight);
@@ -207,4 +199,32 @@ export const redrawCanvas = (
     );
     ctx.setLineDash([]);
   }
+};
+
+export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => {
+  const padding = 20;  // 좌우 패딩 합계
+
+  ctx.font = 'bold 16px Arial';
+  const text1Width = ctx.measureText(node.text1 || '').width;
+  const text3Width = ctx.measureText(node.text3 || '').width;
+  
+  ctx.font = 'bold 24px Arial';
+  const text2Width = ctx.measureText(node.text2 || '').width;
+
+  const textWidth = Math.max(text1Width, text2Width, text3Width);
+  const width = Math.max(textWidth + padding, 200);  // 패딩 포함, 최소 너비 200px
+  const height = Math.max(120, 100);  // 최소 높이 120px
+
+  return { width, height };
+};
+
+export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
+  if (!area) return false;
+  const { startX, startY, endX, endY } = area;
+  const left = Math.min(startX, endX);
+  const right = Math.max(startX, endX);
+  const top = Math.min(startY, endY);
+  const bottom = Math.max(startY, endY);
+
+  return node.x < right && node.x + node.width > left && node.y < bottom && node.y + node.height > top;
 };

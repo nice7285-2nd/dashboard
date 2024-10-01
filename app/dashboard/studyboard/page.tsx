@@ -2,8 +2,8 @@
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback } from 'react';
 import ToolButton from './components/ToolButton';
-import { drawRoundedRect, drawNode, drawResizeHandles, drawRotationHandle, getConnectionPoint, drawConnections, redrawCanvas } from './utils/canvasUtils';
-import { Tool, Node, DraggingState } from './types';
+import { drawRoundedRect, drawNode, drawResizeHandles, drawRotationHandle, getConnectionPoint, drawConnections, redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
+import { Tool, Node, DraggingState, SelectionArea } from './types';
 
 const StudyBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -20,17 +20,17 @@ const StudyBoard = () => {
   const [eraserSize, setEraserSize] = useState(100);
   const [resizing, setResizing] = useState<{ node: Node; direction: string } | null>(null);
   const [rotating, setRotating] = useState<{ node: Node; startAngle: number } | null>(null);
-  const [selectionArea, setSelectionArea] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+  const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [connecting, setConnecting] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [nextNodeId, setNextNodeId] = useState(1);
   const [currentTool, setCurrentTool] = useState<Tool>('select');
   const [maxZIndex, setMaxZIndex] = useState(3);
-  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('solid');
+  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('dashed');
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
 
   // Undo/Redo 기능을 위한 상태 추가
   const [history, setHistory] = useState<Node[][]>([]);
@@ -41,6 +41,14 @@ const StudyBoard = () => {
 
   // 마지막으로 생성된 노드의 위치를 저장하는 상태 추가
   const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 100 });
+
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
+
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [draggingNode, setDraggingNode] = useState<Node | null>(null);
+  const [isDraggingGroup, setIsDraggingGroup] = useState(false);
 
   useEffect(() => {
     const textureImage = new Image();
@@ -89,25 +97,10 @@ const StudyBoard = () => {
   }, [nodes, selectionArea]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    const updateNodeSizes = () => {
-      const updatedNodes = nodes.map((node) => {
-        if (ctx) {
-          ctx.font = 'bold 18px Arial';
-          const textWidth = ctx.measureText(node.text).width;
-          const width = Math.max(textWidth + 40, 120);
-          const height = 80;
-          return { ...node, width, height };
-        }
-        return node;
-      });
-      setNodes(updatedNodes);
-    };
-
-    updateNodeSizes();
+    // 브라우저 환경에서만 실행되도록 합니다.
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      originalSpeakRef.current = window.speechSynthesis.speak.bind(window.speechSynthesis);
+    }
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -123,7 +116,10 @@ const StudyBoard = () => {
       const selectedNode = nodes.find(node => node.selected);
       if (selectedNode && e.key.length === 1) {
         startEditing(selectedNode);
-        setEditText(e.key);
+        setEditText(prevState => ({
+          ...prevState,
+          text1: e.key // 또는 적절한 텍스트 필드
+        }));
       }
     }
   }, [nodes, editingNode]);
@@ -138,7 +134,7 @@ const StudyBoard = () => {
 
   const startEditing = (node: Node) => {
     setEditingNode(node);
-    setEditText('');  // 초기값을 빈 문자열로 설정
+    setEditText({ text1: node.text1, text2: node.text2, text3: node.text3 });
   };
 
   const finishEditing = () => {
@@ -147,28 +143,26 @@ const StudyBoard = () => {
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.font = 'bold 18px Arial';
-          const lines = editText.split('\n');
-          const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-          const width = Math.max(textWidth + 40, 120);
-          const height = Math.max(80, lines.length * 20 + 40);  // 줄바꿈을 고려한 높이 계산
+          const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
 
           setNodes(prevNodes =>
             prevNodes.map(node =>
-              node.id === editingNode.id ? { ...node, text: editText, width, height } : node
+              node.id === editingNode.id
+                ? { ...node, ...editText, width, height }
+                : node
             )
           );
         }
       }
       setEditingNode(null);
-      setEditText('');
+      setEditText({ text1: '', text2: '', text3: '' });
       addToHistory();
     }
   };
 
   const cancelEditing = () => {
     setEditingNode(null);
-    setEditText('');
+    setEditText({ text1: '', text2: '', text3: '' });
   };
 
   const deleteSelectedNodes = () => {
@@ -182,6 +176,29 @@ const StudyBoard = () => {
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (tool === 'move') {
+      const { offsetX, offsetY } = e.nativeEvent;
+      const clickedNode = getClickedNode(offsetX, offsetY);
+      
+      if (clickedNode) {
+        if (!clickedNode.selected) {
+          // 선택되지 않은 노드를 클릭한 경우, 해당 노드만 선택
+          setNodes(prevNodes => prevNodes.map(node => ({
+            ...node,
+            selected: node.id === clickedNode.id
+          })));
+        }
+        // 그룹 드래그 시작
+        setIsDraggingGroup(true);
+      } else {
+        // 빈 공간 클릭 시 선택 영역 드래그 시작
+        setSelectionArea({ startX: offsetX, startY: offsetY, endX: offsetX, endY: offsetY });
+        setIsSelecting(true);
+      }
+      
+      setDragStartPosition({ x: offsetX, y: offsetY });
+    }
+
     const canvas = drawingCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -207,7 +224,7 @@ const StudyBoard = () => {
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
             setDragging({
-              node: { id: -1, x: x, y: y, width: 0, height: 0, text: '', connections: [], zIndex: 0 },
+              node: { id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', connections: [], zIndex: 0, backgroundColor: '', selected: false },
               offsetX: x,
               offsetY: y,
               selectedNodes: selectedNodes // 이제 이 속성이 허용됩니다
@@ -230,15 +247,20 @@ const StudyBoard = () => {
         if (connecting === null) {
           setConnecting({ id: clickedNode.id, side });
         } else {
-          setNodes((prevNodes) =>
+          setNodes((prevNodes: Node[]) =>
             prevNodes.map((node) => {
               if (node.id === connecting.id) {
                 return {
                   ...node,
                   connections: [
                     ...node.connections,
-                    { id: clickedNode.id, fromSide: connecting.side, toSide: side, lineStyle: lineStyle },
-                  ],
+                    {
+                      id: clickedNode.id,
+                      fromSide: connecting.side,
+                      toSide: side,
+                      lineStyle: lineStyle
+                    }
+                  ]
                 };
               }
               return node;
@@ -251,6 +273,25 @@ const StudyBoard = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (tool === 'move') {
+      const { offsetX, offsetY } = e.nativeEvent;
+      
+      if (isDraggingGroup && dragStartPosition) {
+        // 선택된 노드들을 그룹으로 이동
+        const dx = offsetX - dragStartPosition.x;
+        const dy = offsetY - dragStartPosition.y;
+        setNodes(prevNodes => prevNodes.map(node => 
+          node.selected
+            ? { ...node, x: node.x + dx, y: node.y + dy }
+            : node
+        ));
+        setDragStartPosition({ x: offsetX, y: offsetY });
+      } else if (isSelecting) {
+        // 다중 선택을 위한 드래그
+        setSelectionArea(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
+      }
+    }
+
     const canvas = drawingCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -313,7 +354,7 @@ const StudyBoard = () => {
           const ctx = canvasRef.current?.getContext('2d');
           if (ctx) {
             ctx.font = 'bold 18px Arial';
-            const minWidth = Math.max(120, ctx.measureText(node.text).width + 40);
+            const minWidth = Math.max(120, ctx.measureText(node.text2).width + 40);
             const minHeight = 80;
 
             if (resizing.direction.includes('e')) newWidth = Math.max(minWidth, x - node.x);
@@ -353,11 +394,37 @@ const StudyBoard = () => {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(false);
     setDragging(null);
     setResizing(null);
     setRotating(null);
+
+    if (tool === 'move') {
+      const { offsetX, offsetY } = e.nativeEvent;
+      
+      if (isDraggingGroup) {
+        // 그룹 드래그 종료
+        setIsDraggingGroup(false);
+      } else if (isSelecting) {
+        // 다중 선택 종료
+        setIsSelecting(false);
+        if (isDragSignificant(dragStartPosition!, { x: offsetX, y: offsetY })) {
+          const selectedNodes = nodes.filter(node => isNodeInSelectionArea(node, selectionArea!));
+          if (selectedNodes.length > 0) {
+            setNodes(prevNodes => prevNodes.map(node => ({
+              ...node,
+              selected: selectedNodes.some(selectedNode => selectedNode.id === node.id)
+            })));
+          }
+        } else {
+          // 클릭으로 간주되는 경우, 모든 노드 선택 해제
+          setNodes(prevNodes => prevNodes.map(node => ({ ...node, selected: false })));
+        }
+      }
+    }
+    setSelectionArea(null);
+    setDragStartPosition(null);
 
     if (selectionArea) {
       const selectedNodes = nodes.map((node) => ({
@@ -368,13 +435,8 @@ const StudyBoard = () => {
 
       // 선택된 노드들의 텍스트를 읽어주는 기능 추가
       if (isVoiceEnabled) {
-        const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text);
-        if (selectedTexts.length > 0) {
-          const textToRead = selectedTexts.join(', ');
-          const utterance = new SpeechSynthesisUtterance(textToRead);
-          utterance.lang = 'ko-KR'; // 한국어로 설정
-          window.speechSynthesis.speak(utterance);
-        }
+        const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text2);
+        readSelectedTexts(selectedTexts);
       }
 
       setSelectionArea(null);
@@ -427,16 +489,6 @@ const StudyBoard = () => {
     return { node: null, handle: null };
   };
 
-  const isNodeInSelectionArea = (node: Node, area: { startX: number; startY: number; endX: number; endY: number }) => {
-    const { startX, startY, endX, endY } = area;
-    const left = Math.min(startX, endX);
-    const right = Math.max(startX, endX);
-    const top = Math.min(startY, endY);
-    const bottom = Math.max(startY, endY);
-
-    return node.x < right && node.x + node.width > left && node.y < bottom && node.y + node.height > top;
-  };
-
   const getClickedNode = (x: number, y: number) => {
     const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
 
@@ -464,7 +516,7 @@ const StudyBoard = () => {
     const newX = lastNodePosition.x + 20;
     const newY = lastNodePosition.y + 20;
 
-    const newNode: Node = { id: newId, x: newX, y: newY, text: '', width: 120, height: 80, selected: false, connections: [], zIndex: newZIndex, backgroundColor: '#FFFFFF' };
+    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 200, height: 120, selected: false, connections: [], zIndex: newZIndex, backgroundColor: '#FFFFFF' };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setNextNodeId(newId + 1);
@@ -529,8 +581,76 @@ const StudyBoard = () => {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      
+      // 새로운 AudioContext 생성
+      const newAudioContext = new AudioContext();
+      setAudioContext(newAudioContext);
+      
+      // 시스템 오디오와 마이크 입력을 위한 스트림
+      const audioStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
+
+      // 음성 합성 출력을 위한 대상 생성
+      const destination = newAudioContext.createMediaStreamDestination();
+
+      // 시스템 오디오와 마이크 입력을 AudioContext에 연결
+      const sourceNode = newAudioContext.createMediaStreamSource(audioStream);
+      sourceNode.connect(destination);
+
+      // 음성 합성 출력을 AudioContext에 연결
+      if (typeof window !== 'undefined' && window.speechSynthesis && originalSpeakRef.current) {
+        window.speechSynthesis.speak = function(utterance: SpeechSynthesisUtterance) {
+          const synth = window.speechSynthesis;
+          const originalSpeak = originalSpeakRef.current!;
+
+          // 음성 합성 출력을 캡처하기 위한 ScriptProcessorNode 생성
+          const scriptNode = newAudioContext.createScriptProcessor(4096, 1, 1);
+          const synthSource = newAudioContext.createBufferSource();
+
+          scriptNode.onaudioprocess = (audioProcessingEvent) => {
+            const inputBuffer = audioProcessingEvent.inputBuffer;
+            const outputBuffer = audioProcessingEvent.outputBuffer;
+
+            for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+              const inputData = inputBuffer.getChannelData(channel);
+              const outputData = outputBuffer.getChannelData(channel);
+
+              for (let sample = 0; sample < inputBuffer.length; sample++) {
+                outputData[sample] = inputData[sample];
+              }
+            }
+          };
+
+          synthSource.connect(scriptNode);
+          scriptNode.connect(destination);
+
+          utterance.onstart = () => {
+            synthSource.start();
+          };
+
+          utterance.onend = () => {
+            synthSource.stop();
+            scriptNode.disconnect();
+          };
+
+          // 원래의 speak 함수 호출
+          originalSpeak.call(synth, utterance);
+        };
+      }
+
+      // 모든 오디오 트랙 결합
+      const combinedAudioTracks = [...audioStream.getAudioTracks(), ...destination.stream.getAudioTracks()];
+      
+      const tracks = [...displayStream.getTracks(), ...combinedAudioTracks];
+      const combinedStream = new MediaStream(tracks);
+
+      const mediaRecorder = new MediaRecorder(combinedStream);
       mediaRecorderRef.current = mediaRecorder;
 
       const chunks: BlobPart[] = [];
@@ -542,7 +662,22 @@ const StudyBoard = () => {
         a.href = url;
         a.download = 'studyboard-recording.webm';
         a.click();
-        setIsRecording(false);  // 녹화가 완료되면 isRecording 상태를 false로 변경
+        setIsRecording(false);
+
+        // 스트림 정리
+        tracks.forEach(track => track.stop());
+        
+        // AudioContext 정리
+        if (audioContext) {
+          audioContext.close();
+          setAudioContext(null);
+        }
+        
+        // speechSynthesis.speak 함수 복원
+        if (window.speechSynthesis && originalSpeakRef.current) {
+          window.speechSynthesis.speak = originalSpeakRef.current;
+          originalSpeakRef.current = null;
+        }
       };
 
       mediaRecorder.start();
@@ -626,6 +761,46 @@ const StudyBoard = () => {
     }
   };
 
+  // 음성 읽기 함수 수정
+  const readSelectedTexts = (selectedTexts: string[]) => {
+    if (selectedTexts.length > 0 && typeof window !== 'undefined' && window.speechSynthesis) {
+      const textToRead = selectedTexts.join(', ');
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = 'en-US'; // Set to English
+      utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
+      utterance.pitch = 1.0; // 음높이 설정 (1.0이 기본값)
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const readSelectedNodesText = (selectedNodes: Node[]) => {
+    if (!isVoiceEnabled) return;  // isVoiceEnabled가 false면 함수 종료
+
+    const textsToRead = selectedNodes.map(node => node.text2).filter(text => text);
+    if (textsToRead.length > 0) {
+      const textToSpeak = textsToRead.join(', ');
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = 'ko-KR'; // 한국어로 설정
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const isDragSignificant = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    return Math.sqrt(dx * dx + dy * dy) > 5; // 5픽셀 이상 이동했을 때 드래그로 간주
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        redrawCanvas(ctx, nodes, draggingNode ? null : selectionArea);
+      }
+    }
+  }, [nodes, selectionArea, draggingNode]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
@@ -635,40 +810,50 @@ const StudyBoard = () => {
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
         {editingNode && (
-          <textarea
-            value={editText}
-            onChange={(e) => {
-              setEditText(e.target.value);
-              const canvas = canvasRef.current;
-              if (canvas) {
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  ctx.font = 'bold 18px Arial';
-                  const lines = e.target.value.split('\n');
-                  const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-                  const width = Math.max(textWidth + 40, 120);
-                  const height = Math.max(80, lines.length * 20 + 40);
-                  setNodes(prevNodes =>
-                    prevNodes.map(node =>
-                      node.id === editingNode.id ? { ...node, width, height } : node
-                    )
-                  );
-                  setEditingNode(prevNode => prevNode ? { ...prevNode, width, height } : null);
+          <div
+            style={{
+              position: 'absolute',
+              left: editingNode.x,
+              top: editingNode.y,
+              width: editingNode.width,
+              height: editingNode.height,
+              zIndex: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'white',
+              border: '1px solid black',
+              borderRadius: '5px',
+              padding: '5px',
+            }}
+          >
+            <input
+              value={editText.text1}
+              onChange={(e) => setEditText({ ...editText, text1: e.target.value })}
+              style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }}
+              placeholder="텍스트 1"
+              autoFocus
+            />
+            <input
+              value={editText.text2}
+              onChange={(e) => setEditText({ ...editText, text2: e.target.value })}
+              style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }}
+              placeholder="텍스트 2"
+            />
+            <input
+              value={editText.text3}
+              onChange={(e) => setEditText({ ...editText, text3: e.target.value })}
+              style={{ width: '90%', textAlign: 'center' }}
+              placeholder="텍스트 3"
+              onBlur={finishEditing}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  finishEditing();
                 }
-              }
-            }}
-            onBlur={finishEditing}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                finishEditing();
-              } else if (e.key === 'Escape') {
-                cancelEditing();
-              }
-            }}
-            style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, fontSize: '18px', fontWeight: 'bold', textAlign: 'center', border: 'none', outline: 'none', backgroundColor: 'transparent', resize: 'none', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', boxSizing: 'border-box', lineHeight: '1.2' }}
-            autoFocus
-          />
+              }}
+            />
+          </div>
         )}
       </div>
       <div style={{ padding: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>

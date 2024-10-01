@@ -9,25 +9,21 @@ export type Tool =
   | 'alignHorizontal'
   | 'select';
 
-export interface Node {
+export type Node = {
   id: number;
   x: number;
   y: number;
-  text: string;
   width: number;
   height: number;
-  selected?: boolean;
-  rotation?: number;
-  group?: string;
-  connections: {
-    id: number;
-    fromSide: 'top' | 'right' | 'bottom' | 'left';
-    toSide: 'top' | 'right' | 'bottom' | 'left';
-    lineStyle: 'solid' | 'dashed';
-  }[];
+  text1: string;
+  text2: string;
+  text3: string;
+  selected: boolean;
+  connections: { id: number; fromSide: "top" | "right" | "bottom" | "left"; toSide: "top" | "right" | "bottom" | "left"; lineStyle: "solid" | "dashed"; }[];
   zIndex: number;
-  backgroundColor?: string;
-}
+  backgroundColor: string;
+  rotation?: number;
+};
 
 // DraggingState 타입 정의 부분
 export type DraggingState = {
@@ -36,3 +32,10 @@ export type DraggingState = {
   offsetY: number;
   selectedNodes?: Node[]; // selectedNodes 속성 추가
 };
+
+export interface SelectionArea {
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+}
