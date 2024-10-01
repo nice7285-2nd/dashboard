@@ -29,8 +29,10 @@ export interface Node {
   backgroundColor?: string;
 }
 
-export interface DraggingState {
+// DraggingState 타입 정의 부분
+export type DraggingState = {
   node: Node;
   offsetX: number;
   offsetY: number;
-}
+  selectedNodes?: Node[]; // selectedNodes 속성 추가
+};

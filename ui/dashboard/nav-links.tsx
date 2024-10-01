@@ -23,7 +23,7 @@ const links = [
   },
   {
     name: '녹화영상 업로드',
-    href: '/dashboard/studyvideo',
+    href: '/dashboard/studyrecord',
     icon: DocumentChartBarIcon,
   },
   { name: '프로젝트', href: '/dashboard/projects', icon: DocumentChartBarIcon },

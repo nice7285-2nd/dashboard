@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, KeyboardEvent, useCallback } from 'react';
 import ToolButton from './components/ToolButton';
 import { drawRoundedRect, drawNode, drawResizeHandles, drawRotationHandle, getConnectionPoint, drawConnections, redrawCanvas } from './utils/canvasUtils';
 import { Tool, Node, DraggingState } from './types';
@@ -9,11 +9,7 @@ const StudyBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [nodes, setNodes] = useState<Node[]>([
-    { id: 1, x: 100, y: 100, text: 'Environmentalists', width: 150, height: 50, connections: [], zIndex: 1 },
-    { id: 2, x: 400, y: 250, text: 'are', width: 50, height: 50, connections: [], zIndex: 2 },
-    { id: 3, x: 700, y: 100, text: 'getting more worried', width: 200, height: 50, connections: [], zIndex: 3 },
-  ]);
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('move');
@@ -32,10 +28,19 @@ const StudyBoard = () => {
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('solid');
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [editText, setEditText] = useState('');
 
   // Undo/Redo 기능을 위한 상태 추가
   const [history, setHistory] = useState<Node[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // 그리기 객체를 저장하기 위한 상태 추가
+  const [drawings, setDrawings] = useState<string[]>([]);
+
+  // 마지막으로 생성된 노드의 위치를 저장하는 상태 추가
+  const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 100 });
 
   useEffect(() => {
     const textureImage = new Image();
@@ -105,6 +110,77 @@ const StudyBoard = () => {
     updateNodeSizes();
   }, []);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Delete') {
+      deleteSelectedNodes();
+    } else if (editingNode) {
+      if (e.key === 'Enter') {
+        finishEditing();
+      } else if (e.key === 'Escape') {
+        cancelEditing();
+      }
+    } else {
+      const selectedNode = nodes.find(node => node.selected);
+      if (selectedNode && e.key.length === 1) {
+        startEditing(selectedNode);
+        setEditText(e.key);
+      }
+    }
+  }, [nodes, editingNode]);
+
+  useEffect(() => {
+    const handleKeyDownEvent = (e: globalThis.KeyboardEvent) => handleKeyDown(e as unknown as KeyboardEvent);
+    window.addEventListener('keydown', handleKeyDownEvent);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDownEvent);
+    };
+  }, [handleKeyDown]);
+
+  const startEditing = (node: Node) => {
+    setEditingNode(node);
+    setEditText('');  // 초기값을 빈 문자열로 설정
+  };
+
+  const finishEditing = () => {
+    if (editingNode) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.font = 'bold 18px Arial';
+          const lines = editText.split('\n');
+          const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+          const width = Math.max(textWidth + 40, 120);
+          const height = Math.max(80, lines.length * 20 + 40);  // 줄바꿈을 고려한 높이 계산
+
+          setNodes(prevNodes =>
+            prevNodes.map(node =>
+              node.id === editingNode.id ? { ...node, text: editText, width, height } : node
+            )
+          );
+        }
+      }
+      setEditingNode(null);
+      setEditText('');
+      addToHistory();
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingNode(null);
+    setEditText('');
+  };
+
+  const deleteSelectedNodes = () => {
+    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+    const updatedNodes = nodes.filter(node => !node.selected).map(node => ({
+      ...node,
+      connections: node.connections.filter(conn => !selectedNodeIds.includes(conn.id))
+    }));
+    setNodes(updatedNodes);
+    addToHistory();
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = drawingCanvasRef.current;
     if (!canvas) return;
@@ -123,10 +199,7 @@ const StudyBoard = () => {
       const { node, handle } = getClickedNodeAndHandle(x, y);
       if (node) {
         if (handle === 'rotate') {
-          setRotating({
-            node,
-            startAngle: Math.atan2(y - (node.y + node.height / 2), x - (node.x + node.width / 2)),
-          });
+          setRotating({ node, startAngle: Math.atan2(y - (node.y + node.height / 2), x - (node.x + node.width / 2)) });
         } else if (handle) {
           setResizing({ node, direction: handle });
         } else {
@@ -134,17 +207,13 @@ const StudyBoard = () => {
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
             setDragging({
-              node: { id: 'group', x: x, y: y, width: 0, height: 0 },
+              node: { id: -1, x: x, y: y, width: 0, height: 0, text: '', connections: [], zIndex: 0 },
               offsetX: x,
               offsetY: y,
-              selectedNodes: selectedNodes,
+              selectedNodes: selectedNodes // 이제 이 속성이 허용됩니다
             });
           } else {
-            setDragging({
-              node,
-              offsetX: x - node.x,
-              offsetY: y - node.y,
-            });
+            setDragging({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
           }
         }
@@ -168,12 +237,7 @@ const StudyBoard = () => {
                   ...node,
                   connections: [
                     ...node.connections,
-                    {
-                      id: clickedNode.id,
-                      fromSide: connecting.side,
-                      toSide: side,
-                      lineStyle: lineStyle,
-                    },
+                    { id: clickedNode.id, fromSide: connecting.side, toSide: side, lineStyle: lineStyle },
                   ],
                 };
               }
@@ -214,39 +278,29 @@ const StudyBoard = () => {
         }
       }
     } else if (dragging) {
-      if (dragging.node.id === 'group') {
+      if (dragging.node.id === -1) {
         // 여러 노드가 선택된 경우
         const dx = x - dragging.offsetX;
         const dy = y - dragging.offsetY;
         const newNodes = nodes.map((node) => {
           if (node.selected) {
-            return {
-              ...node,
-              x: node.x + dx,
-              y: node.y + dy,
-            };
+            return { ...node, x: node.x + dx, y: node.y + dy };
           }
           return node;
         });
         setNodes(newNodes);
-        setDragging({
-          ...dragging,
-          offsetX: x,
-          offsetY: y,
-        });
+        setDragging({ ...dragging, offsetX: x, offsetY: y });
       } else {
         // 단일 노드 이동
         const newNodes = nodes.map((node) => {
           if (node.id === dragging.node.id) {
-            return {
-              ...node,
-              x: x - dragging.offsetX,
-              y: y - dragging.offsetY,
-            };
+            return { ...node, x: x - dragging.offsetX, y: y - dragging.offsetY };
           }
           return node;
         });
         setNodes(newNodes);
+        // 마지막으로 이동한 노드의 위치 업데이트
+        setLastNodePosition({ x: x - dragging.offsetX, y: y - dragging.offsetY });
       }
     } else if (resizing) {
       const newNodes = nodes.map((node) => {
@@ -274,13 +328,7 @@ const StudyBoard = () => {
             }
           }
 
-          return {
-            ...node,
-            x: newX,
-            y: newY,
-            width: newWidth,
-            height: newHeight,
-          };
+          return { ...node, x: newX, y: newY, width: newWidth, height: newHeight };
         }
         return node;
       });
@@ -295,11 +343,7 @@ const StudyBoard = () => {
     }
 
     if (selectionArea) {
-      setSelectionArea({
-        ...selectionArea,
-        endX: x,
-        endY: y,
-      });
+      setSelectionArea({ ...selectionArea, endX: x, endY: y });
     }
 
     if (tool === 'erase') {
@@ -323,12 +367,14 @@ const StudyBoard = () => {
       setNodes(selectedNodes);
 
       // 선택된 노드들의 텍스트를 읽어주는 기능 추가
-      const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text);
-      if (selectedTexts.length > 0) {
-        const textToRead = selectedTexts.join(', ');
-        const utterance = new SpeechSynthesisUtterance(textToRead);
-        utterance.lang = 'ko-KR'; // 한국어로 설정
-        window.speechSynthesis.speak(utterance);
+      if (isVoiceEnabled) {
+        const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text);
+        if (selectedTexts.length > 0) {
+          const textToRead = selectedTexts.join(', ');
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.lang = 'ko-KR'; // 한국어로 설정
+          window.speechSynthesis.speak(utterance);
+        }
       }
 
       setSelectionArea(null);
@@ -336,6 +382,16 @@ const StudyBoard = () => {
 
     // 상태 변경 후 히스토리에 추가
     addToHistory();
+
+    // 그리기 객체 저장
+    const drawingCanvas = drawingCanvasRef.current;
+    if (drawingCanvas) {
+      const ctx = drawingCanvas.getContext('2d');
+      if (ctx) {
+        const imageData = drawingCanvas.toDataURL();
+        setDrawings((prevDrawings) => [...prevDrawings, imageData]);
+      }
+    }
   };
 
   const getClickedNodeAndHandle = (x: number, y: number) => {
@@ -403,22 +459,18 @@ const StudyBoard = () => {
   const addNode = () => {
     const newId = Date.now();
     const newZIndex = maxZIndex + 1;
-    const newNode: Node = {
-      id: newId,
-      x: 100,
-      y: 100,
-      text: '새 노드',
-      width: 120,
-      height: 80,
-      selected: false,
-      connections: [],
-      zIndex: newZIndex,
-      backgroundColor: '#FFFFFF',
-    };
+    
+    // 최근에 이동한 노드의 위치를 기반으로 새 노드의 위치 설정
+    const newX = lastNodePosition.x + 20;
+    const newY = lastNodePosition.y + 20;
+
+    const newNode: Node = { id: newId, x: newX, y: newY, text: '', width: 120, height: 80, selected: false, connections: [], zIndex: newZIndex, backgroundColor: '#FFFFFF' };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setNextNodeId(newId + 1);
     setMaxZIndex(newZIndex);
+    setLastNodePosition({ x: newX, y: newY });
+    startEditing(newNode);
     addToHistory();
   };
 
@@ -440,17 +492,11 @@ const StudyBoard = () => {
   const alignNodesVertically = () => {
     const selectedNodes = nodes.filter((node) => node.selected);
     if (selectedNodes.length < 2) return;
-
     const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
-
     const baseY = leftmostNode.y;
-
     const newNodes = nodes.map((node) => {
       if (node.selected) {
-        return {
-          ...node,
-          y: baseY,
-        };
+        return { ...node, y: baseY };
       }
       return node;
     });
@@ -462,17 +508,11 @@ const StudyBoard = () => {
   const alignNodesHorizontally = () => {
     const selectedNodes = nodes.filter((node) => node.selected);
     if (selectedNodes.length < 2) return;
-
     const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
-
     const baseX = topmostNode.x;
-
     const newNodes = nodes.map((node) => {
       if (node.selected) {
-        return {
-          ...node,
-          x: baseX,
-        };
+        return { ...node, x: baseX };
       }
       return node;
     });
@@ -542,6 +582,50 @@ const StudyBoard = () => {
     setHistoryIndex(newHistory.length - 1);
   };
 
+  // 저장 기능
+  const saveCanvas = () => {
+    const data = {
+      nodes: nodes,
+      drawings: drawings,
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'studyboard-data.json';
+    a.click();
+  };
+
+  // 불러오기 기능
+  const loadCanvas = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        setNodes(data.nodes);
+        setDrawings(data.drawings);
+
+        // 그리기 객체 복원
+        const drawingCanvas = drawingCanvasRef.current;
+        if (drawingCanvas) {
+          const ctx = drawingCanvas.getContext('2d');
+          if (ctx) {
+            data.drawings.forEach((imageData: string) => {
+              const img = new Image();
+              img.onload = () => {
+                ctx.drawImage(img, 0, 0);
+              };
+              img.src = imageData;
+            });
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
@@ -550,39 +634,78 @@ const StudyBoard = () => {
         {eraserPosition.visible && (
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
+        {editingNode && (
+          <textarea
+            value={editText}
+            onChange={(e) => {
+              setEditText(e.target.value);
+              const canvas = canvasRef.current;
+              if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.font = 'bold 18px Arial';
+                  const lines = e.target.value.split('\n');
+                  const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+                  const width = Math.max(textWidth + 40, 120);
+                  const height = Math.max(80, lines.length * 20 + 40);
+                  setNodes(prevNodes =>
+                    prevNodes.map(node =>
+                      node.id === editingNode.id ? { ...node, width, height } : node
+                    )
+                  );
+                  setEditingNode(prevNode => prevNode ? { ...prevNode, width, height } : null);
+                }
+              }
+            }}
+            onBlur={finishEditing}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                finishEditing();
+              } else if (e.key === 'Escape') {
+                cancelEditing();
+              }
+            }}
+            style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, fontSize: '18px', fontWeight: 'bold', textAlign: 'center', border: 'none', outline: 'none', backgroundColor: 'transparent', resize: 'none', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', boxSizing: 'border-box', lineHeight: '1.2' }}
+            autoFocus
+          />
+        )}
       </div>
-      <div style={{ padding: '20px', borderRadius: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
+      <div style={{ padding: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
+        <ToolButton tool="save" icon="/icon-save.svg" onClick={saveCanvas} currentTool={tool} />
+        <ToolButton tool="load" icon="/icon-load.svg" onClick={() => document.getElementById('fileInput')?.click()} currentTool={tool} />
         <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />
         <ToolButton tool="draw" icon="/icon-draw.svg" onClick={() => handleToolChange('draw')} currentTool={tool} />
         <ToolButton tool="addNode" icon="/icon-addnode.svg" onClick={() => handleToolChange('addNode')} currentTool={tool} />
         <ToolButton tool="connect" icon="/icon-connect.svg" onClick={() => handleToolChange('connect')} currentTool={tool} />
         <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />
-        <ToolButton
-          tool="clear"
-          icon="/icon-clear.svg"
-          onClick={() => {
+        <ToolButton tool="clear" icon="/icon-clear.svg" onClick={() => {
             const canvas = drawingCanvasRef.current;
             if (canvas) {
               const ctx = canvas.getContext('2d');
               if (ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                redrawCanvas(ctx, nodes, selectionArea);
               }
             }
+            setNodes([]);  // 모든 노드 삭제
+            setDrawings([]);  // 모든 그리기 객체 삭제
             addToHistory();
           }}
           currentTool={tool}
         />
         <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />
         <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={alignNodesHorizontally} currentTool={tool} />
-        <ToolButton
-          tool="record"
-          icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"}
+        <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"}
           onClick={isRecording ? stopRecording : startRecording}
           currentTool={tool}
         />
         <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} />
         <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} />
+        <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"}
+          onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
+          currentTool={isVoiceEnabled ? 'voice' : ''}
+        />
+        <input type="file" id="fileInput" style={{ display: 'none' }} onChange={loadCanvas} accept=".json" />
         <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
           <label style={{ marginRight: '10px' }}>색상</label>
           <select value={penColor} onChange={(e) => handleColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
