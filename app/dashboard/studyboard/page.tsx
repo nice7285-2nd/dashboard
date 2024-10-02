@@ -579,117 +579,62 @@ const StudyBoard = () => {
     addToHistory();
   };
 
+  // 음성 읽기 함수 수정
+  const readSelectedTexts = (selectedTexts: string[]) => {
+    if (selectedTexts.length > 0 && typeof window !== 'undefined' && window.speechSynthesis) {
+      // const textToRead = selectedTexts.join(', ');
+      const textToRead = selectedTexts.join(' ');
+      const utterance = new SpeechSynthesisUtterance(textToRead);
+      utterance.lang = 'en-US'; // Set to English
+      utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
+      utterance.pitch = 1.0; // 음높이 설정 (1.0이 기본값)
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const startRecording = async () => {
     try {
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const combinedStream = new MediaStream([
+        ...displayStream.getVideoTracks(),
+        ...audioStream.getAudioTracks()
+      ]);
       
-      // 새로운 AudioContext 생성
-      const newAudioContext = new AudioContext();
-      setAudioContext(newAudioContext);
-      
-      // 시스템 오디오와 마이크 입력을 위한 스트림
-      const audioStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
-      });
-
-      // 음성 합성 출력을 위한 대상 생성
-      const destination = newAudioContext.createMediaStreamDestination();
-
-      // 시스템 오디오와 마이크 입력을 AudioContext에 연결
-      const sourceNode = newAudioContext.createMediaStreamSource(audioStream);
-      sourceNode.connect(destination);
-
-      // 음성 합성 출력을 AudioContext에 연결
-      if (typeof window !== 'undefined' && window.speechSynthesis && originalSpeakRef.current) {
-        window.speechSynthesis.speak = function(utterance: SpeechSynthesisUtterance) {
-          const synth = window.speechSynthesis;
-          const originalSpeak = originalSpeakRef.current!;
-
-          // 음성 합성 출력을 캡처하기 위한 ScriptProcessorNode 생성
-          const scriptNode = newAudioContext.createScriptProcessor(4096, 1, 1);
-          const synthSource = newAudioContext.createBufferSource();
-
-          scriptNode.onaudioprocess = (audioProcessingEvent) => {
-            const inputBuffer = audioProcessingEvent.inputBuffer;
-            const outputBuffer = audioProcessingEvent.outputBuffer;
-
-            for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
-              const inputData = inputBuffer.getChannelData(channel);
-              const outputData = outputBuffer.getChannelData(channel);
-
-              for (let sample = 0; sample < inputBuffer.length; sample++) {
-                outputData[sample] = inputData[sample];
-              }
-            }
-          };
-
-          synthSource.connect(scriptNode);
-          scriptNode.connect(destination);
-
-          utterance.onstart = () => {
-            synthSource.start();
-          };
-
-          utterance.onend = () => {
-            synthSource.stop();
-            scriptNode.disconnect();
-          };
-
-          // 원래의 speak 함수 호출
-          originalSpeak.call(synth, utterance);
-        };
-      }
-
-      // 모든 오디오 트랙 결합
-      const combinedAudioTracks = [...audioStream.getAudioTracks(), ...destination.stream.getAudioTracks()];
-      
-      const tracks = [...displayStream.getTracks(), ...combinedAudioTracks];
-      const combinedStream = new MediaStream(tracks);
-
-      const mediaRecorder = new MediaRecorder(combinedStream);
-      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorderRef.current = new MediaRecorder(combinedStream);
 
       const chunks: BlobPart[] = [];
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'studyboard-recording.webm';
+        a.download = 'study_rec.webm';
         a.click();
-        setIsRecording(false);
-
-        // 스트림 정리
-        tracks.forEach(track => track.stop());
+        URL.revokeObjectURL(url);
         
-        // AudioContext 정리
-        if (audioContext) {
-          audioContext.close();
-          setAudioContext(null);
-        }
-        
-        // speechSynthesis.speak 함수 복원
-        if (window.speechSynthesis && originalSpeakRef.current) {
-          window.speechSynthesis.speak = originalSpeakRef.current;
-          originalSpeakRef.current = null;
-        }
+        displayStream.getTracks().forEach(track => track.stop());
+        audioStream.getTracks().forEach(track => track.stop());
+        setIsRecording(false); // 녹화 종료 시 상태 변경
       };
 
-      mediaRecorder.start();
+      mediaRecorderRef.current.start();
       setIsRecording(true);
-    } catch (err) {
-      console.error("Error: ", err);
+    } catch (error) {
+      console.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다:', error);
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
+      setIsRecording(false); // 녹화 종료 시 상태 변경
     }
   };
 
@@ -758,30 +703,6 @@ const StudyBoard = () => {
         }
       };
       reader.readAsText(file);
-    }
-  };
-
-  // 음성 읽기 함수 수정
-  const readSelectedTexts = (selectedTexts: string[]) => {
-    if (selectedTexts.length > 0 && typeof window !== 'undefined' && window.speechSynthesis) {
-      const textToRead = selectedTexts.join(', ');
-      const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.lang = 'en-US'; // Set to English
-      utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
-      utterance.pitch = 1.0; // 음높이 설정 (1.0이 기본값)
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const readSelectedNodesText = (selectedNodes: Node[]) => {
-    if (!isVoiceEnabled) return;  // isVoiceEnabled가 false면 함수 종료
-
-    const textsToRead = selectedNodes.map(node => node.text2).filter(text => text);
-    if (textsToRead.length > 0) {
-      const textToSpeak = textsToRead.join(', ');
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.lang = 'ko-KR'; // 한국어로 설정
-      window.speechSynthesis.speak(utterance);
     }
   };
 
