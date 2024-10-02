@@ -4,6 +4,10 @@ import React, { useRef, useEffect, useState, KeyboardEvent, useCallback } from '
 import ToolButton from './components/ToolButton';
 import { drawRoundedRect, drawNode, drawResizeHandles, drawRotationHandle, getConnectionPoint, drawConnections, redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
 import { Tool, Node, DraggingState, SelectionArea } from './types';
+import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
+import { createLesson } from './actions';
+import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
+import { createStudyRec } from './actions';
 
 const StudyBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -47,6 +51,9 @@ const StudyBoard = () => {
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [draggingNode, setDraggingNode] = useState<Node | null>(null);
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
+  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
     const resizeCanvas = () => {
@@ -600,16 +607,13 @@ const StudyBoard = () => {
 
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'study_rec.webm';
-        a.click();
-        URL.revokeObjectURL(url);
         
         displayStream.getTracks().forEach(track => track.stop());
         audioStream.getTracks().forEach(track => track.stop());
         setIsRecording(false); // 녹화 종료 시 상태 변경
+
+        setRecordingBlob(blob);
+        setShowSaveRecordingPopup(true);
       };
 
       mediaRecorderRef.current.start();
@@ -622,7 +626,6 @@ const StudyBoard = () => {
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false); // 녹화 종료 시 상태 변경
     }
   };
 
@@ -651,17 +654,46 @@ const StudyBoard = () => {
   };
 
   // 저장 기능
-  const saveCanvas = () => {
+  const saveCanvas = async (title: string) => {
+    const filename = `${Date.now()}.json`;
+    const filePath = `/lessons/${filename}`;
+
     const data = {
+      title: title,
       nodes: nodes,
       drawings: drawings,
     };
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'studyboard-data.json';
-    a.click();
+
+    try {
+      // 파일 저장
+      const response = await fetch('/api/save-lesson', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        // 데이터베이스에 저장
+        const formData = new FormData();
+        formData.append('name', title);
+        formData.append('path', filePath);
+        const result = await createLesson(formData);
+
+        if (result.message === 'Created Lesson.') {
+          alert(`레슨 "${title}"이(가) 성공적으로 저장되었습니다.`);
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        throw new Error('레슨 파일 저장에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('레슨 저장 중 오류 발생:', error);
+      alert('레슨 저장에 실패했습니다. 다시 시도해 주세요.');
+    }
+    setShowSavePopup(false);
   };
 
   // 불러오기 기능
@@ -709,6 +741,49 @@ const StudyBoard = () => {
       }
     }
   }, [nodes, selectionArea, draggingNode]);
+
+  const saveRecording = async (title: string) => {
+    if (!recordingBlob) {
+      alert('저장할 녹화 파일이 없습니다.');
+      return;
+    }
+
+    const filename = `${Date.now()}.webm`;
+    const filePath = `/studyRec/${filename}`;
+
+    try {
+      // 파일 저장
+      const formData = new FormData();
+      formData.append('file', recordingBlob, filename);
+      formData.append('path', filePath);
+
+      const response = await fetch('/api/save-recording', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        // 데이터베이스에 저장
+        const dbFormData = new FormData();
+        dbFormData.append('name', title);
+        dbFormData.append('path', filePath);
+        const result = await createStudyRec(dbFormData);
+
+        if (result.message === 'Created StudyRec.') {
+          alert(`녹화 파일 "${title}"이(가) 성공적으로 저장되었습니다.`);
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        throw new Error('녹화 파일 저장에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('녹화 파일 저장 중 오류 발생:', error);
+      alert('녹화 파일 저장에 실패했습니다. 다시 시도해 주세요.');
+    }
+    setShowSaveRecordingPopup(false);
+    setRecordingBlob(null);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -766,7 +841,7 @@ const StudyBoard = () => {
         )}
       </div>
       <div style={{ padding: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        <ToolButton tool="save" icon="/icon-save.svg" onClick={saveCanvas} currentTool={tool} />
+        <ToolButton tool="save" icon="/icon-save.svg" onClick={() => setShowSavePopup(true)} currentTool={tool} />
         <ToolButton tool="load" icon="/icon-load.svg" onClick={() => document.getElementById('fileInput')?.click()} currentTool={tool} />
         <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />
         <ToolButton tool="draw" icon="/icon-draw.svg" onClick={() => handleToolChange('draw')} currentTool={tool} />
@@ -836,6 +911,18 @@ const StudyBoard = () => {
           </select>
         </div>
       </div>
+      {showSavePopup && (
+        <SaveLessonPopup
+          onSave={saveCanvas}
+          onCancel={() => setShowSavePopup(false)}
+        />
+      )}
+      {showSaveRecordingPopup && (
+        <SaveRecordingPopup
+          onSave={saveRecording}
+          onCancel={() => setShowSaveRecordingPopup(false)}
+        />
+      )}
     </div>
   );
 };

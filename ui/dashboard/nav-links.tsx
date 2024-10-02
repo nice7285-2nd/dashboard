@@ -16,6 +16,11 @@ const links = [
     icon: DocumentChartBarIcon,
   },
   {
+    name: '교안목록보기',
+    href: '/dashboard/lessonlist',
+    icon: DocumentChartBarIcon,
+  },
+  {
     name: '학습영상 보기',
     href: '/dashboard/studyvideo',
     icon: DocumentChartBarIcon,
