@@ -16,14 +16,12 @@ const StudyBoard = () => {
   const [penColor, setPenColor] = useState('#000000');
   const [lineWidth, setLineWidth] = useState<string>('4');
   const [eraserPosition, setEraserPosition] = useState({ x: 0, y: 0, visible: false });
-  const [chalkTexture, setChalkTexture] = useState<HTMLImageElement | null>(null);
   const [eraserSize, setEraserSize] = useState(100);
   const [resizing, setResizing] = useState<{ node: Node; direction: string } | null>(null);
   const [rotating, setRotating] = useState<{ node: Node; startAngle: number } | null>(null);
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [connecting, setConnecting] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [nextNodeId, setNextNodeId] = useState(1);
-  const [currentTool, setCurrentTool] = useState<Tool>('select');
   const [maxZIndex, setMaxZIndex] = useState(3);
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('dashed');
   const [isRecording, setIsRecording] = useState(false);
@@ -49,12 +47,6 @@ const StudyBoard = () => {
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [draggingNode, setDraggingNode] = useState<Node | null>(null);
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
-
-  useEffect(() => {
-    const textureImage = new Image();
-    textureImage.src = '/chalk-texture.jpg';
-    textureImage.onload = () => setChalkTexture(textureImage);
-  }, []);
 
   useEffect(() => {
     const resizeCanvas = () => {
@@ -286,8 +278,8 @@ const StudyBoard = () => {
             : node
         ));
         setDragStartPosition({ x: offsetX, y: offsetY });
-      } else if (isSelecting) {
-        // 다중 선택을 위한 드래그
+      } else if (isSelecting && !resizing) {
+        // 다중 선택을 위한 드래그 (리사이징 중이 아닐 때만)
         setSelectionArea(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
       }
     }
@@ -381,10 +373,6 @@ const StudyBoard = () => {
       const newRotation = ((angle * 180) / Math.PI + 360) % 360;
 
       setNodes(nodes.map((node) => (node.id === rotating.node.id ? { ...node, rotation: newRotation } : node)));
-    }
-
-    if (selectionArea) {
-      setSelectionArea({ ...selectionArea, endX: x, endY: y });
     }
 
     if (tool === 'erase') {
