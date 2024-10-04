@@ -650,7 +650,11 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const handleColorChange = (color: string) => {
     setPenColor(color);
-    setNodes((prevNodes) => prevNodes.map((node) => (node.selected ? { ...node, backgroundColor: color } : node)));
+    // 선택된 노드의 배경색만 변경하고, 그리기는 유지
+    setNodes((prevNodes) => prevNodes.map((node) => 
+      node.selected ? { ...node, backgroundColor: color } : node
+    ));
+    // 히스토리에 추가
     addToHistory();
   };
 
@@ -797,7 +801,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
+    const drawingCanvas = drawingCanvasRef.current;
+    if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         redrawCanvas(ctx, nodes, draggingNode ? null : selectionArea);
