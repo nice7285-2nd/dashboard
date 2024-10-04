@@ -682,16 +682,16 @@ const StudyBoard = () => {
         const result = await createLesson(formData);
 
         if (result.message === 'Created Lesson.') {
-          alert(`레슨 "${title}"이(가) 성공적으로 저장되었습니다.`);
+          alert(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
         } else {
           throw new Error(result.message);
         }
       } else {
-        throw new Error('레슨 파일 저장에 실패했습니다.');
+        throw new Error('교안 파일 저장에 실패했습니다.');
       }
     } catch (error) {
-      console.error('레슨 저장 중 오류 발생:', error);
-      alert('레슨 저장에 실패했습니다. 다시 시도해 주세요.');
+      console.error('교안 저장 중 오류 발생:', error);
+      alert('교안 저장에 실패했습니다. 다시 시도해 주세요.');
     }
     setShowSavePopup(false);
   };

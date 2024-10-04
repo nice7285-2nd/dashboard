@@ -11,12 +11,12 @@ const SaveLessonPopup: React.FC<SaveLessonPopupProps> = ({ onSave, onCancel }) =
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-xl font-bold mb-4">레슨 저장</h2>
+        <h2 className="text-xl font-bold mb-4">교안 저장</h2>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="레슨 제목을 입력하세요"
+          placeholder="교안 제목을 입력하세요"
           className="w-full p-2 border border-gray-300 rounded mb-4"
         />
         <div className="flex justify-end">

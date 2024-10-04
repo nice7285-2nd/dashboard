@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
 interface Video {
@@ -13,38 +13,74 @@ interface Video {
 }
 
 const VideoList = () => {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<Video[]>([
+    {
+      id: '1',
+      title: '리액트 기초 강좌',
+      thumbnail: '/teacher.png',
+      channelName: '코딩 채널',
+      views: 10000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // youtube-nocookie.com 사용
+    },
+    {
+      id: '2',
+      title: 'Next.js 튜토리얼',
+      thumbnail: '/teacher.png',
+      channelName: '웹 개발 마스터',
+      views: 5000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '3',
+      title: 'TypeScript 완전 정복',
+      thumbnail: '/teacher.png',
+      channelName: 'TS 러버',
+      views: 7500,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '4',
+      title: 'CSS 트릭스 모음',
+      thumbnail: '/teacher.png',
+      channelName: '디자인 고수',
+      views: 3000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '5',
+      title: 'CSS 트릭스 모음',
+      thumbnail: '/teacher.png',
+      channelName: '디자인 고수',
+      views: 3000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '6',
+      title: 'CSS 트릭스 모음',
+      thumbnail: '/teacher.png',
+      channelName: '디자인 고수',
+      views: 3000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '7',
+      title: 'CSS 트릭스 모음',
+      thumbnail: '/teacher.png',
+      channelName: '디자인 고수',
+      views: 3000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+    {
+      id: '8',
+      title: 'CSS 트릭스 모음',
+      thumbnail: '/teacher.png',
+      channelName: '디자인 고수',
+      views: 3000,
+      videoUrl: 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', // 예시 URL
+    },
+  ]);
+
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
-
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        // URL에 타임스탬프를 추가하여 캐시를 방지합니다
-        const response = await fetch(`/api/studyreclist?t=${new Date().getTime()}`);
-        if (!response.ok) {
-          throw new Error('데이터를 가져오는데 실패했습니다');
-        }
-        const data = await response.json();
-
-        console.log('서버에서 받은 데이터:', data);
-
-        const modifiedData = data.rows.map((video: any) => ({  
-          id: video.id || video.row,
-          title: video.name || '제목 없음',
-          thumbnail: '/teacher.png',
-          channelName: '영어 채널',
-          views: 10000,
-          videoUrl: video.website_url || video.path || '#',
-        }));
-
-        setVideos(modifiedData);
-      } catch (error) {
-        console.error('동영상 목록을 가져오는 중 오류 발생:', error);
-      }
-    };
-
-    fetchVideos();
-  }, []);
 
   const openVideo = (video: Video) => {
     setSelectedVideo(video);
@@ -66,7 +102,7 @@ const VideoList = () => {
       >
         {videos.map((video) => (
           <div
-            key={video.id} // 여기에 고유한 key를 추가합니다
+            key={video.id}
             style={{ cursor: 'pointer' }}
             onClick={() => openVideo(video)}
           >
@@ -122,18 +158,16 @@ const VideoList = () => {
               width: '80%',
               maxWidth: '800px',
               aspectRatio: '16 / 9',
-              backgroundColor: 'black', // 배경색을 검정으로 설정
             }}
           >
             <iframe
               width="100%"
               height="100%"
-              src={`${selectedVideo.videoUrl}?autoplay=1`}
+              src={`${selectedVideo.videoUrl}?autoplay=1`} // autoplay와 mute 파라미터 추가
               title={selectedVideo.title}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
-              style={{ position: 'absolute', top: 0, left: 0 }} // iframe을 컨테이너에 맞춤
             ></iframe>
             <button
               onClick={closeVideo}

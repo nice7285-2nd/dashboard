@@ -15,9 +15,9 @@ export async function POST(request: Request) {
     }
 
     fs.writeFileSync(filePath, JSON.stringify(data));
-    return NextResponse.json({ message: '레슨 파일이 성공적으로 저장되었습니다.', filename });
+    return NextResponse.json({ message: '교안 파일이 성공적으로 저장되었습니다.', filename });
   } catch (error) {
     console.error('파일 저장 중 오류 발생:', error);
-    return NextResponse.json({ message: '레슨 파일 저장에 실패했습니다.' }, { status: 500 });
+    return NextResponse.json({ message: '교안 파일 저장에 실패했습니다.' }, { status: 500 });
   }
 }

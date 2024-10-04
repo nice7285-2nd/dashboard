@@ -25,12 +25,6 @@ const links = [
     href: '/dashboard/studyvideo',
     icon: DocumentChartBarIcon,
   },
-  {
-    name: '녹화영상 업로드',
-    href: '/dashboard/studyrecord',
-    icon: DocumentChartBarIcon,
-  },
-  { name: '프로젝트', href: '/dashboard/projects', icon: DocumentChartBarIcon },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
 
