@@ -11,11 +11,6 @@ import clsx from 'clsx';
 
 const links = [
   {
-    name: '교안만들기',
-    href: '/dashboard/studyboard',
-    icon: DocumentChartBarIcon,
-  },
-  {
     name: '교안목록보기',
     href: '/dashboard/lessons',
     icon: DocumentChartBarIcon,
