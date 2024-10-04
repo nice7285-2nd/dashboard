@@ -1,15 +1,15 @@
 import Pagination from '@/ui/projects/pagination';
 import Search from '@/ui/search';
 import Table from './table';
-import { CreateProject } from '@/ui/projects/buttons';
-import { ProjectTableSkeleton } from '@/ui/skeletons';
+import { CreateLesson } from '@/ui/lessons/buttons';
+import { LessonTableSkeleton } from '@/ui/skeletons';
 import { Suspense } from 'react';
-import { fetchProjectsPages } from '@/backend/project-data';
+import { fetchLessonsPages } from '@/backend/lessons-data';
 import { Metadata } from 'next';
 import { auth } from '@/auth';
 
 export const metadata: Metadata = {
-  title: 'Projects',
+  title: 'Lessons',
 };
 
 export default async function Page({
@@ -29,7 +29,7 @@ export default async function Page({
     return null;
   }
 
-  const totalPages = await fetchProjectsPages(query, session?.user?.email);
+  const totalPages = await fetchLessonsPages(query, session?.user?.email);
 
   return (
     <div className="w-full">
@@ -38,9 +38,9 @@ export default async function Page({
       </div>
       <div className="flex items-center justify-between gap-2 mt-4 md:mt-8">
         <Search placeholder="교안 검색..." />
-        <CreateProject />
+        <CreateLesson />
       </div>
-       <Suspense key={query + currentPage} fallback={<ProjectTableSkeleton />}>
+       <Suspense key={query + currentPage} fallback={<LessonTableSkeleton />}>
         <Table query={query} currentPage={currentPage} email={session?.user?.email} />
       </Suspense>
       <div className="flex justify-center w-full mt-5">

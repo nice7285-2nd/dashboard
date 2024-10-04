@@ -82,7 +82,7 @@ export function TableRowSkeleton() {
   );
 }
 
-export function ProjectMobileSkeleton() {
+export function LessonMobileSkeleton() {
   return (
     <div className="w-full p-4 mb-2 bg-white rounded-md">
       <div className="flex items-center justify-between pb-8 border-b border-gray-100">
@@ -107,18 +107,18 @@ export function ProjectMobileSkeleton() {
   );
 }
 
-export function ProjectTableSkeleton() {
+export function LessonTableSkeleton() {
   return (
     <div className="flow-root mt-6">
       <div className="inline-block min-w-full align-middle">
         <div className="p-2 rounded-lg bg-gray-50 md:pt-0">
           <div className="md:hidden">
-            <ProjectMobileSkeleton />
-            <ProjectMobileSkeleton />
-            <ProjectMobileSkeleton />
-            <ProjectMobileSkeleton />
-            <ProjectMobileSkeleton />
-            <ProjectMobileSkeleton />
+            <LessonMobileSkeleton />
+            <LessonMobileSkeleton />
+            <LessonMobileSkeleton />
+            <LessonMobileSkeleton />
+            <LessonMobileSkeleton />
+            <LessonMobileSkeleton />
           </div>
           <table className="hidden min-w-full text-gray-900 md:table">
             <thead className="text-sm font-normal text-left rounded-lg">

@@ -11,3 +11,10 @@ export type ProjectTable = {
   name: string;
   website_url: string;
 };
+
+
+export type LessonsTable = {
+  id: string;
+  name: string;
+  path: string;
+};

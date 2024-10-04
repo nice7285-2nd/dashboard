@@ -1,11 +1,11 @@
 import {
-  AnalyticsProject,
-  UpdateProject,
-  DeleteProject
-} from '@/ui/projects/buttons';
-import { fetchFilteredProjectsSimple } from '@/backend/project-data';
+  AnalyticsLesson,
+  UpdateLesson,
+  DeleteLesson
+} from '@/ui/lessons/buttons';
+import { fetchFilteredLessonsSimple } from '@/backend/lessons-data';
 
-export default async function ProjectsTable({
+export default async function LessonsTable({
   query,
   currentPage,
   email,
@@ -14,31 +14,31 @@ export default async function ProjectsTable({
   currentPage: number;
   email: string
 }) {
-  const projects = await fetchFilteredProjectsSimple(query, currentPage, email);
+  const lessons = await fetchFilteredLessonsSimple(query, currentPage, email);
 
   return (
     <div className="flow-root mt-6">
       <div className="inline-block min-w-full align-middle">
         <div className="p-2 rounded-lg bg-gray-50 md:pt-0">
           <div className="md:hidden">
-            {projects?.map((project) => (
+            {lessons?.map((lesson) => (
               <div
-                key={project.id}
+                key={lesson.id}
                 className="w-full p-4 mb-2 bg-white rounded-md"
               >
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div>
                     <div className="flex items-center mb-2">
-                      <p>{project.name}</p>
+                      <p>{lesson.name}</p>
                     </div>
-                    <p className="text-sm text-gray-500">{project.website_url}</p>
+                    <p className="text-sm text-gray-500">{lesson.path}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <AnalyticsProject id={project.name} />
-                    <UpdateProject id={project.id} />
-                    <DeleteProject id={project.id} />
+                    <AnalyticsLesson id={lesson.name} />
+                    <UpdateLesson id={lesson.id} />
+                    <DeleteLesson id={lesson.id} />
                   </div>
                 </div>
               </div>
@@ -59,24 +59,24 @@ export default async function ProjectsTable({
               </tr>
             </thead>
             <tbody className="bg-white">
-              {projects?.map((project) => (
+              {lessons?.map((lesson) => (
                 <tr
-                  key={project.id}
+                  key={lesson.id}
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <p>{project.name}</p>
+                      <p>{lesson.name}</p>
                     </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {project.website_url}
+                    {lesson.path}
                   </td>
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <AnalyticsProject id={project.name} />
-                      <UpdateProject id={project.id} />
-                      <DeleteProject id={project.id} />
+                      <AnalyticsLesson id={lesson.name} />
+                      <UpdateLesson id={lesson.id} />
+                      <DeleteLesson id={lesson.id} />
                     </div>
                   </td>
                 </tr>

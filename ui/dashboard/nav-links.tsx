@@ -17,7 +17,7 @@ const links = [
   },
   {
     name: '교안목록보기',
-    href: '/dashboard/lessonlist',
+    href: '/dashboard/lessons',
     icon: DocumentChartBarIcon,
   },
   {
