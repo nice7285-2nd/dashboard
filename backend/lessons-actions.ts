@@ -9,13 +9,13 @@ import path from 'path';
 
 const CreateLessonSchema = z.object({
   name: z.string().nonempty({ message: 'Please enter a project name.' }),
-  website_url: z.string().optional(),
+  path: z.string().optional(),
 });
 
 export type LessonState = {
   errors?: {
     name?: string[];
-    website_url?: string[];
+    path?: string[];
   };
   message?: string | undefined;
 };
@@ -24,7 +24,7 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
   // 폼 데이터 유효성 검사
   const validatedFields = CreateLessonSchema.safeParse({
     name: formData.get('name'),
-    website_url: formData.get('website_url'),
+    path: formData.get('path'),
   });
 
   // 유효성 검사 실패 시 에러 반환
@@ -35,7 +35,7 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
     };
   }
 
-  const { id, name, path } = validatedFields.data;
+  const { name, path } = validatedFields.data;
   const session = await auth();
   const userEmail = session?.user?.email || '';
 
@@ -59,8 +59,8 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
   // 데이터베이스에 데이터 삽입
   try {
     await sql`
-      INSERT INTO lessons (id, name, path)
-      VALUES (${id}, ${name}, ${path})
+      INSERT INTO lessons (name, path)
+      VALUES (${name}, ${path})
     `;
   } catch (error) {
     return {

@@ -1,6 +1,6 @@
 import Pagination from '@/ui/projects/pagination';
 import Search from '@/ui/search';
-import Table from './table';
+import LessonsTable from '@/ui/lessons/table';
 import { CreateLesson } from '@/ui/lessons/buttons';
 import { LessonTableSkeleton } from '@/ui/skeletons';
 import { Suspense } from 'react';
@@ -41,7 +41,7 @@ export default async function Page({
         <CreateLesson />
       </div>
        <Suspense key={query + currentPage} fallback={<LessonTableSkeleton />}>
-        <Table query={query} currentPage={currentPage} email={session?.user?.email} />
+        <LessonsTable query={query} currentPage={currentPage} email={session?.user?.email} />
       </Suspense>
       <div className="flex justify-center w-full mt-5">
         <Pagination totalPages={totalPages} />
