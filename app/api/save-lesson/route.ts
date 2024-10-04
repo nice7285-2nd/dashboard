@@ -4,12 +4,11 @@ import path from 'path';
 
 export async function POST(request: Request) {
   const data = await request.json();
-  const { title } = data;
-  const filename = `${Date.now()}.json`;
-  const lessonsDir = path.join(process.cwd(), 'public', 'lessons');
+  const { filedir, filename, title, nodes, drawings } = data;
+  const lessonsDir = path.join(process.cwd(), 'public', filedir);
   const filePath = path.join(lessonsDir, filename);
 
-  try {
+  try { 
     if (!fs.existsSync(lessonsDir)) {
       fs.mkdirSync(lessonsDir, { recursive: true });
     }

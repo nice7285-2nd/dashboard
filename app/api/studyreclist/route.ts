@@ -12,7 +12,7 @@ type StudyRecListTable = {
 export async function GET() {
   try {
     const result = await sql<StudyRecListTable>`
-    SELECT * FROM studyreclist
+    SELECT * FROM studyreclist ORDER BY created_at DESC
     `;
     // NextResponse.json()을 사용하여 결과를 JSON 형식으로 반환합니다.
     return NextResponse.json(result);

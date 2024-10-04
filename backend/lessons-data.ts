@@ -2,7 +2,7 @@ import { sql } from '@vercel/postgres';
 import { LessonsTable, } from '@/types/definitions';
 import { unstable_noStore as noStore } from 'next/cache';
 
-const LESSONS_PER_PAGE = 6;
+const LESSONS_PER_PAGE = 12;
 
 export async function fetchFilteredLessonsSimple(
   query: string,
@@ -27,7 +27,7 @@ export async function fetchFilteredLessonsSimple(
     return lessons.rows;
   } catch (error) {
     console.error('Database Error:', error);
-    throw new Error('Failed to fetch project metrics.');
+    throw new Error('Failed to fetch lessons.');
   }
 }
 
@@ -37,19 +37,18 @@ export async function fetchLessonById(id: string) {
   try {
     const data = await sql<LessonsTable>`
       SELECT
-        lessons.id,
-        lessons.name,
-        lessons.path
+        id,
+        name,
+        path
       FROM lessons
-      WHERE lessons.id = ${id};
+      WHERE id = ${id};
     `;
 
-    const lesson = data.rows.map((lesson) => ({
-      ...lesson
-    }));
+    if (data.rows.length === 0) {
+      return null; // 수업을 찾지 못한 경우
+    }
 
-    // console.log(project[0]);
-    return lesson[0];
+    return data.rows[0]; // 첫 번째 (그리고 유일한) 결과를 반환
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch lesson.');

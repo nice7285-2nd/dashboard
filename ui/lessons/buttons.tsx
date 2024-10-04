@@ -1,13 +1,13 @@
 'use client';
 
-import { PencilIcon, PlusIcon, TrashIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, PlusIcon, TrashIcon, ChartBarIcon, PlayIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { deleteLesson } from '@/backend/lessons-actions';
 
 export function CreateLesson() {
   return (
     <Link
-      href="/dashboard/studyboard"
+      href="/dashboard/studyboard/new/edit"
       className="flex items-center h-10 px-4 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       <span className="hidden md:block">교안 만들기</span>{' '}
@@ -16,24 +16,24 @@ export function CreateLesson() {
   );
 }
 
-export function UpdateLesson({ id }: { id: string }) {
+export function PlayLesson({ id }: { id: string }) {
   return (
     <Link
-      href={`/dashboard/studyboard/${id}/edit`}
-      className="p-2 border rounded-md hover:bg-gray-100 "
+      href={`/dashboard/studyboard/${id}/edit/?mode=play`}
+      className="p-2 text-white transition-colors bg-blue-600 border rounded-md hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
-      <PencilIcon className="w-5" />
+      <PlayIcon className="w-5" />
     </Link>
   );
 }
 
-export function AnalyticsLesson({ id }: { id: string }) {
+export function EditLesson({ id }: { id: string }) {
   return (
     <Link
-      href={`/dashboard/studyboard/${id}/analytics`}
-      className="p-2 text-white transition-colors bg-blue-600 border rounded-md hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      href={`/dashboard/studyboard/${id}/edit/?mode=edit`}
+      className="p-2 border rounded-md hover:bg-gray-100"
     >
-      <ChartBarIcon className="w-5" />
+      <PencilIcon className="w-5" />
     </Link>
   );
 }

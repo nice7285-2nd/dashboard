@@ -1,6 +1,6 @@
 import {
-  AnalyticsLesson,
-  UpdateLesson,
+  PlayLesson,
+  EditLesson,
   DeleteLesson
 } from '@/ui/lessons/buttons';
 import { fetchFilteredLessonsSimple } from '@/backend/lessons-data';
@@ -36,8 +36,8 @@ export default async function LessonsTable({
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <AnalyticsLesson id={lesson.name} />
-                    <UpdateLesson id={lesson.id} />
+                    <PlayLesson id={lesson.id} />
+                    <EditLesson id={lesson.id} />
                     <DeleteLesson id={lesson.id} />
                   </div>
                 </div>
@@ -74,8 +74,8 @@ export default async function LessonsTable({
                   </td>
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <AnalyticsLesson id={lesson.name} />
-                      <UpdateLesson id={lesson.id} />
+                      <PlayLesson id={lesson.id} />
+                      <EditLesson id={lesson.id} />
                       <DeleteLesson id={lesson.id} />
                     </div>
                   </td>

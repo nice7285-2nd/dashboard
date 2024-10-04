@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback } from 'react';
 import ToolButton from './components/ToolButton';
-import { drawRoundedRect, drawNode, drawResizeHandles, drawRotationHandle, getConnectionPoint, drawConnections, redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
 import { Tool, Node, DraggingState, SelectionArea } from './types';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import { createLesson } from './actions';
@@ -107,7 +107,17 @@ const StudyBoard = () => {
       deleteSelectedNodes();
     } else if (editingNode) {
       if (e.key === 'Enter') {
-        finishEditing();
+        if (e.target instanceof HTMLInputElement) {
+          const inputs = document.querySelectorAll('input');
+          const currentIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
+          if (currentIndex < inputs.length - 1) {
+            (inputs[currentIndex + 1] as HTMLInputElement).focus();
+          } else {
+            finishEditing();
+          }
+        } else {
+          finishEditing();
+        }
       } else if (e.key === 'Escape') {
         cancelEditing();
       }
@@ -115,10 +125,6 @@ const StudyBoard = () => {
       const selectedNode = nodes.find(node => node.selected);
       if (selectedNode && e.key.length === 1) {
         startEditing(selectedNode);
-        setEditText(prevState => ({
-          ...prevState,
-          text1: e.key // 또는 적절한 텍스트 필드
-        }));
       }
     }
   }, [nodes, editingNode]);
@@ -794,49 +800,10 @@ const StudyBoard = () => {
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
         {editingNode && (
-          <div
-            style={{
-              position: 'absolute',
-              left: editingNode.x,
-              top: editingNode.y,
-              width: editingNode.width,
-              height: editingNode.height,
-              zIndex: 4,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'white',
-              border: '1px solid black',
-              borderRadius: '5px',
-              padding: '5px',
-            }}
-          >
-            <input
-              value={editText.text1}
-              onChange={(e) => setEditText({ ...editText, text1: e.target.value })}
-              style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }}
-              placeholder="텍스트 1"
-              autoFocus
-            />
-            <input
-              value={editText.text2}
-              onChange={(e) => setEditText({ ...editText, text2: e.target.value })}
-              style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }}
-              placeholder="텍스트 2"
-            />
-            <input
-              value={editText.text3}
-              onChange={(e) => setEditText({ ...editText, text3: e.target.value })}
-              style={{ width: '90%', textAlign: 'center' }}
-              placeholder="텍스트 3"
-              onBlur={finishEditing}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  finishEditing();
-                }
-              }}
-            />
+          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid black', borderRadius: '5px', padding: '5px' }}>
+            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 1" autoFocus />
+            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 2" />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
           </div>
         )}
       </div>
