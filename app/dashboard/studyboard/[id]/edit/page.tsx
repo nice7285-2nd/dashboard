@@ -650,7 +650,11 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const handleColorChange = (color: string) => {
     setPenColor(color);
-    setNodes((prevNodes) => prevNodes.map((node) => (node.selected ? { ...node, backgroundColor: color } : node)));
+    // 선택된 노드의 배경색만 변경하고, 그리기는 유지
+    setNodes((prevNodes) => prevNodes.map((node) => 
+      node.selected ? { ...node, backgroundColor: color } : node
+    ));
+    // 히스토리에 추가
     addToHistory();
   };
 
@@ -797,13 +801,25 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
+    const drawingCanvas = drawingCanvasRef.current;
+    if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        redrawCanvas(ctx, nodes, draggingNode ? null : selectionArea);
+      const drawingCtx = drawingCanvas.getContext('2d');
+      if (ctx && drawingCtx) {
+        // 노드 다시 그리기
+        redrawCanvas(ctx, nodes, selectionArea);
+        
+        // 그리기 캔버스의 내용 유지
+        drawings.forEach((imageData) => {
+          const img = new Image();
+          img.onload = () => {
+            drawingCtx.drawImage(img, 0, 0);
+          };
+          img.src = imageData;
+        });
       }
     }
-  }, [nodes, selectionArea, draggingNode]);
+  }, [nodes, selectionArea, drawings]);
 
   const saveRecording = async (title: string) => {
     if (!recordingBlob) {
