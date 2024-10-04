@@ -9,9 +9,7 @@ import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import { createLesson } from './actions';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import { createStudyRec } from './actions';
-import { fetchLessonById } from '@/backend/lessons-data';
-import { notFound } from 'next/navigation';
-import path from 'path';
+import { CircularProgress, Box, Typography } from '@mui/material';
 
 const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const searchParams = useSearchParams();
@@ -230,9 +228,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
           setNodes(prevNodes =>
             prevNodes.map(node =>
-              node.id === editingNode.id
-                ? { ...node, ...editText, width, height }
-                : node
+              node.id === editingNode.id ? { ...node, ...editText, width, height } : node
             )
           );
         }
@@ -853,7 +849,18 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   };
 
   if (isLoading) {
-    return <div>로딩 중...</div>;
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100vh"
+        bgcolor="#f5f5f5"
+      >
+        <CircularProgress size={60} thickness={4} />
+      </Box>
+    );
   }
 
   return (
