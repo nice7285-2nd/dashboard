@@ -840,7 +840,7 @@ const StudyBoard = () => {
           </div>
         )}
       </div>
-      <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'left', zIndex: 10, gap: '10px' }}>
+      <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', zIndex: 10, gap: '10px' }}>
         <ToolButton tool="save" icon="/icon-save.svg" onClick={() => setShowSavePopup(true)} currentTool={tool} />
         <ToolButton tool="load" icon="/icon-load.svg" onClick={() => document.getElementById('fileInput')?.click()} currentTool={tool} />
         <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />
