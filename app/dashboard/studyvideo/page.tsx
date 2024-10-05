@@ -36,9 +36,11 @@ const VideoItem = ({ video, openVideo }: { video: Video; openVideo: (video: Vide
 
 const VideoList = () => {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [filteredVideos, setFilteredVideos] = useState<Video[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -73,12 +75,23 @@ const VideoList = () => {
     fetchVideos();
   }, []);
 
+  useEffect(() => {
+    const filtered = videos.filter(video =>
+      video.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredVideos(filtered);
+  }, [videos, searchTerm]);
+
   const openVideo = (video: Video) => {
     setSelectedVideo(video);
   };
 
   const closeVideo = () => {
     setSelectedVideo(null);
+  };
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
   };
 
   if (isLoading) {
@@ -95,9 +108,24 @@ const VideoList = () => {
 
   return (
     <div style={{ margin: '0 auto', padding: '20px' }}>
-      <h1 style={{ fontSize: '24px', marginBottom: '20px' }}>학습 동영상</h1>
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          type="text"
+          placeholder="제목으로 검색"
+          value={searchTerm}
+          onChange={handleSearchChange}
+          style={{
+            width: '100%',
+            padding: '10px',
+            fontSize: '16px',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            fontFamily: 'Noto Sans KR, sans-serif'
+          }}
+        />
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
-        {videos.map((video) => (
+        {filteredVideos.map((video) => (
           <VideoItem key={video.id} video={video} openVideo={openVideo} />
         ))}
       </div>
