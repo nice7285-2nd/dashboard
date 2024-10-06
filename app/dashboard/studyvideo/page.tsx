@@ -11,22 +11,17 @@ const VideoItem = ({ video, openVideo }: { video: Video; openVideo: (video: Vide
 
   const handleMouseEnter = () => {
     setIsHovering(true);
-    if (videoRef.current) {
-      videoRef.current.play();
-    }
+    videoRef.current?.play();
   };
 
   const handleMouseLeave = () => {
     setIsHovering(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
+    videoRef.current?.pause();
   };
 
   return (
     <div onClick={() => openVideo(video)} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <video ref={videoRef} src={video.videoUrl} style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', marginBottom: '10px', transition: 'transform 0.3s ease', transform: isHovering ? 'scale(1.05)' : 'scale(1)', boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none' }} muted loop playsInline />
+      <video ref={videoRef} src={video.videoUrl} style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', marginBottom: '10px', transition: 'transform 0.3s ease', transform: isHovering ? 'scale(1.05)' : 'scale(1)', boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', borderRadius: '10px' }} muted loop playsInline />
       <h3 style={{ fontSize: '16px', marginBottom: '5px', fontFamily: 'Noto Sans KR, sans-serif', fontWeight: 600 }}>{video.title}</h3>
       <p style={{ fontSize: '14px', color: '#606060', marginBottom: '3px' }}>{video.channelName}</p>
       <p style={{ fontSize: '14px', color: '#606060' }}>조회수 {video.views.toLocaleString()}회</p>
