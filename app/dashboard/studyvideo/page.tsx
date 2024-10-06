@@ -127,7 +127,7 @@ const VideoList = () => {
 
       {selectedVideo && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ position: 'relative', width: '80%', maxWidth: '800px', aspectRatio: '16 / 9', backgroundColor: 'black' }}>
+          <div style={{ position: 'relative', width: '80%', maxWidth: '1600px', aspectRatio: '16 / 9', backgroundColor: 'black' }}>
             <iframe width="100%" height="100%" src={`${selectedVideo.videoUrl}?autoplay=1`} title={selectedVideo.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ position: 'absolute', top: 0, left: 0 }}></iframe>
             <button onClick={closeVideo} style={{ position: 'absolute', top: '-40px', right: '0', background: 'transparent', border: 'none', padding: '10px', cursor: 'pointer', fontSize: '24px', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '40px', height: '40px', borderRadius: '50%' }}>
               &#10005;

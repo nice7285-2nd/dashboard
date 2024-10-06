@@ -61,7 +61,6 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
 
   if (node.selected) {
     drawResizeHandles(ctx, node, minWidth, minHeight);
-    drawRotationHandle(ctx, node, minHeight);
   }
 
   ctx.restore();
@@ -90,17 +89,6 @@ export const drawResizeHandles = (
       handleSize
     );
   });
-};
-
-export const drawRotationHandle = (
-  ctx: CanvasRenderingContext2D,
-  node: Node,
-  height: number
-) => {
-  ctx.beginPath();
-  ctx.arc(0, -height / 2 - 20, 5, 0, 2 * Math.PI);
-  ctx.fillStyle = '#FF4500';
-  ctx.fill();
 };
 
 export const getConnectionPoint = (
@@ -169,35 +157,39 @@ export const drawConnections = (
   });
 };
 
+export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: SelectionArea) => {
+  const { startX, startY, endX, endY } = area;
+  const width = endX - startX;
+  const height = endY - startY;
+
+  ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(startX, startY, width, height);
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
+  ctx.fillRect(startX, startY, width, height);
+};
+
 export const redrawCanvas = (
   ctx: CanvasRenderingContext2D,
   nodes: Node[],
-  selectionArea: {
-    startX: number;
-    startY: number;
-    endX: number;
-    endY: number;
-  } | null
+  selectionArea: SelectionArea | null
 ) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-  const sortedNodes = [...nodes].sort((a, b) => a.zIndex - b.zIndex);
+  // 연결선 먼저 그리기 (z-index가 가장 낮도록)
+  drawConnections(ctx, nodes);
 
-  sortedNodes.forEach(drawNode.bind(null, ctx));
-  drawConnections(ctx, sortedNodes);
+  // 노드 그리기
+  nodes.forEach(node => {
+    drawNode(ctx, node);
+  });
 
+  // 선택 영역 그리기
   if (selectionArea) {
-    const { startX, startY, endX, endY } = selectionArea;
-    ctx.strokeStyle = 'rgba(0, 0, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.strokeRect(
-      Math.min(startX, endX),
-      Math.min(startY, endY),
-      Math.abs(endX - startX),
-      Math.abs(endY - startY)
-    );
-    ctx.setLineDash([]);
+    drawSelectionArea(ctx, selectionArea);
   }
 };
 
