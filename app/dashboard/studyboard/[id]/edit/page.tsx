@@ -12,6 +12,7 @@ import { createStudyRec } from './actions';
 import { CircularProgress, Box, Typography } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 
 const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const searchParams = useSearchParams();
@@ -62,6 +63,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // 새로운 상태 추가
+  const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
 
   // 'play' 모드에서 숨길 툴 버튼들의 목록
   const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
@@ -826,6 +830,21 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     handleToolChange('connect');
   };
 
+  // 전체 지우기 함수
+  const clearAll = () => {
+    const canvas = drawingCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    setNodes([]);
+    setDrawings([]);
+    addToHistory();
+    setShowClearConfirmPopup(false);
+  };
+
   if (isLoading) {
     return (
       <Box
@@ -868,18 +887,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           <ToolButton
             tool="clear"
             icon="/icon-clear.svg"
-            onClick={() => {
-              const canvas = drawingCanvasRef.current;
-              if (canvas) {
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                  ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
-              }
-              setNodes([]);
-              setDrawings([]);
-              addToHistory();
-            }}
+            onClick={() => setShowClearConfirmPopup(true)}
             currentTool={tool}
           />
         )}
@@ -970,6 +978,12 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         <SaveRecordingPopup
           onSave={saveRecording}
           onCancel={() => setShowSaveRecordingPopup(false)}
+        />
+      )}
+      {showClearConfirmPopup && (
+        <ClearConfirmPopup
+          onConfirm={clearAll}
+          onCancel={() => setShowClearConfirmPopup(false)}
         />
       )}
       <ToastContainer position="top-center" autoClose={1000} />
