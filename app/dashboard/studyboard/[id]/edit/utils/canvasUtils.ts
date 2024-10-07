@@ -1,4 +1,4 @@
-import { Node, SelectionArea } from '../types';
+import { Node, SelectionArea, DrawingAction } from '../types';
 
 export const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -132,6 +132,7 @@ export const drawConnections = (
         ctx.stroke();
         ctx.setLineDash([]);
 
+        // 화살표 그리기
         if (connection.lineStyle !== 'dashed') {
           const angle = Math.atan2(
             toPoint.y - fromPoint.y,
@@ -162,19 +163,48 @@ export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: Selection
   const width = endX - startX;
   const height = endY - startY;
 
-  ctx.strokeStyle = 'rgba(0, 123, 255, 0.5)';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(0, 123, 255, 1)';
+  ctx.lineWidth = 1;
   ctx.setLineDash([5, 5]);
   ctx.strokeRect(startX, startY, width, height);
   ctx.setLineDash([]);
 
-  ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
-  ctx.fillRect(startX, startY, width, height);
+  // ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
+  // ctx.fillRect(startX, startY, width, height);
+};
+
+
+export const drawDrawings = (
+  ctx: CanvasRenderingContext2D,
+  drawingActions: DrawingAction[]
+) => {
+  if (ctx) {
+    // 그리기 작업 다시 그리기
+    drawingActions.forEach(action => {
+      ctx.beginPath();
+      ctx.moveTo(action.points[0].x, action.points[0].y);
+      action.points.forEach(point => {
+    ctx.lineTo(point.x, point.y);
+    });
+    if (action.type === 'draw') {
+      ctx.strokeStyle = action.color || '#000';
+      ctx.lineWidth = action.lineWidth;
+      ctx.stroke();
+    } else if (action.type === 'erase') {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.strokeStyle = 'rgba(255,255,255,1)';
+      ctx.lineWidth = action.lineWidth;
+      ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      }
+    });    
+  }
 };
 
 export const redrawCanvas = (
   ctx: CanvasRenderingContext2D,
   nodes: Node[],
+  drawings: DrawingAction[],
   selectionArea: SelectionArea | null
 ) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -186,6 +216,9 @@ export const redrawCanvas = (
   nodes.forEach(node => {
     drawNode(ctx, node);
   });
+
+  // 그리기 그리기
+  drawDrawings(ctx, drawings);
 
   // 선택 영역 그리기
   if (selectionArea) {

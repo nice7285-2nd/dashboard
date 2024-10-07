@@ -39,3 +39,11 @@ export interface SelectionArea {
   endX: number;
   endY: number;
 }
+
+// 그리기 작업을 저장할 타입 정의
+export type DrawingAction = {
+  type: 'draw' | 'erase';
+  points: { x: number; y: number }[];
+  color?: string;
+  lineWidth: number;
+};

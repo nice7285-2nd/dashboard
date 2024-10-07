@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } f
 import { useSearchParams } from 'next/navigation';
 import ToolButton from './components/ToolButton';
 import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
-import { Tool, Node, DraggingState, SelectionArea } from './types';
+import { Tool, Node, DraggingState, SelectionArea, DrawingAction } from './types';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import { createLesson } from './actions';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
@@ -33,7 +33,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [resizing, setResizing] = useState<{ node: Node; direction: string } | null>(null);
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [connecting, setConnecting] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
-  const [nextNodeId, setNextNodeId] = useState(1);
   const [maxZIndex, setMaxZIndex] = useState(3);
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('dashed');
   const [isRecording, setIsRecording] = useState(false);
@@ -42,31 +41,25 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
 
-  // Undo/Redo 기능을 위한 상태 추가
-  const [history, setHistory] = useState<Node[][]>([]);
+  // 히스토리 상태를 수정하여 drawings도 포함하도록 합니다
+  const [history, setHistory] = useState<{ nodes: Node[][], drawings: DrawingAction[][] }>({ nodes: [], drawings: [] });
   const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // 그리기 객체를 저장하기 위한 상태 추가
-  const [drawings, setDrawings] = useState<string[]>([]);
 
   // 마지막으로 생성된 노드의 위치를 저장하는 상태 추가
   const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 100 });
-
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
-
   const [isSelecting, setIsSelecting] = useState(false);
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
   const [draggingNode, setDraggingNode] = useState<Node | null>(null);
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
-  const [showSavePopup, setShowSavePopup] = useState(false);
-  const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // 새로운 상태 추가
+  const [showSavePopup, setShowSavePopup] = useState(false);
+  const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
-
+  const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
+  const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
+  
   // 'play' 모드에서 숨길 툴 버튼들의 목록
   const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
 
@@ -95,7 +88,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 200, height: 120, selected: false, connections: [], zIndex: newZIndex, backgroundColor: '#FFFFFF' };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
-    setNextNodeId(newId + 1);
     setMaxZIndex(newZIndex);
     setLastNodePosition({ x: newX, y: newY });
     startEditing(newNode);
@@ -206,6 +198,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       if (ctx) {
         ctx.beginPath();
         ctx.moveTo(x, y);
+        // 그리기 시작 점 설정
+        setCurrentDrawingPoints([{ x, y }]);
       }
     } else if (tool === 'move') {
       const { node, handle } = getClickedNodeAndHandle(x, y);
@@ -282,6 +276,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
+          // 현재 그리기 점 추가
+          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
         } else if (tool === 'erase') {
           ctx.globalCompositeOperation = 'destination-out';
           ctx.strokeStyle = 'rgba(255,255,255,1)';
@@ -314,7 +310,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           return node;
         });
         setNodes(newNodes);
-        // 마지막으로 이동한 노드의 위치 업데이트
         setLastNodePosition({ x: x - dragging.offsetX, y: y - dragging.offsetY });
       }
     } else if (resizing) {
@@ -404,22 +399,25 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setSelectionArea(null);
     }
 
-    // 상태 변경 후 히스토리에 추가
-    addToHistory();
-
-    // 그리기 객체 저장
-    const drawingCanvas = drawingCanvasRef.current;
-    if (drawingCanvas) {
-      const ctx = drawingCanvas.getContext('2d');
-      if (ctx) {
-        const imageData = drawingCanvas.toDataURL();
-        setDrawings((prevDrawings) => [...prevDrawings, imageData]);
-      }
+    // 그리기 작업 저장
+    if (isDrawing && (tool === 'draw' || tool === 'erase')) {
+      setDrawingActions(prevActions => [
+        ...prevActions,
+        {
+          type: tool,
+          points: currentDrawingPoints,
+          color: tool === 'draw' ? penColor : undefined,
+          lineWidth: tool === 'draw' ? Number(lineWidth) : eraserSize
+        }
+      ]);
+      setCurrentDrawingPoints([]);
     }
+
+    // 상태 변경 후 히스토리에 한 번만 추가
+    addToHistory();
   };
 
   const handleToolChange = (newTool: Tool) => {
-    console.log(`도구 변경: ${newTool}`);
     if (tool === 'move' && newTool !== 'move') {
       setNodes((prevNodes) => prevNodes.map((node) => ({ ...node, selected: false })));
     }
@@ -480,7 +478,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const getClickedNode = (x: number, y: number) => {
     const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
-
     return sortedNodes.find((node) => x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
   };
 
@@ -527,6 +524,93 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
     setNodes(newNodes);
     addToHistory();
+  };
+
+
+  // 히스토리에 현재 상태 추가 함수 수정
+  const addToHistory = (newDrawings?: DrawingAction[]) => {
+    const newHistory = {
+      nodes: history.nodes.slice(0, historyIndex + 1),
+      drawings: history.drawings.slice(0, historyIndex + 1)
+    };
+    newHistory.nodes.push([...nodes]);
+    newHistory.drawings.push(newDrawings || [...drawingActions]);
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.nodes.length - 1);
+  };
+
+  // Undo 기능 수정
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      setNodes(history.nodes[historyIndex - 1]);
+      setDrawingActions(history.drawings[historyIndex - 1]);
+      // redrawDrawings(history.drawings[historyIndex - 1]);
+    }
+  };
+
+  // Redo 기능 수정
+  const redo = () => {
+    if (historyIndex < history.nodes.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      setNodes(history.nodes[historyIndex + 1]);
+      setDrawingActions(history.drawings[historyIndex + 1]);
+      // redrawDrawings(history.drawings[historyIndex + 1]);
+    }
+  };
+
+  // 저장 기능
+  const saveCanvas = async (title: string) => {
+    setShowSavePopup(false);
+    const filename = `${new Date().toLocaleString('ko-KR', { 
+      timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
+    }).replace(/[^\d]/g, '')}.json`;
+    const filedir = `lessons`;
+    const filePath = `/${filedir}/${filename}`;
+
+    const data = {
+      filedir: filedir,
+      filename: filename,
+      title: title,
+      nodes: nodes,
+      drawings: drawingActions,
+    };
+
+    try {
+      // 파일 저장
+      const response = await fetch('/api/save-lesson', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        // 데이터베이스에 저장
+        const formData = new FormData();
+        formData.append('name', title);
+        formData.append('path', filePath);
+        const result = await createLesson(formData);
+
+        if (result.message === 'Created Lesson.') {
+          toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        throw new Error('교안 파일 저장에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('교안 저장 중 오류 발생:', error);
+      toast.error('교안 저장에 실패했습니다. 다시 시도해 주세요.');
+    }
+  };
+
+  const isDragSignificant = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    return Math.sqrt(dx * dx + dy * dy) > 5; // 5픽셀 이상 이동했을 때 드래그로 간주
   };
 
   // 음성 읽기 함수 수정
@@ -583,86 +667,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       mediaRecorderRef.current.stop();
     }
   };
-
-  // Undo 기능
-  const undo = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setNodes(history[historyIndex - 1]);
-    }
-  };
-
-  // Redo 기능
-  const redo = () => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      setNodes(history[historyIndex + 1]);
-    }
-  };
-
-  // 히스토리에 현재 상태 추가
-  const addToHistory = () => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push([...nodes]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  };
-
-  // 저장 기능
-  const saveCanvas = async (title: string) => {
-    setShowSavePopup(false);
-    const filename = `${new Date().toLocaleString('ko-KR', { 
-      timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
-    }).replace(/[^\d]/g, '')}.json`;
-    const filedir = `lessons`;
-    const filePath = `/${filedir}/${filename}`;
-
-    const data = {
-      filedir: filedir,
-      filename: filename,
-      title: title,
-      nodes: nodes,
-      drawings: drawings,
-    };
-
-    try {
-      // 파일 저장
-      const response = await fetch('/api/save-lesson', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        // 데이터베이스에 저장
-        const formData = new FormData();
-        formData.append('name', title);
-        formData.append('path', filePath);
-        const result = await createLesson(formData);
-
-        if (result.message === 'Created Lesson.') {
-          toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
-        } else {
-          throw new Error(result.message);
-        }
-      } else {
-        throw new Error('교안 파일 저장에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('교안 저장 중 오류 발생:', error);
-      toast.error('교안 저장에 실패했습니다. 다시 시도해 주세요.');
-    }
-  };
-
-  const isDragSignificant = (start: { x: number; y: number }, end: { x: number; y: number }) => {
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    return Math.sqrt(dx * dx + dy * dy) > 5; // 5픽셀 이상 이동했을 때 드래그로 간주
-  };
-
-
   const saveRecording = async (title: string) => {
     setShowSaveRecordingPopup(false);
     if (!recordingBlob) {
@@ -732,7 +736,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         const fileData = await fileResponse.json();
 
         setNodes(fileData.nodes);
-        setDrawings(fileData.drawings);
+        setDrawingActions(fileData.drawings);
 
         // 그리기 객체 복원
         const drawingCanvas = drawingCanvasRef.current;
@@ -774,7 +778,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          redrawCanvas(ctx, nodes, selectionArea);
+          redrawCanvas(ctx, nodes, drawingActions, selectionArea);
         }
       }
     };
@@ -783,7 +787,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     window.addEventListener('resize', resizeCanvas);
 
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, [nodes, selectionArea]);
+  }, [nodes, drawingActions, selectionArea]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -791,13 +795,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         const animate = () => {
-          redrawCanvas(ctx, nodes, selectionArea);
+          redrawCanvas(ctx, nodes, drawingActions, selectionArea);
           requestAnimationFrame(animate);
         };
         animate();
       }
     }
-  }, [nodes, selectionArea]);
+  }, [nodes, drawingActions, selectionArea]);
 
   useEffect(() => {
     // 브라우저 환경에서만 실행되도록 합니다.
@@ -820,7 +824,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        redrawCanvas(ctx, nodes, draggingNode ? null : selectionArea);
+        redrawCanvas(ctx, nodes, drawingActions, draggingNode ? null : selectionArea);
       }
     }
   }, [nodes, selectionArea, draggingNode]);
@@ -840,7 +844,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       }
     }
     setNodes([]);
-    setDrawings([]);
+    setDrawingActions([]);
     addToHistory();
     setShowClearConfirmPopup(false);
   };
