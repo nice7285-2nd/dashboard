@@ -691,7 +691,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const saveRecording = async (title: string) => {
     setShowSaveRecordingPopup(false);
     if (!recordingBlob) {
-      alert('저장할 녹화 파일이 없습니다.');
+      toast.error('저장할 녹화 파일이 없습니다.');
       return;
     }
 
@@ -775,7 +775,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
       } catch (error) {
         console.error('레슨 불러오기 실패:', error);
-        alert('레슨을 불러오는 데 실패했습니다: ' + (error as Error).message);
+        toast.error('레슨을 불러오는 데 실패했습니다: ' + (error as Error).message);
       } finally {
         setIsLoading(false);
       }
