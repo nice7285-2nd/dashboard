@@ -213,6 +213,9 @@ export const redrawCanvas = (
 ) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+  // 그리기 그리기
+  drawDrawings(ctx, drawings);
+
   // 연결선 먼저 그리기 (z-index가 가장 낮도록)
   drawConnections(ctx, nodes);
 
@@ -220,9 +223,6 @@ export const redrawCanvas = (
   nodes.forEach(node => {
     drawNode(ctx, node);
   });
-
-  // 그리기 그리기
-  drawDrawings(ctx, drawings);
 
   // 선택 영역 그리기
   if (selectionArea) {

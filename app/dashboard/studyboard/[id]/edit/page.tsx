@@ -404,7 +404,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         {
           type: tool,
           points: currentDrawingPoints,
-          color: tool === 'draw' ? penColor : undefined,
+          color: tool === 'draw' ? penColor : '#FFF',
           lineWidth: tool === 'draw' ? Number(lineWidth) : eraserSize
         }
       ]);
@@ -813,20 +813,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   }, [nodes, drawingActions, selectionArea]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        const animate = () => {
-          redrawCanvas(ctx, nodes, drawingActions, selectionArea);
-          requestAnimationFrame(animate);
-        };
-        animate();
-      }
-    }
-  }, [nodes, drawingActions, selectionArea]);
-
-  useEffect(() => {
     // 브라우저 환경에서만 실행되도록 합니다.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       originalSpeakRef.current = window.speechSynthesis.speak.bind(window.speechSynthesis);
@@ -956,7 +942,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         {mode !== 'edit' && (
           <>
             <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>굵기</label>
+              <label style={{ marginRight: '10px' }}>펜굵기</label>
               <select value={lineWidth} onChange={(e) => setLineWidth(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
                 <option value="1">얇게</option>
                 <option value="2">보통</option>
