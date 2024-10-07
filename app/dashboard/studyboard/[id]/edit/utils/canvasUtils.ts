@@ -184,19 +184,23 @@ export const drawDrawings = (
       ctx.beginPath();
       ctx.moveTo(action.points[0].x, action.points[0].y);
       action.points.forEach(point => {
-    ctx.lineTo(point.x, point.y);
-    });
-    if (action.type === 'draw') {
-      ctx.strokeStyle = action.color || '#000';
-      ctx.lineWidth = action.lineWidth;
-      ctx.stroke();
-    } else if (action.type === 'erase') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(255,255,255,1)';
-      ctx.lineWidth = action.lineWidth;
-      ctx.stroke();
-      ctx.globalCompositeOperation = 'source-over';
-      }
+        ctx.lineTo(point.x, point.y);
+        if (action.type === 'draw') {
+          ctx.strokeStyle = action.color || '#000';
+          ctx.lineWidth = action.lineWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+        } else if (action.type === 'erase') {
+          // ctx.globalCompositeOperation = 'destination-out';
+          ctx.strokeStyle = 'rgba(255,255,255,1)';
+          ctx.lineWidth = action.lineWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.stroke();
+          // ctx.globalCompositeOperation = 'source-over';
+        }
+      });
     });    
   }
 };

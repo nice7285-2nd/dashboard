@@ -50,7 +50,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
-  const [draggingNode, setDraggingNode] = useState<Node | null>(null);
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,10 +59,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
   
-  // 'play' 모드에서 숨길 툴 버튼들의 목록
   const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
-
-  // 'edit' 모드에서 숨길 툴 버튼들의 목록
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
 
   // 툴 버튼을 렌더링할지 결정하는 함수
@@ -279,13 +275,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           // 현재 그리기 점 추가
           setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
         } else if (tool === 'erase') {
-          ctx.globalCompositeOperation = 'destination-out';
+          // ctx.globalCompositeOperation = 'destination-out';
           ctx.strokeStyle = 'rgba(255,255,255,1)';
           ctx.lineWidth = eraserSize;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
-          ctx.globalCompositeOperation = 'source-over';
+          // ctx.globalCompositeOperation = 'source-over';
         }
       }
     } else if (dragging) {
@@ -616,10 +612,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   // 음성 읽기 함수 수정
   const readSelectedTexts = (selectedTexts: string[]) => {
     if (selectedTexts.length > 0 && typeof window !== 'undefined' && window.speechSynthesis) {
-      // const textToRead = selectedTexts.join(', ');
       const textToRead = selectedTexts.join(' ');
       const utterance = new SpeechSynthesisUtterance(textToRead);
-      utterance.lang = 'en-US'; // Set to English
+      utterance.lang = 'en-US'; // 영어로 설정
       utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
       utterance.pitch = 1.0; // 음높이 설정 (1.0이 기본값)
       window.speechSynthesis.speak(utterance);
@@ -628,11 +623,36 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const startRecording = async () => {
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 사용자에게 화면 공유 권한 요청
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: { displaySurface: "browser" },
+        audio: true 
+      });
+
+      // 오디오 스트림 요청 (마이크와 시스템 오디오)
+      const audioStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        }
+      });
+
+      // 시스템 오디오 캡처를 위한 AudioContext 생성
+      const audioContext = new AudioContext();
+      const systemSource = audioContext.createMediaStreamSource(displayStream);
+      const micSource = audioContext.createMediaStreamSource(audioStream);
+      const destination = audioContext.createMediaStreamDestination();
+
+      // 시스템 오디오와 마이크 오디오를 혼합
+      const systemGain = audioContext.createGain();
+      const micGain = audioContext.createGain();
+      systemSource.connect(systemGain).connect(destination);
+      micSource.connect(micGain).connect(destination);
+
       const combinedStream = new MediaStream([
         ...displayStream.getVideoTracks(),
-        ...audioStream.getAudioTracks()
+        ...destination.stream.getAudioTracks()
       ]);
       
       mediaRecorderRef.current = new MediaRecorder(combinedStream);
@@ -659,6 +679,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setIsRecording(true);
     } catch (error) {
       console.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다:', error);
+      toast.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
@@ -824,10 +845,10 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        redrawCanvas(ctx, nodes, drawingActions, draggingNode ? null : selectionArea);
+        redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);
       }
     }
-  }, [nodes, selectionArea, draggingNode]);
+  }, [nodes, selectionArea, dragging]);
 
   const handleLineStyleChange = (style: 'solid' | 'dashed') => {
     setLineStyle(style);
@@ -851,14 +872,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        height="100vh"
-        bgcolor="#f5f5f5"
-      >
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100vh" bgcolor="#f5f5f5">
         <CircularProgress size={60} thickness={4} />
       </Box>
     );
