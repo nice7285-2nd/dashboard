@@ -193,7 +193,7 @@ export const drawDrawings = (
           ctx.stroke();
         } else if (action.type === 'erase') {
           // ctx.globalCompositeOperation = 'destination-out';
-          ctx.strokeStyle = 'rgba(255,255,255,1)';
+          ctx.strokeStyle = '#FFF';
           ctx.lineWidth = action.lineWidth;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';

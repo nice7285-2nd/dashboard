@@ -282,6 +282,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           ctx.lineJoin = 'round';
           ctx.stroke();
           // ctx.globalCompositeOperation = 'source-over';
+          // 현재 그리기 점 추가
+          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
         }
       }
     } else if (dragging) {
