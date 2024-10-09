@@ -424,32 +424,65 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
     return {
-      x: (touch.clientX - rect.left) * scaleX,
-      y: (touch.clientY - rect.top) * scaleY
+      x: (touch.pageX - (rect.left + scrollX)) * scaleX,
+      y: (touch.pageY - (rect.top + scrollY)) * scaleY
     };
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const canvas = e.currentTarget;
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
     const touch = e.touches[0];
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos({ x, y });
-    console.log('Touch start:', { x, y, clientX: touch.clientX, clientY: touch.clientY });
-    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
+    console.log('Touch start:', { x, y, pageX: touch.pageX, pageY: touch.pageY });
+    
+    if (tool === 'draw' || tool === 'erase') {
+      setIsDrawing(true);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setCurrentDrawingPoints([{ x, y }]);
+      }
+    } else {
+      handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (!touchStartPos) return;
-    const canvas = e.currentTarget;
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
     const touch = e.touches[0];
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
-    console.log('Touch move:', { x, y, clientX: touch.clientX, clientY: touch.clientY });
-    handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
+    console.log('Touch move:', { x, y, pageX: touch.pageX, pageY: touch.pageY });
+
+    if (isDrawing && (tool === 'draw' || tool === 'erase')) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.lineTo(x, y);
+        if (tool === 'draw') {
+          ctx.strokeStyle = penColor;
+          ctx.lineWidth = Number(lineWidth);
+        } else if (tool === 'erase') {
+          ctx.strokeStyle = 'rgba(255,255,255,1)';
+          ctx.lineWidth = eraserSize;
+        }
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+        setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
+      }
+    } else {
+      handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
