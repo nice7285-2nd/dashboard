@@ -419,70 +419,27 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     addToHistory();
   };
 
-  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
-  const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    return {
-      x: (touch.pageX - (rect.left + scrollX)) * scaleX,
-      y: (touch.pageY - (rect.top + scrollY)) * scaleY
-    };
-  };
-
+  // 터치 이벤트 핸들러 추가
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
     const touch = e.touches[0];
-    if (!touch) return;
-    const { x, y } = getTouchPos(canvas, touch);
+    const { clientX, clientY } = touch;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
     setTouchStartPos({ x, y });
-    console.log('Touch start:', { x, y, pageX: touch.pageX, pageY: touch.pageY });
-    
-    if (tool === 'draw' || tool === 'erase') {
-      setIsDrawing(true);
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        setCurrentDrawingPoints([{ x, y }]);
-      }
-    } else {
-      handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
-    }
+    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
+    if (!touchStartPos) return;
     const touch = e.touches[0];
-    if (!touch) return;
-    const { x, y } = getTouchPos(canvas, touch);
-    console.log('Touch move:', { x, y, pageX: touch.pageX, pageY: touch.pageY });
-
-    if (isDrawing && (tool === 'draw' || tool === 'erase')) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.lineTo(x, y);
-        if (tool === 'draw') {
-          ctx.strokeStyle = penColor;
-          ctx.lineWidth = Number(lineWidth);
-        } else if (tool === 'erase') {
-          ctx.strokeStyle = 'rgba(255,255,255,1)';
-          ctx.lineWidth = eraserSize;
-        }
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-        setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
-      }
-    } else {
-      handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
-    }
+    const { clientX, clientY } = touch;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    handleMouseMove({ clientX: x, clientY: y } as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -868,23 +825,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
       if (container && canvas && drawingCanvas) {
         const { width, height } = container.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-
-        drawingCanvas.width = width * dpr;
-        drawingCanvas.height = height * dpr;
-        drawingCanvas.style.width = `${width}px`;
-        drawingCanvas.style.height = `${height}px`;
+        canvas.width = width;
+        canvas.height = height;
+        drawingCanvas.width = width;
+        drawingCanvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        const drawingCtx = drawingCanvas.getContext('2d');
-        if (ctx && drawingCtx) {
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          drawingCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (ctx) {
           redrawCanvas(ctx, nodes, drawingActions, selectionArea);
         }
       }
