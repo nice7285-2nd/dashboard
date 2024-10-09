@@ -422,9 +422,11 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
   const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
     const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
     return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY
     };
   };
 
@@ -435,6 +437,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos({ x, y });
+    console.log('Touch start:', { x, y, clientX: touch.clientX, clientY: touch.clientY });
     handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
@@ -445,6 +448,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const touch = e.touches[0];
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
+    console.log('Touch move:', { x, y, clientX: touch.clientX, clientY: touch.clientY });
     handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
@@ -831,13 +835,23 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
       if (container && canvas && drawingCanvas) {
         const { width, height } = container.getBoundingClientRect();
-        canvas.width = width;
-        canvas.height = height;
-        drawingCanvas.width = width;
-        drawingCanvas.height = height;
+        const dpr = window.devicePixelRatio || 1;
+        
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+
+        drawingCanvas.width = width * dpr;
+        drawingCanvas.height = height * dpr;
+        drawingCanvas.style.width = `${width}px`;
+        drawingCanvas.style.height = `${height}px`;
 
         const ctx = canvas.getContext('2d');
-        if (ctx) {
+        const drawingCtx = drawingCanvas.getContext('2d');
+        if (ctx && drawingCtx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          drawingCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
           redrawCanvas(ctx, nodes, drawingActions, selectionArea);
         }
       }
