@@ -67,18 +67,24 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   // nav 영역의 너비를 저장할 상태 추가
   const [navWidth, setNavWidth] = useState(0);
+  const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
 
   // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
   const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
-    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-    return {
-      x: ((touch.pageX - (rect.left + scrollX + navWidth)) * scaleX),
-      y: ((touch.pageY - (rect.top + scrollY)) * scaleY)
-    };
+    
+    // navWidth를 제외하지 않고 계산
+    const x = (touch.clientX - rect.left) * scaleX;
+    const y = (touch.clientY - rect.top) * scaleY;
+
+    setDebugInfo({
+      original: { x: touch.clientX, y: touch.clientY },
+      calculated: { x, y }
+    });
+
+    return { x, y };
   };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
@@ -436,11 +442,14 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const canvas = e.currentTarget;
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
     const touch = e.touches[0];
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos({ x, y });
+    console.log('Touch start:', { x, y, clientX: touch.clientX, clientY: touch.clientY, navWidth });
+    
     handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
