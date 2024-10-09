@@ -2,22 +2,21 @@
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } from 'react';
 import { useSearchParams } from 'next/navigation';
-import ToolButton from './components/ToolButton';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
-import { Tool, Node, DraggingState, SelectionArea, DrawingAction } from './types';
+import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
-import { createLesson } from './actions';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
-import { createStudyRec } from './actions';
+import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
+import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
+import { Tool, Node, DraggingState, SelectionArea, DrawingAction } from './types';
+import { createLesson } from './actions';
 import { CircularProgress, Box, Typography } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 
 const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode') || 'edit';
-
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -40,12 +39,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
-
-  // 히스토리 상태를 수정하여 drawings도 포함하도록 합니다
   const [history, setHistory] = useState<{ nodes: Node[][], drawings: DrawingAction[][] }>({ nodes: [], drawings: [] });
   const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // 마지막으로 생성된 노드의 위치를 저장하는 상태 추가
   const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 100 });
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -58,16 +53,14 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
   const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
-  
-  const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
-  const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
-
   // 터치 이벤트를 위한 상태 추가
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
-
   // nav 영역의 너비를 저장할 상태 추가
   const [navWidth, setNavWidth] = useState(0);
   const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
+  
+  const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
+  const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
 
   // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
   const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
@@ -89,20 +82,14 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   // 툴 버튼을 렌더링할지 결정하는 함수
   const shouldRenderTool = (toolName: string) => {
-    if (mode === 'play' && hiddenToolsInPlayMode.includes(toolName)) {
-      return false;
-    }
-    if (mode === 'edit' && hiddenToolsInEditMode.includes(toolName)) {
-      return false;
-    }
+    if (mode === 'play' && hiddenToolsInPlayMode.includes(toolName)) {return false;}
+    if (mode === 'edit' && hiddenToolsInEditMode.includes(toolName)) {return false;}
     return true;
   };
 
   const addNode = () => {
     const newId = Date.now();
     const newZIndex = maxZIndex + 1;
-    
-    // 최근에 이동한 노드의 오른쪽에 새 노드 생성
     const newX = lastNodePosition.x + 220; // 기존 노드의 너비(200) + 간격(20)
     const newY = lastNodePosition.y;
 
@@ -137,7 +124,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
-
           setNodes(prevNodes =>
             prevNodes.map(node =>
               node.id === editingNode.id ? { ...node, ...editText, width, height } : node
@@ -166,20 +152,12 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           const currentIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
           if (currentIndex < inputs.length - 1) {
             (inputs[currentIndex + 1] as HTMLInputElement).focus();
-          } else {
-            finishEditing();
-          }
-        } else {
-          finishEditing();
-        }
-      } else if (e.key === 'Escape') {
-        cancelEditing();
-      }
+          } else {finishEditing();}
+        } else {finishEditing();}
+      } else if (e.key === 'Escape') {cancelEditing();}
     } else {
       const selectedNode = nodes.find(node => node.selected);
-      if (selectedNode && e.key.length === 1) {
-        startEditing(selectedNode);
-      }
+      if (selectedNode && e.key.length === 1) {startEditing(selectedNode);}
     }
   }, [nodes, editingNode]);
 
@@ -225,9 +203,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     } else if (tool === 'move') {
       const { node, handle } = getClickedNodeAndHandle(x, y);
       if (node) {
-        if (handle) {
-          setResizing({ node, direction: handle });
-        } else {
+        if (handle) {setResizing({ node, direction: handle });}
+        else {
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
@@ -252,9 +229,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       const clickedNode = getClickedNode(x, y);
       if (clickedNode) {
         const side = getNodeSide(clickedNode, x, y);
-        if (connecting === null) {
-          setConnecting({ id: clickedNode.id, side });
-        } else {
+        if (connecting === null) {setConnecting({ id: clickedNode.id, side });}
+        else {
           setNodes((prevNodes: Node[]) =>
             prevNodes.map((node) => {
               if (node.id === connecting.id) {
@@ -290,23 +266,41 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (isDrawing) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.lineTo(x, y);
+        // ctx.beginPath();
+        // ctx.moveTo(currentDrawingPoints[0].x, currentDrawingPoints[0].y);
+  
         if (tool === 'draw') {
+          // 현재 그리기 점 추가
+          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
+
+          if (currentDrawingPoints.length < 2) return;
+
           ctx.strokeStyle = penColor;
           ctx.lineWidth = Number(lineWidth);
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
-          ctx.stroke();
-          // 현재 그리기 점 추가
-          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
+
+          ctx.beginPath();
+          ctx.moveTo(currentDrawingPoints[0].x, currentDrawingPoints[0].y);
+      
+          for (let i = 1; i < currentDrawingPoints.length; i++) {
+            const currentPoint = currentDrawingPoints[i];
+            const previousPoint = currentDrawingPoints[i - 1];
+            const midPoint = {x: (previousPoint.x + currentPoint.x) / 2, y: (previousPoint.y + currentPoint.y) / 2};
+      
+            ctx.quadraticCurveTo(previousPoint.x, previousPoint.y, midPoint.x, midPoint.y);
+          }    
+          // const lastPoint = currentDrawingPoints[currentDrawingPoints.length - 1];
+          // ctx.lineTo(lastPoint.x, lastPoint.y);    
+          ctx.stroke();          
+
         } else if (tool === 'erase') {
-          // ctx.globalCompositeOperation = 'destination-out';
+          ctx.lineTo(x, y);
           ctx.strokeStyle = 'rgba(255,255,255,1)';
           ctx.lineWidth = eraserSize;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
-          // ctx.globalCompositeOperation = 'source-over';
           // 현재 그리기 점 추가
           setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
         }
@@ -317,9 +311,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         const dx = x - dragging.offsetX;
         const dy = y - dragging.offsetY;
         const newNodes = nodes.map((node) => {
-          if (node.selected) {
-            return { ...node, x: node.x + dx, y: node.y + dy };
-          }
+          if (node.selected) {return { ...node, x: node.x + dx, y: node.y + dy };}
           return node;
         });
         setNodes(newNodes);
@@ -327,9 +319,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       } else {
         // 단일 노드 이동
         const newNodes = nodes.map((node) => {
-          if (node.id === dragging.node.id) {
-            return { ...node, x: x - dragging.offsetX, y: y - dragging.offsetY };
-          }
+          if (node.id === dragging.node.id) {return { ...node, x: x - dragging.offsetX, y: y - dragging.offsetY };}
           return node;
         });
         setNodes(newNodes);
@@ -360,7 +350,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
               newY = Math.min(y, node.y + node.height - minHeight);
             }
           }
-
           return { ...node, x: newX, y: newY, width: newWidth, height: newHeight };
         }
         return node;
@@ -368,11 +357,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setNodes(newNodes);
     }
 
-    if (tool === 'erase') {
-      setEraserPosition({ x, y, visible: true });
-    } else {
-      setEraserPosition({ x: 0, y: 0, visible: false });
-    }
+    if (tool === 'erase') {setEraserPosition({ x, y, visible: true });}
+    else {setEraserPosition({ x: 0, y: 0, visible: false });}
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -578,7 +564,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     addToHistory();
   };
 
-
   // 히스토리에 현재 상태 추가 함수 수정
   const addToHistory = (newDrawings?: DrawingAction[]) => {
     const newHistory = {
@@ -617,14 +602,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }).replace(/[^\d]/g, '')}.json`;
     const filedir = `lessons`;
     const filePath = `/${filedir}/${filename}`;
-
-    const data = {
-      filedir: filedir,
-      filename: filename,
-      title: title,
-      nodes: nodes,
-      drawings: drawingActions,
-    };
+    const data = { filedir, filename, title, nodes, drawings: drawingActions };
 
     try {
       // 파일 저장
@@ -675,116 +653,18 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      // 사용자에게 화면 공유 권한 요청
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({ 
-        video: { displaySurface: "browser" },
-        audio: true 
-      });
-
-      // 오디오 스트림 요청 (마이크와 시스템 오디오)
-      const audioStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
-        }
-      });
-
-      // 시스템 오디오 캡처를 위한 AudioContext 생성
-      const audioContext = new AudioContext();
-      const systemSource = audioContext.createMediaStreamSource(displayStream);
-      const micSource = audioContext.createMediaStreamSource(audioStream);
-      const destination = audioContext.createMediaStreamDestination();
-
-      // 시스템 오디오와 마이크 오디오를 혼합
-      const systemGain = audioContext.createGain();
-      const micGain = audioContext.createGain();
-      systemSource.connect(systemGain).connect(destination);
-      micSource.connect(micGain).connect(destination);
-
-      const combinedStream = new MediaStream([
-        ...displayStream.getVideoTracks(),
-        ...destination.stream.getAudioTracks()
-      ]);
-      
-      mediaRecorderRef.current = new MediaRecorder(combinedStream);
-
-      const chunks: BlobPart[] = [];
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
-        }
-      };
-
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        
-        displayStream.getTracks().forEach(track => track.stop());
-        audioStream.getTracks().forEach(track => track.stop());
-        setIsRecording(false); // 녹화 종료 시 상태 변경
-
-        setRecordingBlob(blob);
-        setShowSaveRecordingPopup(true);
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다:', error);
-      toast.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다. 다시 시도해 주세요.');
-    }
+  const handleStartRecording = () => {
+    startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-    }
+  const handleStopRecording = () => {
+    stopRecording(mediaRecorderRef);
   };
-  const saveRecording = async (title: string) => {
-    setShowSaveRecordingPopup(false);
-    if (!recordingBlob) {
-      toast.error('저장할 녹화 파일이 없습니다.');
-      return;
-    }
 
-    const filename = `${Date.now()}.webm`;
-    const filePath = `/studyRec/${filename}`;
-
-    try {
-      // 파일 저장
-      const formData = new FormData();
-      formData.append('file', recordingBlob, filename);
-      formData.append('path', filePath);
-
-      const response = await fetch('/api/save-recording', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        // 데이터베이스에 저장
-        const dbFormData = new FormData();
-        dbFormData.append('name', title);
-        dbFormData.append('path', filePath);
-        const result = await createStudyRec(dbFormData);
-
-        if (result.message === 'Created StudyRec.') {
-          toast.success(`녹화 파일 "${title}"이(가) 성공적으로 저장되었습니다.`);
-        } else {
-          throw new Error(result.message);
-        }
-      } else {
-        throw new Error('녹화 파일 저장에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('녹화 파일 저장 중 오류 발생:', error);
-      toast.error('녹화 파일 저장에 실패했습니다. 다시 시도해 주세요.');
-    }
-    setRecordingBlob(null);
+  const handleSaveRecording = (title: string) => {
+    saveRecording(title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);
   };
-  
+
   useEffect(() => {
     const loadLesson = async () => {
       if (params.id === 'new') {
@@ -795,9 +675,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setIsLoading(true);
       try {
         const response = await fetch(`/api/lessons/?id=${params.id}`);
-        if (!response.ok) {
-          throw new Error('교안을 찾을 수 없습니다');
-        }
+        if (!response.ok) {throw new Error('교안을 찾을 수 없습니다');}
+
         const lessonData = await response.json();
         
         // lessonData.path에서 파일 경로 읽기
@@ -805,9 +684,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         
         // 파일 내용 읽기
         const fileResponse = await fetch(filePath);
-        if (!fileResponse.ok) {
-          throw new Error('파일을 찾을 수 없습니다');
-        }
+        if (!fileResponse.ok) {throw new Error('파일을 찾을 수 없습니다');}
+
         const fileData = await fileResponse.json();
 
         setNodes(fileData.nodes);
@@ -820,9 +698,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           if (ctx) {
             fileData.drawings.forEach((imageData: string) => {
               const img = new Image();
-              img.onload = () => {
-                ctx.drawImage(img, 0, 0);
-              };
+              img.onload = () => {ctx.drawImage(img, 0, 0);};
               img.src = imageData;
             });
           }
@@ -830,9 +706,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       } catch (error) {
         console.error('레슨 불러오기 실패:', error);
         toast.error('레슨을 불러오는 데 실패했습니다: ' + (error as Error).message);
-      } finally {
-        setIsLoading(false);
-      }
+      } finally {setIsLoading(false);}
     };
 
     loadLesson();
@@ -852,9 +726,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         drawingCanvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        if (ctx) {
-          redrawCanvas(ctx, nodes, drawingActions, selectionArea);
-        }
+        if (ctx) {redrawCanvas(ctx, nodes, drawingActions, selectionArea);}
       }
     };
 
@@ -874,9 +746,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   useEffect(() => {
     const handleKeyDownEvent = (e: globalThis.KeyboardEvent) => handleKeyDown(e as unknown as KeyboardEvent);
     window.addEventListener('keydown', handleKeyDownEvent);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDownEvent);
-    };
+    return () => {window.removeEventListener('keydown', handleKeyDownEvent);};
   }, [handleKeyDown]);
     
   useEffect(() => {
@@ -884,9 +754,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const drawingCanvas = drawingCanvasRef.current;
     if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);
-      }
+      if (ctx) {redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);}
     }
   }, [nodes, selectionArea, dragging]);
 
@@ -900,9 +768,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const canvas = drawingCanvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+      if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
     }
     setNodes([]);
     setDrawingActions([]);
@@ -922,17 +788,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
-        <canvas
-          ref={drawingCanvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        />
+        <canvas ref={drawingCanvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
         {eraserPosition.visible && (
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
@@ -951,32 +807,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon="/icon-addnode.svg" onClick={() => handleToolChange('addNode')} currentTool={tool} />}
         {shouldRenderTool('connect') && <ToolButton tool="connect" icon="/icon-connect.svg" onClick={() => handleToolChange('connect')} currentTool={tool} />}
         {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
-        {shouldRenderTool('clear') && (
-          <ToolButton
-            tool="clear"
-            icon="/icon-clear.svg"
-            onClick={() => setShowClearConfirmPopup(true)}
-            currentTool={tool}
-          />
-        )}
+        {shouldRenderTool('clear') && <ToolButton tool="clear" icon="/icon-clear.svg" onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
         {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />}
         {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={alignNodesHorizontally} currentTool={tool} />}
-        {shouldRenderTool('record') && (
-          <ToolButton 
-            tool="record" 
-            icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"}
-            onClick={isRecording ? stopRecording : startRecording}
-            currentTool={tool}
-          />
-        )}
+        {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
         <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} />
         <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} />
-        <ToolButton 
-          tool="voice" 
-          icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"}
-          onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
-          currentTool={isVoiceEnabled ? 'voice' : ''}
-        />
+        <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currentTool={isVoiceEnabled ? 'voice' : ''} />
         {mode !== 'play' && (
           <>
             <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
@@ -1036,27 +873,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           </div>
         )}
       </div>
-      {showSavePopup && (
-        <SaveLessonPopup
-          onSave={saveCanvas}
-          onCancel={() => setShowSavePopup(false)}
-        />
-      )}
-      {showSaveRecordingPopup && (
-        <SaveRecordingPopup
-          onSave={saveRecording}
-          onCancel={() => setShowSaveRecordingPopup(false)}
-        />
-      )}
-      {showClearConfirmPopup && (
-        <ClearConfirmPopup
-          onConfirm={clearAll}
-          onCancel={() => setShowClearConfirmPopup(false)}
-        />
-      )}
+      {showSavePopup && <SaveLessonPopup onSave={saveCanvas} onCancel={() => setShowSavePopup(false)} />}
+      {showSaveRecordingPopup && <SaveRecordingPopup onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
+      {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="top-center" autoClose={1000} />
     </div>
   );
 };
 
 export default EditStudyBoard;
+  

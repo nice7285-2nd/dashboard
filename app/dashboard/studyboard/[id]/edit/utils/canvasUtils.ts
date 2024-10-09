@@ -131,24 +131,17 @@ export const drawConnections = (
         ctx.strokeStyle = '#333';
         ctx.stroke();
 
+        // 대시 선 설정 초기화
+        ctx.setLineDash([]);
+
         // 화살표 그리기
         if (connection.lineStyle !== 'dashed') {
-          ctx.setLineDash([]);
-          const angle = Math.atan2(
-            toPoint.y - fromPoint.y,
-            toPoint.x - fromPoint.x
-          );
+          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
           const headlen = 10;
           ctx.beginPath();
           ctx.moveTo(toPoint.x, toPoint.y);
-          ctx.lineTo(
-            toPoint.x - headlen * Math.cos(angle - Math.PI / 6),
-            toPoint.y - headlen * Math.sin(angle - Math.PI / 6)
-          );
-          ctx.lineTo(
-            toPoint.x - headlen * Math.cos(angle + Math.PI / 6),
-            toPoint.y - headlen * Math.sin(angle + Math.PI / 6)
-          );
+          ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.fillStyle = '#333';
           ctx.fill();
@@ -180,28 +173,44 @@ export const drawDrawings = (
 ) => {
   if (ctx) {
     // 그리기 작업 다시 그리기
+    ctx.save();
     drawingActions.forEach(action => {
-      ctx.beginPath();
-      ctx.moveTo(action.points[0].x, action.points[0].y);
       action.points.forEach(point => {
-        ctx.lineTo(point.x, point.y);
         if (action.type === 'draw') {
+          if (action.points.length < 2) return;
+
           ctx.strokeStyle = action.color || '#000';
           ctx.lineWidth = action.lineWidth;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
-          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(action.points[0].x, action.points[0].y);
+      
+          for (let i = 1; i < action.points.length; i++) {
+            const currentPoint = action.points[i];
+            const previousPoint = action.points[i - 1];
+            const midPoint = {x: (previousPoint.x + currentPoint.x) / 2, y: (previousPoint.y + currentPoint.y) / 2};
+      
+            ctx.quadraticCurveTo(previousPoint.x, previousPoint.y, midPoint.x, midPoint.y);
+          }    
+          // const lastPoint = action.points[action.points.length - 1];
+          // ctx.lineTo(lastPoint.x, lastPoint.y);    
+          ctx.stroke();          
+
         } else if (action.type === 'erase') {
-          // ctx.globalCompositeOperation = 'destination-out';
+          ctx.beginPath();
+          ctx.moveTo(action.points[0].x, action.points[0].y);
+          ctx.lineTo(point.x, point.y);
           ctx.strokeStyle = '#FFF';
           ctx.lineWidth = action.lineWidth;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
-          // ctx.globalCompositeOperation = 'source-over';
         }
       });
-    });    
+    });
+    ctx.restore();
   }
 };
 
@@ -214,6 +223,7 @@ export const redrawCanvas = (
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   // 그리기 그리기
+  // 지우개 영역 교안 복구를 위해서 맨위에 와야함
   drawDrawings(ctx, drawings);
 
   // 연결선 먼저 그리기 (z-index가 가장 낮도록)
