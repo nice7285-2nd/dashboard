@@ -128,18 +128,18 @@ export const drawConnections = (
           ctx.strokeStyle = '#333';
           ctx.stroke();
         } else if (connection.lineStyle === 'curved') {
-          ctx.strokeStyle = '#55F';
+          ctx.strokeStyle = '#17f';
           ctx.lineWidth = 6;
-          drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+          const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
 
-          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
-          const headlen = 30;
+          // 화살표 그리기
+          const headlen = 20;
           ctx.beginPath();
           ctx.moveTo(toPoint.x, toPoint.y);
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
-          ctx.fillStyle = '#55F';
+          ctx.fillStyle = '#17f';
           ctx.fill();          
         } else {
           ctx.setLineDash([]);
@@ -148,6 +148,7 @@ export const drawConnections = (
           ctx.strokeStyle = '#333';
           ctx.stroke();
 
+          // 화살표 그리기
           const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
           const headlen = 10;
           ctx.beginPath();
@@ -176,7 +177,16 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
 
   ctx.quadraticCurveTo(controlX, controlY, endX, endY);
   ctx.stroke();
+
+  // 곡선의 끝점에서의 접선 각도 계산
+  const t = 1; // 곡선의 끝점
+  const dx = 2 * (1 - t) * (controlX - startX) + 2 * t * (endX - controlX);
+  const dy = 2 * (1 - t) * (controlY - startY) + 2 * t * (endY - controlY);
+  const angle = Math.atan2(dy, dx);
+
+  return angle;
 }
+
 export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: SelectionArea) => {
   const { startX, startY, endX, endY } = area;
   const width = endX - startX;
