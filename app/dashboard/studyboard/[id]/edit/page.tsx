@@ -33,7 +33,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [connecting, setConnecting] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(3);
-  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed'>('dashed');
+  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('dashed');
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
@@ -124,11 +124,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
-          setNodes(prevNodes =>
-            prevNodes.map(node =>
-              node.id === editingNode.id ? { ...node, ...editText, width, height } : node
-            )
-          );
+          setNodes(prevNodes => prevNodes.map(node => node.id === editingNode.id ? { ...node, ...editText, width, height } : node));
         }
       }
       setEditingNode(null);
@@ -820,8 +816,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
               <label style={{ marginRight: '10px' }}>노드 색상</label>
               <select value={nodeColor} onChange={(e) => handleNodeColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
                 <option value="#FFFFFF">흰색</option>
-                <option value="#FFFF00">노랑</option>
                 <option value="#FFD700">오렌지</option>
+                <option value="#ADD8E6">밝은파랑</option>
+                <option value="#90EE90">밝은녹색</option>
               </select>
             </div>
           </>
@@ -869,6 +866,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             >
               <option value="solid">실선</option>
               <option value="dashed">점선</option>
+              <option value="curved">곡선</option>
             </select>
           </div>
         )}
@@ -881,5 +879,4 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   );
 };
 
-export default EditStudyBoard;
-  
+export default EditStudyBoard;  

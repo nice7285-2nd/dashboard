@@ -30,11 +30,11 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   const minHeight = Math.max(node.height, 120);  // 최소 높이를 120으로 설정
 
   ctx.fillStyle = node.backgroundColor || '#ffffff';
-  drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 5);
+  drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
   ctx.fill();
 
-  ctx.strokeStyle = node.selected ? '#FF4500' : '#4a90e2';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = node.selected ? '#FF4500' : '#4a90ff';
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   // 텍스트 그리기
@@ -118,24 +118,36 @@ export const drawConnections = (
         const fromPoint = getConnectionPoint(node, connection.fromSide);
         const toPoint = getConnectionPoint(targetNode, connection.toSide);
 
+        ctx.save();
         ctx.beginPath();
         ctx.moveTo(fromPoint.x, fromPoint.y);
         if (connection.lineStyle === 'dashed') {
-          ctx.setLineDash([7, 3]);
+          ctx.setLineDash([6, 4]);
           ctx.lineWidth = 6;
+          ctx.lineTo(toPoint.x, toPoint.y);
+          ctx.strokeStyle = '#333';
+          ctx.stroke();
+        } else if (connection.lineStyle === 'curved') {
+          ctx.strokeStyle = '#55F';
+          ctx.lineWidth = 6;
+          drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+
+          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
+          const headlen = 30;
+          ctx.beginPath();
+          ctx.moveTo(toPoint.x, toPoint.y);
+          ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fillStyle = '#55F';
+          ctx.fill();          
         } else {
           ctx.setLineDash([]);
-          ctx.lineWidth = 2;
-        }
-        ctx.lineTo(toPoint.x, toPoint.y);
-        ctx.strokeStyle = '#333';
-        ctx.stroke();
+          ctx.lineWidth = 1;
+          ctx.lineTo(toPoint.x, toPoint.y);
+          ctx.strokeStyle = '#333';
+          ctx.stroke();
 
-        // 대시 선 설정 초기화
-        ctx.setLineDash([]);
-
-        // 화살표 그리기
-        if (connection.lineStyle !== 'dashed') {
           const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
           const headlen = 10;
           ctx.beginPath();
@@ -146,11 +158,25 @@ export const drawConnections = (
           ctx.fillStyle = '#333';
           ctx.fill();
         }
+        ctx.restore();
       }
     });
   });
 };
 
+// 곡선 그리기 함수 추가
+function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const controlX = midX;
+  const controlY = midY - 100;
+
+  ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+  ctx.stroke();
+}
 export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: SelectionArea) => {
   const { startX, startY, endX, endY } = area;
   const width = endX - startX;
