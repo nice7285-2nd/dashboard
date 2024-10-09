@@ -65,6 +65,21 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   // 터치 이벤트를 위한 상태 추가
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
 
+  // nav 영역의 너비를 저장할 상태 추가
+  const [navWidth, setNavWidth] = useState(0);
+
+  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
+  const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    return {
+      x: ((touch.pageX - (rect.left + scrollX + navWidth)) * scaleX),
+      y: ((touch.pageY - (rect.top + scrollY)) * scaleY)
+    };
+  };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
   const shouldRenderTool = (toolName: string) => {
@@ -417,15 +432,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
     // 상태 변경 후 히스토리에 한 번만 추가
     addToHistory();
-  };
-
-  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
-  const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top
-    };
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
