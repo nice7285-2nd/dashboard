@@ -419,27 +419,33 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     addToHistory();
   };
 
-  // 터치 이벤트 핸들러 추가
+  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
+  const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: touch.clientX - rect.left,
+      y: touch.clientY - rect.top
+    };
+  };
+
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const canvas = e.currentTarget;
     const touch = e.touches[0];
-    const { clientX, clientY } = touch;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
+    if (!touch) return;
+    const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos({ x, y });
-    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
+    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     if (!touchStartPos) return;
+    const canvas = e.currentTarget;
     const touch = e.touches[0];
-    const { clientX, clientY } = touch;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    handleMouseMove({ clientX: x, clientY: y } as React.MouseEvent<HTMLCanvasElement>);
+    if (!touch) return;
+    const { x, y } = getTouchPos(canvas, touch);
+    handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
