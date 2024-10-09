@@ -130,10 +130,10 @@ export const drawConnections = (
         ctx.lineTo(toPoint.x, toPoint.y);
         ctx.strokeStyle = '#333';
         ctx.stroke();
-        ctx.setLineDash([]);
 
         // 화살표 그리기
         if (connection.lineStyle !== 'dashed') {
+          ctx.setLineDash([]);
           const angle = Math.atan2(
             toPoint.y - fromPoint.y,
             toPoint.x - fromPoint.x

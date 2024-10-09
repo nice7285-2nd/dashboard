@@ -20,6 +20,11 @@ const links = [
     href: '/dashboard/studyvideo',
     icon: DocumentChartBarIcon,
   },
+  {
+    name: '계정관리',
+    href: '/dashboard/projects',
+    icon: DocumentChartBarIcon,
+  },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
 

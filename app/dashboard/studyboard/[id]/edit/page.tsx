@@ -62,6 +62,38 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
 
+  // 터치 이벤트를 위한 상태 추가
+  const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
+
+  // 터치 이벤트 핸들러 추가
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const { clientX, clientY } = touch;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    setTouchStartPos({ x, y });
+    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!touchStartPos) return;
+    const touch = e.touches[0];
+    const { clientX, clientY } = touch;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    handleMouseMove({ clientX: x, clientY: y } as React.MouseEvent<HTMLCanvasElement>);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setTouchStartPos(null);
+    handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
+  };
+
   // 툴 버튼을 렌더링할지 결정하는 함수
   const shouldRenderTool = (toolName: string) => {
     if (mode === 'play' && hiddenToolsInPlayMode.includes(toolName)) {
@@ -543,7 +575,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setHistoryIndex(historyIndex - 1);
       setNodes(history.nodes[historyIndex - 1]);
       setDrawingActions(history.drawings[historyIndex - 1]);
-      // redrawDrawings(history.drawings[historyIndex - 1]);
     }
   };
 
@@ -553,7 +584,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setHistoryIndex(historyIndex + 1);
       setNodes(history.nodes[historyIndex + 1]);
       setDrawingActions(history.drawings[historyIndex + 1]);
-      // redrawDrawings(history.drawings[historyIndex + 1]);
     }
   };
 
@@ -870,7 +900,17 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
-        <canvas ref={drawingCanvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} />
+        <canvas
+          ref={drawingCanvasRef}
+          style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        />
         {eraserPosition.visible && (
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
