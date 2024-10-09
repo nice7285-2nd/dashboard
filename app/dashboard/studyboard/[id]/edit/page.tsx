@@ -65,34 +65,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   // 터치 이벤트를 위한 상태 추가
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
 
-  // 터치 이벤트 핸들러 추가
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const { clientX, clientY } = touch;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    setTouchStartPos({ x, y });
-    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    if (!touchStartPos) return;
-    const touch = e.touches[0];
-    const { clientX, clientY } = touch;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    handleMouseMove({ clientX: x, clientY: y } as React.MouseEvent<HTMLCanvasElement>);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    setTouchStartPos(null);
-    handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
-  };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
   const shouldRenderTool = (toolName: string) => {
@@ -445,6 +417,41 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
     // 상태 변경 후 히스토리에 한 번만 추가
     addToHistory();
+  };
+
+  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
+  const getTouchPos = (canvas: HTMLCanvasElement, touch: Touch) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (touch.clientX - rect.left) * scaleX,
+      y: (touch.clientY - rect.top) * scaleY
+    };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = e.currentTarget;
+    const touch = e.touches[0];
+    const { x, y } = getTouchPos(canvas, touch);
+    setTouchStartPos({ x, y });
+    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as React.MouseEvent<HTMLCanvasElement>);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!touchStartPos) return;
+    const canvas = e.currentTarget;
+    const touch = e.touches[0];
+    const { x, y } = getTouchPos(canvas, touch);
+    handleMouseMove({ clientX: x, clientY: y } as React.MouseEvent<HTMLCanvasElement>);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setTouchStartPos(null);
+    handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleToolChange = (newTool: Tool) => {
