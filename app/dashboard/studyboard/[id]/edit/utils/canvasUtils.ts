@@ -33,7 +33,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
   ctx.fill();
 
-  ctx.strokeStyle = node.selected ? '#FF4500' : '#4a90ff';
+  ctx.strokeStyle = node.selected ? '#FF4500' : '#1a70ff';
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -46,12 +46,12 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
 
   // 위쪽 텍스트
   ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = 'black';
+  ctx.fillStyle = '#FF7500';
   ctx.fillText(node.text1 || '', leftX, -minHeight / 2 + 20);
 
   // 가운데 텍스트 (더 크게)
   ctx.font = 'bold 24px Arial';
-  ctx.fillStyle = '#333333';  // 약간 더 진한 색상
+  ctx.fillStyle = 'black'; // 약간 더 진한 색상
   ctx.fillText(node.text2 || '', leftX, 0);
 
   // 아래쪽 텍스트
@@ -121,8 +121,9 @@ export const drawConnections = (
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(fromPoint.x, fromPoint.y);
+        
         if (connection.lineStyle === 'dashed') {
-          ctx.setLineDash([6, 4]);
+          ctx.setLineDash([6, 5]);
           ctx.lineWidth = 6;
           ctx.lineTo(toPoint.x, toPoint.y);
           ctx.strokeStyle = '#333';
@@ -133,7 +134,7 @@ export const drawConnections = (
           const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
 
           // 화살표 그리기
-          const headlen = 20;
+          const headlen = 28;
           ctx.beginPath();
           ctx.moveTo(toPoint.x, toPoint.y);
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
@@ -169,19 +170,29 @@ export const drawConnections = (
 function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
   ctx.beginPath();
   ctx.moveTo(startX, startY);
-  
-  const midX = (startX + endX) / 2;
-  const midY = (startY + endY) / 2;
-  const controlX = midX;
-  const controlY = midY - 100;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+  const midX1 = startX + (endX - startX) * 1 / 12;
+  const midY1 = (startY + endY) / 2;
+  const midX2 = startX + (endX - startX) * 11 / 12;
+  const midY2 = (startY + endY) / 2;
+  const controlX1 = midX1;
+  const controlY1 = midY1 - 75;
+  const controlX2 = midX2;
+  const controlY2 = midY2 - 75;
+
+  ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, endX, endY);
   ctx.stroke();
 
-  // 곡선의 끝점에서의 접선 각도 계산
+// 베지어 곡선의 끝점에서의 접선 각도 계산
   const t = 1; // 곡선의 끝점
-  const dx = 2 * (1 - t) * (controlX - startX) + 2 * t * (endX - controlX);
-  const dy = 2 * (1 - t) * (controlY - startY) + 2 * t * (endY - controlY);
+  const dx = 3 * (1 - t) * (1 - t) * (controlX1 - startX) + 
+             6 * (1 - t) * t * (controlX2 - controlX1) + 
+             3 * t * t * (endX - controlX2);
+  const dy = 3 * (1 - t) * (1 - t) * (controlY1 - startY) + 
+             6 * (1 - t) * t * (controlY2 - controlY1) + 
+             3 * t * t * (endY - controlY2);
   const angle = Math.atan2(dy, dx);
 
   return angle;

@@ -139,15 +139,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   };
   
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Delete') {
-      deleteSelectedNodes();
+    if (e.key === 'Delete') {deleteSelectedNodes();
     } else if (editingNode) {
       if (e.key === 'Enter') {
         if (e.target instanceof HTMLInputElement) {
           const inputs = document.querySelectorAll('input');
           const currentIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
-          if (currentIndex < inputs.length - 1) {
-            (inputs[currentIndex + 1] as HTMLInputElement).focus();
+          if (currentIndex < inputs.length - 1) {(inputs[currentIndex + 1] as HTMLInputElement).focus();
           } else {finishEditing();}
         } else {finishEditing();}
       } else if (e.key === 'Escape') {cancelEditing();}
