@@ -19,7 +19,7 @@ export type Node = {
   text2: string;
   text3: string;
   selected: boolean;
-  connections: { id: number; fromSide: "top" | "right" | "bottom" | "left"; toSide: "top" | "right" | "bottom" | "left"; lineStyle: "solid" | "dashed" | "curved"; }[];
+  connections: { id: number; fromSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft"; toSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft"; lineStyle: "solid" | "dashed" | "curved"; }[];
   zIndex: number;
   backgroundColor: string;
   rotation?: number;

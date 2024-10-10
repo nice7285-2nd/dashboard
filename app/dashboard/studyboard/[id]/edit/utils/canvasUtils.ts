@@ -33,7 +33,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
   ctx.fill();
 
-  ctx.strokeStyle = node.selected ? '#FF4500' : '#1a70ff';
+  ctx.strokeStyle = node.selected ? '#1a70ff' : '#1a70ff';
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -81,7 +81,7 @@ export const drawResizeHandles = (
   ];
 
   positions.forEach((pos) => {
-    ctx.fillStyle = '#FF4500';
+    ctx.fillStyle = '#1a70ff';
     ctx.fillRect(
       pos.x - handleSize / 2,
       pos.y - handleSize / 2,
@@ -93,7 +93,7 @@ export const drawResizeHandles = (
 
 export const getConnectionPoint = (
   node: Node,
-  side: 'top' | 'right' | 'bottom' | 'left'
+  side: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft'
 ) => {
   switch (side) {
     case 'top':
@@ -104,6 +104,14 @@ export const getConnectionPoint = (
       return { x: node.x + node.width / 2, y: node.y + node.height };
     case 'left':
       return { x: node.x, y: node.y + node.height / 2 };
+    case 'topRight':
+      return { x: node.x + node.width, y: node.y };
+    case 'topLeft':
+      return { x: node.x, y: node.y };
+    case 'bottomRight':
+      return { x: node.x + node.width, y: node.y + node.height };
+    case 'bottomLeft':
+      return { x: node.x, y: node.y + node.height };
   }
 };
 
@@ -115,8 +123,16 @@ export const drawConnections = (
     node.connections.forEach((connection) => {
       const targetNode = nodes.find((n) => n.id === connection.id);
       if (targetNode) {
-        const fromPoint = getConnectionPoint(node, connection.fromSide);
-        const toPoint = getConnectionPoint(targetNode, connection.toSide);
+        let fromSide = connection.fromSide;
+        let toSide = connection.toSide;
+
+        if (connection.lineStyle === 'curved') {
+          fromSide = 'topRight';
+          toSide = 'topLeft';
+        }
+
+        const fromPoint = getConnectionPoint(node, fromSide);
+        const toPoint = getConnectionPoint(targetNode, toSide);
 
         ctx.save();
         ctx.beginPath();
@@ -134,13 +150,14 @@ export const drawConnections = (
           const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
 
           // 화살표 그리기
-          const headlen = 28;
+          const headlen = 22;
           ctx.beginPath();
           ctx.moveTo(toPoint.x, toPoint.y);
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
-          ctx.fillStyle = '#17f';
+          ctx.stroke();
+          ctx.fillStyle = '#2af';
           ctx.fill();          
         } else {
           ctx.setLineDash([]);
@@ -178,9 +195,9 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
   const midX2 = startX + (endX - startX) * 11 / 12;
   const midY2 = (startY + endY) / 2;
   const controlX1 = midX1;
-  const controlY1 = midY1 - 75;
+  const controlY1 = midY1 - 90;
   const controlX2 = midX2;
-  const controlY2 = midY2 - 75;
+  const controlY2 = midY2 - 90;
 
   ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, endX, endY);
   ctx.stroke();

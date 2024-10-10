@@ -14,6 +14,15 @@ import { CircularProgress, Box, Typography } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Connection 인터페이스 수정
+interface Connection {
+  id: string;
+  fromSide: string;
+  toSide: string;
+  lineStyle: 'solid' | 'dashed' | 'curved';
+  text?: string; // 텍스트 필드 추가
+}
+
 const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode') || 'edit';
@@ -58,6 +67,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   // nav 영역의 너비를 저장할 상태 추가
   const [navWidth, setNavWidth] = useState(0);
   const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
+  const [editingConnection, setEditingConnection] = useState<{ nodeId: number, connectionIndex: number } | null>(null);
+  const [connectionText, setConnectionText] = useState('');
   
   const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
@@ -223,17 +234,25 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       const clickedNode = getClickedNode(x, y);
       if (clickedNode) {
         const side = getNodeSide(clickedNode, x, y);
-        if (connecting === null) {setConnecting({ id: clickedNode.id, side });}
-        else {
+        if (connecting === null) {
+          setConnecting({ id: clickedNode.id, side });
+        } else {
+          const newConnection = { id: clickedNode.id, fromSide: connecting.side, toSide: side, lineStyle: lineStyle };
           setNodes((prevNodes: Node[]) =>
             prevNodes.map((node) => {
               if (node.id === connecting.id) {
-                return { ...node, connections: [...node.connections, { id: clickedNode.id, fromSide: connecting.side, toSide: side, lineStyle: lineStyle }] };
+                return { ...node, connections: [...node.connections, newConnection] };
               }
               return node;
             })
           );
           setConnecting(null);
+          // 연결 생성 후 텍스트 입력 모드로 전환
+          const sourceNode = nodes.find(node => node.id === connecting.id);
+          if (sourceNode) {
+            setEditingConnection({ nodeId: sourceNode.id, connectionIndex: sourceNode.connections.length });
+            setConnectionText('');
+          }
         }
       }
     }
@@ -770,6 +789,72 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setShowClearConfirmPopup(false);
   };
 
+  // 연결선 텍스트 입력 완료 처리 함수
+  const finishEditingConnection = () => {
+    if (editingConnection) {
+      setNodes(prevNodes => prevNodes.map(node => {
+        if (node.id === editingConnection.nodeId) {
+          const updatedConnections = [...node.connections];
+          updatedConnections[editingConnection.connectionIndex] = {
+            ...updatedConnections[editingConnection.connectionIndex],
+            text: connectionText
+          };
+          return { ...node, connections: updatedConnections };
+        }
+        return node;
+      }));
+      setEditingConnection(null);
+      setConnectionText('');
+      addToHistory();
+    }
+  };
+
+  // drawConnections 함수 수정
+  const drawConnections = (ctx: CanvasRenderingContext2D) => {
+    nodes.forEach((node) => {
+      node.connections.forEach((connection, index) => {
+        const targetNode = nodes.find((n) => n.id === connection.id);
+        if (targetNode) {
+          const fromPoint = getConnectionPoint(node, connection.fromSide);
+          const toPoint = getConnectionPoint(targetNode, connection.toSide);
+
+          ctx.beginPath();
+          ctx.moveTo(fromPoint.x, fromPoint.y);
+          
+          if (connection.lineStyle === 'curved') {
+            // ... 곡선 그리기 코드 ...
+          } else {
+            ctx.lineTo(toPoint.x, toPoint.y);
+          }
+          
+          ctx.strokeStyle = '#55F';
+          ctx.lineWidth = 6;
+          if (connection.lineStyle === 'dashed') {
+            ctx.setLineDash([5, 5]);
+          } else {
+            ctx.setLineDash([]);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 화살표 그리기
+          // ... 기존 화살표 그리기 코드 ...
+
+          // 연결선 텍스트 그리기
+          if (connection.text) {
+            const midX = (fromPoint.x + toPoint.x) / 2;
+            const midY = (fromPoint.y + toPoint.y) / 2;
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(connection.text, midX, midY - 10);
+          }
+        }
+      });
+    });
+  };
+
   if (isLoading) {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100vh" bgcolor="#f5f5f5">
@@ -791,6 +876,19 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 1" autoFocus />
             <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 2" />
             <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
+          </div>
+        )}
+        {editingConnection && (
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
+            <input
+              value={connectionText}
+              onChange={(e) => setConnectionText(e.target.value)}
+              onBlur={finishEditingConnection}
+              onKeyDown={(e) => { if (e.key === 'Enter') finishEditingConnection(); }}
+              style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
+              placeholder="연결선 텍스트 입력"
+              autoFocus
+            />
           </div>
         )}
       </div>
@@ -815,7 +913,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
               <select value={nodeColor} onChange={(e) => handleNodeColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
                 <option value="#FFFFFF">흰색</option>
                 <option value="#FFD700">오렌지</option>
-                <option value="#ADD8E6">밝은파랑</option>
+                <option value="#ADD8FF">밝은파랑</option>
                 <option value="#90EE90">밝은녹색</option>
               </select>
             </div>
