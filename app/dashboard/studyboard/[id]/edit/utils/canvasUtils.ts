@@ -1,4 +1,4 @@
-import { Node, SelectionArea, DrawingAction } from '../types';
+import { Node, SelectionArea, DrawingAction, Link } from '../types';
 
 export const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -91,10 +91,7 @@ export const drawResizeHandles = (
   });
 };
 
-export const getConnectionPoint = (
-  node: Node,
-  side: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft'
-) => {
+export const getLinkPoint = (node: Node, side: Link['fromSide'] | Link['toSide']) => {
   switch (side) {
     case 'top':
       return { x: node.x + node.width / 2, y: node.y };
@@ -112,39 +109,42 @@ export const getConnectionPoint = (
       return { x: node.x + node.width, y: node.y + node.height };
     case 'bottomLeft':
       return { x: node.x, y: node.y + node.height };
+    default:
+      return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
   }
 };
 
-export const drawConnections = (
+export const drawLinks = (
   ctx: CanvasRenderingContext2D,
   nodes: Node[]
 ) => {
   nodes.forEach((node) => {
-    node.connections.forEach((connection) => {
-      const targetNode = nodes.find((n) => n.id === connection.id);
-      if (targetNode) {
-        let fromSide = connection.fromSide;
-        let toSide = connection.toSide;
+    node.links.forEach((link) => {
+      const fromPoint = getLinkPoint(node, link.fromSide);
+      const toNode = nodes.find(n => n.id === Number(link.id));
+      if (toNode) {
+        let fromSide = link.fromSide;
+        let toSide = link.toSide;
 
-        if (connection.lineStyle === 'curved') {
+        if (link.lineStyle === 'curved') {
           fromSide = 'topRight';
           toSide = 'topLeft';
         }
 
-        const fromPoint = getConnectionPoint(node, fromSide);
-        const toPoint = getConnectionPoint(targetNode, toSide);
+        const fromPoint = getLinkPoint(node, fromSide);
+        const toPoint = getLinkPoint(toNode, toSide);
 
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(fromPoint.x, fromPoint.y);
         
-        if (connection.lineStyle === 'dashed') {
+        if (link.lineStyle === 'dashed') {
           ctx.setLineDash([6, 5]);
           ctx.lineWidth = 6;
           ctx.lineTo(toPoint.x, toPoint.y);
           ctx.strokeStyle = '#333';
           ctx.stroke();
-        } else if (connection.lineStyle === 'curved') {
+        } else if (link.lineStyle === 'curved') {
           ctx.strokeStyle = '#17f';
           ctx.lineWidth = 6;
           const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
@@ -177,6 +177,35 @@ export const drawConnections = (
           ctx.fillStyle = '#333';
           ctx.fill();
         }
+
+        // 연결선 텍스트 그리기
+        if (link.text) {
+          const midX = (fromPoint.x + toPoint.x) / 2;
+          const midY = (fromPoint.y + toPoint.y) / 2;
+          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
+          const isVertical = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < (3 * Math.PI) / 4;
+        
+          ctx.font = '14px Arial';
+          ctx.fillStyle = '#000';
+          
+          const textOffset = 10; // 텍스트와 선 사이의 거리
+          let textX, textY;
+        
+          if (isVertical) {
+            textX = midX + (angle > 0 ? textOffset : -textOffset);
+            textY = midY;
+            ctx.textAlign = angle > 0 ? 'left' : 'right';
+            ctx.textBaseline = 'middle';
+          } else {
+            textX = midX;
+            textY = midY + (Math.abs(angle) < Math.PI / 2 ? -textOffset : textOffset);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = Math.abs(angle) < Math.PI / 2 ? 'bottom' : 'top';
+          }
+        
+          ctx.fillText(link.text, textX, textY);
+        }
+
         ctx.restore();
       }
     });
@@ -291,7 +320,7 @@ export const redrawCanvas = (
   drawDrawings(ctx, drawings);
 
   // 연결선 먼저 그리기 (z-index가 가장 낮도록)
-  drawConnections(ctx, nodes);
+  drawLinks(ctx, nodes);
 
   // 노드 그리기
   nodes.forEach(node => {

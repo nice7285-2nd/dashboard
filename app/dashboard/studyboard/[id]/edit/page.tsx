@@ -6,22 +6,13 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea } from './utils/canvasUtils';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
-import { Tool, Node, DraggingState, SelectionArea, DrawingAction } from './types';
+import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link } from './types';
 import { createLesson } from './actions';
 import { CircularProgress, Box, Typography } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-// Connection 인터페이스 수정
-interface Connection {
-  id: string;
-  fromSide: string;
-  toSide: string;
-  lineStyle: 'solid' | 'dashed' | 'curved';
-  text?: string; // 텍스트 필드 추가
-}
 
 const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const searchParams = useSearchParams();
@@ -40,9 +31,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [eraserSize, setEraserSize] = useState(100);
   const [resizing, setResizing] = useState<{ node: Node; direction: string } | null>(null);
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
-  const [connecting, setConnecting] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
+  const [linking, setLinking] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(3);
-  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('dashed');
+  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('solid');
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
@@ -62,15 +53,12 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
   const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
-  // 터치 이벤트를 위한 상태 추가
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
-  // nav 영역의 너비를 저장할 상태 추가
-  const [navWidth, setNavWidth] = useState(0);
   const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
-  const [editingConnection, setEditingConnection] = useState<{ nodeId: number, connectionIndex: number } | null>(null);
-  const [connectionText, setConnectionText] = useState('');
+  const [editingLink, setEditingLink] = useState<{ fromNode: Node, toNode: Node, x: number, y: number } | null>(null);
+  const [linkText, setLinkText] = useState('');
   
-  const hiddenToolsInPlayMode = ['save', 'addNode', 'connect', 'clear', 'alignVertical', 'alignHorizontal'];
+  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
 
   // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
@@ -104,7 +92,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const newX = lastNodePosition.x + 220; // 기존 노드의 너비(200) + 간격(20)
     const newY = lastNodePosition.y;
 
-    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 200, height: 120, selected: false, connections: [], zIndex: newZIndex, backgroundColor: '#FFFFFF' };
+    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 200, height: 120, selected: false, links: [], zIndex: newZIndex, backgroundColor: '#FFF' };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setMaxZIndex(newZIndex);
@@ -117,7 +105,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
     const updatedNodes = nodes.filter(node => !node.selected).map(node => ({
       ...node,
-      connections: node.connections.filter(conn => !selectedNodeIds.includes(conn.id))
+      links: node.links.filter(link => !selectedNodeIds.includes(Number(link.id)))
     }));
     setNodes(updatedNodes);
     addToHistory();
@@ -174,10 +162,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       if (clickedNode) {
         if (!clickedNode.selected) {
           // 선택되지 않은 노드를 클릭한 경우, 해당 노드만 선택
-          setNodes(prevNodes => prevNodes.map(node => ({
-            ...node,
-            selected: node.id === clickedNode.id
-          })));
+          setNodes(prevNodes => prevNodes.map(node => ({...node, selected: node.id === clickedNode.id})));
         }
         // 그룹 드래그 시작
         setIsDraggingGroup(true);
@@ -213,47 +198,17 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
-            setDragging({
-              node: { id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', connections: [], zIndex: 0, backgroundColor: '', selected: false },
-              offsetX: x,
-              offsetY: y,
-              selectedNodes: selectedNodes // 이제 이 속성이 허용됩니다
-            });
+            setDragging({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
             setDragging({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
           }
         }
         // 노드 이동 시작 시 현재 상태를 히스토리에 추가
-        addToHistory();
+        // addToHistory();
       } else {
         setSelectionArea({ startX: x, startY: y, endX: x, endY: y });
         setNodes(nodes.map((n) => ({ ...n, selected: false })));
-      }
-    } else if (tool === 'connect') {
-      const clickedNode = getClickedNode(x, y);
-      if (clickedNode) {
-        const side = getNodeSide(clickedNode, x, y);
-        if (connecting === null) {
-          setConnecting({ id: clickedNode.id, side });
-        } else {
-          const newConnection = { id: clickedNode.id, fromSide: connecting.side, toSide: side, lineStyle: lineStyle };
-          setNodes((prevNodes: Node[]) =>
-            prevNodes.map((node) => {
-              if (node.id === connecting.id) {
-                return { ...node, connections: [...node.connections, newConnection] };
-              }
-              return node;
-            })
-          );
-          setConnecting(null);
-          // 연결 생성 후 텍스트 입력 모드로 전환
-          const sourceNode = nodes.find(node => node.id === connecting.id);
-          if (sourceNode) {
-            setEditingConnection({ nodeId: sourceNode.id, connectionIndex: sourceNode.connections.length });
-            setConnectionText('');
-          }
-        }
       }
     }
   };
@@ -391,10 +346,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         if (isDragSignificant(dragStartPosition!, { x: offsetX, y: offsetY })) {
           const selectedNodes = nodes.filter(node => isNodeInSelectionArea(node, selectionArea!));
           if (selectedNodes.length > 0) {
-            setNodes(prevNodes => prevNodes.map(node => ({
-              ...node,
-              selected: selectedNodes.some(selectedNode => selectedNode.id === node.id)
-            })));
+            setNodes(prevNodes => prevNodes.map(node => ({...node, selected: selectedNodes.some(selectedNode => selectedNode.id === node.id)})));
           }
         } else {
           // 클릭으로 간주되는 경우, 모든 노드 선택 해제
@@ -406,10 +358,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setDragStartPosition(null);
 
     if (selectionArea) {
-      const selectedNodes = nodes.map((node) => ({
-        ...node,
-        selected: isNodeInSelectionArea(node, selectionArea),
-      }));
+      const selectedNodes = nodes.map((node) => ({...node, selected: isNodeInSelectionArea(node, selectionArea),}));
       setNodes(selectedNodes);
 
       // 선택된 노드들의 텍스트를 읽어주는 기능 추가
@@ -435,8 +384,44 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setCurrentDrawingPoints([]);
     }
 
-    // 상태 변경 후 히스토리에 한 번만 추가
-    addToHistory();
+    if (tool === 'link') {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const clickedNode = getClickedNode(x, y);
+      if (clickedNode) {
+        const side = getNodeSide(clickedNode, x, y);
+        if (linking === null) {setLinking({ id: clickedNode.id, side });}
+        else {
+          const fromNode = nodes.find(node => node.id === linking.id);
+          if (fromNode) {
+            const newLink: Link = {id: clickedNode.id.toString(), fromSide: linking.side, toSide: side, lineStyle: lineStyle};
+            setNodes((prevNodes: Node[]) =>
+              prevNodes.map((node) => {
+                if (node.id === linking.id) {return { ...node, links: [...node.links, newLink] };}
+                return node;
+              })
+            );
+              // 연결 생성 후 바로 텍스트 입력 모드로 전환
+            const fromPoint = getLinkPoint(fromNode, linking.side);
+            const toPoint = getLinkPoint(clickedNode, side);
+            const midX = (fromPoint.x + toPoint.x) / 2;
+            const midY = (fromPoint.y + toPoint.y) / 2;
+            
+            setEditingLink({ fromNode, toNode: clickedNode, x: midX, y: midY });
+            setLinkText('');
+          }
+          setLinking(null);
+        }
+      }
+    }
+
+    if (tool === 'move' || tool === 'draw' || tool === 'erase') {
+      addToHistory();
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -447,9 +432,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (!touch) return;
     const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos({ x, y });
-    console.log('Touch start:', { x, y, clientX: touch.clientX, clientY: touch.clientY, navWidth });
-    
-    handleMouseDown({ nativeEvent: { offsetX: x, offsetY: y } } as unknown as React.MouseEvent<HTMLCanvasElement>);
+    handleMouseDown({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -464,12 +447,17 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    const canvas = drawingCanvasRef.current;
+    if (!canvas) return;
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+    const { x, y } = getTouchPos(canvas, touch);
     setTouchStartPos(null);
-    handleMouseUp({} as React.MouseEvent<HTMLCanvasElement>);
+    handleMouseUp({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
   const handleToolChange = (newTool: Tool) => {
-    if (tool === 'move' && newTool !== 'move') {
+    if (newTool !== 'move') {
       setNodes((prevNodes) => prevNodes.map((node) => ({ ...node, selected: false })));
     }
     setTool(newTool);
@@ -538,11 +526,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const dx = x - centerX;
     const dy = y - centerY;
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-      return dx > 0 ? 'right' : 'left';
-    } else {
-      return dy > 0 ? 'bottom' : 'top';
-    }
+    if (Math.abs(dx) > Math.abs(dy)) {return dx > 0 ? 'right' : 'left';}
+    else {return dy > 0 ? 'bottom' : 'top';}
   };
 
   const alignNodesVertically = () => {
@@ -551,9 +536,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
     const baseY = leftmostNode.y;
     const newNodes = nodes.map((node) => {
-      if (node.selected) {
-        return { ...node, y: baseY };
-      }
+      if (node.selected) {return { ...node, y: baseY };}
       return node;
     });
 
@@ -567,9 +550,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
     const baseX = topmostNode.x;
     const newNodes = nodes.map((node) => {
-      if (node.selected) {
-        return { ...node, x: baseX };
-      }
+      if (node.selected) {return { ...node, x: baseX };}
       return node;
     });
 
@@ -666,17 +647,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
   };
 
-  const handleStartRecording = () => {
-    startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);
-  };
-
-  const handleStopRecording = () => {
-    stopRecording(mediaRecorderRef);
-  };
-
-  const handleSaveRecording = (title: string) => {
-    saveRecording(title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);
-  };
+  const handleStartRecording = () => {startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);};
+  const handleStopRecording = () => {stopRecording(mediaRecorderRef);};
+  const handleSaveRecording = (title: string) => {saveRecording(title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
 
   useEffect(() => {
     const loadLesson = async () => {
@@ -771,9 +744,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
   }, [nodes, selectionArea, dragging]);
 
-  const handleLineStyleChange = (style: 'solid' | 'dashed') => {
+  const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
     setLineStyle(style);
-    handleToolChange('connect');
+    handleToolChange('link');
   };
 
   // 전체 지우기 함수
@@ -785,74 +758,28 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
     setNodes([]);
     setDrawingActions([]);
-    addToHistory();
+    setHistory({ nodes: [], drawings: [] });
+    setHistoryIndex(-1);
     setShowClearConfirmPopup(false);
   };
 
   // 연결선 텍스트 입력 완료 처리 함수
-  const finishEditingConnection = () => {
-    if (editingConnection) {
+  const finishEditingLink = () => {
+    if (editingLink) {
       setNodes(prevNodes => prevNodes.map(node => {
-        if (node.id === editingConnection.nodeId) {
-          const updatedConnections = [...node.connections];
-          updatedConnections[editingConnection.connectionIndex] = {
-            ...updatedConnections[editingConnection.connectionIndex],
-            text: connectionText
-          };
-          return { ...node, connections: updatedConnections };
+        if (node.id === editingLink.fromNode.id) {
+          const updatedLinks = node.links.map(link => {
+            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
+            return link;
+          });
+          return { ...node, links: updatedLinks };
         }
         return node;
       }));
-      setEditingConnection(null);
-      setConnectionText('');
-      addToHistory();
+      setEditingLink(null);
+      setLinkText('');
+      // addToHistory();
     }
-  };
-
-  // drawConnections 함수 수정
-  const drawConnections = (ctx: CanvasRenderingContext2D) => {
-    nodes.forEach((node) => {
-      node.connections.forEach((connection, index) => {
-        const targetNode = nodes.find((n) => n.id === connection.id);
-        if (targetNode) {
-          const fromPoint = getConnectionPoint(node, connection.fromSide);
-          const toPoint = getConnectionPoint(targetNode, connection.toSide);
-
-          ctx.beginPath();
-          ctx.moveTo(fromPoint.x, fromPoint.y);
-          
-          if (connection.lineStyle === 'curved') {
-            // ... 곡선 그리기 코드 ...
-          } else {
-            ctx.lineTo(toPoint.x, toPoint.y);
-          }
-          
-          ctx.strokeStyle = '#55F';
-          ctx.lineWidth = 6;
-          if (connection.lineStyle === 'dashed') {
-            ctx.setLineDash([5, 5]);
-          } else {
-            ctx.setLineDash([]);
-          }
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          // 화살표 그리기
-          // ... 기존 화살표 그리기 코드 ...
-
-          // 연결선 텍스트 그리기
-          if (connection.text) {
-            const midX = (fromPoint.x + toPoint.x) / 2;
-            const midY = (fromPoint.y + toPoint.y) / 2;
-            ctx.font = '14px Arial';
-            ctx.fillStyle = '#000';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(connection.text, midX, midY - 10);
-          }
-        }
-      });
-    });
   };
 
   if (isLoading) {
@@ -878,17 +805,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
           </div>
         )}
-        {editingConnection && (
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
-            <input
-              value={connectionText}
-              onChange={(e) => setConnectionText(e.target.value)}
-              onBlur={finishEditingConnection}
-              onKeyDown={(e) => { if (e.key === 'Enter') finishEditingConnection(); }}
-              style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }}
-              placeholder="연결선 텍스트 입력"
-              autoFocus
-            />
+        {editingLink && (
+          <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
+            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #333', fontSize: '14px', color: '#000' }} placeholder="설명 입력" autoFocus />
           </div>
         )}
       </div>
@@ -897,7 +816,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         {shouldRenderTool('move') && <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />}
         {shouldRenderTool('draw') && <ToolButton tool="draw" icon="/icon-draw.svg" onClick={() => handleToolChange('draw')} currentTool={tool} />}
         {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon="/icon-addnode.svg" onClick={() => handleToolChange('addNode')} currentTool={tool} />}
-        {shouldRenderTool('connect') && <ToolButton tool="connect" icon="/icon-connect.svg" onClick={() => handleToolChange('connect')} currentTool={tool} />}
+        {shouldRenderTool('link') && <ToolButton tool="link" icon="/icon-connect.svg" onClick={() => handleToolChange('link')} currentTool={tool} />}
         {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
         {shouldRenderTool('clear') && <ToolButton tool="clear" icon="/icon-clear.svg" onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
         {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />}
@@ -957,7 +876,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             <label style={{ marginRight: '10px' }}>연결선 스타일</label>
             <select 
               value={lineStyle} 
-              onChange={(e) => handleLineStyleChange(e.target.value as 'solid' | 'dashed')} 
+              onChange={(e) => handleLineStyleChange(e.target.value as 'solid' | 'dashed' | 'curved')} 
               style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}
             >
               <option value="solid">실선</option>

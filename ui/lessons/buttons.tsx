@@ -8,7 +8,7 @@ import { deleteLesson } from '@/backend/lessons-actions';
 export function CreateLesson() {
   return (
     <Link
-      href="/dashboard/studyboard/new/edit"
+      href="/dashboard/studyboard/new/edit/?mode=edit"
       className="flex items-center h-10 px-4 text-sm font-medium text-white transition-colors bg-blue-600 rounded-lg hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
     >
       <span className="hidden md:block">교안 만들기</span>{' '}

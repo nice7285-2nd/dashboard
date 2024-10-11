@@ -2,7 +2,7 @@ export type Tool =
   | 'move'
   | 'draw'
   | 'addNode'
-  | 'connect'
+  | 'link'
   | 'erase'
   | 'clear'
   | 'alignVertical'
@@ -19,7 +19,7 @@ export type Node = {
   text2: string;
   text3: string;
   selected: boolean;
-  connections: { id: number; fromSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft"; toSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft"; lineStyle: "solid" | "dashed" | "curved"; }[];
+  links: Link[]; // connections => links로 변경
   zIndex: number;
   backgroundColor: string;
   rotation?: number;
@@ -33,7 +33,7 @@ export type DraggingState = {
   selectedNodes?: Node[]; // selectedNodes 속성 추가
 };
 
-export interface SelectionArea {
+export type SelectionArea = {
   startX: number;
   startY: number;
   endX: number;
@@ -47,3 +47,12 @@ export type DrawingAction = {
   color?: string;
   lineWidth: number;
 };
+
+// Connection => Link로 변경
+export type Link = {
+  id: string;
+  fromSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft";  
+  toSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft";
+  lineStyle: 'solid' | 'dashed' | 'curved';
+  text?: string;
+}
