@@ -42,7 +42,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
   const [history, setHistory] = useState<{ nodes: Node[][], drawings: DrawingAction[][] }>({ nodes: [], drawings: [] });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 100 });
+  const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 200 });
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
@@ -88,9 +88,12 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   };
 
   const addNode = () => {
+    let offsetX = 0;
+    if (nodes.length > 0) {offsetX = 360;} 
+
     const newId = Date.now();
     const newZIndex = maxZIndex + 1;
-    const newX = lastNodePosition.x + 200; // 기존 노드의 너비(180) + 간격(20)
+    const newX = lastNodePosition.x + offsetX; // 기존 노드의 너비(180) + 간격(180)
     const newY = lastNodePosition.y;
 
     const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 180, height: 100, selected: false, links: [], zIndex: newZIndex, backgroundColor: '#FFF', borderColor: '#05f' };
@@ -440,7 +443,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             else if (newLink.lineStyle === 'dashed') {link = 'verbing';}
 
             setLinkText(link);            
-            addToHistory();
+            // addToHistory();
           }
           setLinking(null);
         }
@@ -798,7 +801,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setHistory({ nodes: [], drawings: [] });
     setHistoryIndex(-1);
     setShowClearConfirmPopup(false);
-    setLastNodePosition({ x: 100, y: 100 });
+    setLastNodePosition({ x: 100, y: 200 });
   };
 
   // 연결선 텍스트 입력 완료 처리 함수
