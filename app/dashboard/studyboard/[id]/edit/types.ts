@@ -22,6 +22,7 @@ export type Node = {
   links: Link[]; // connections => links로 변경
   zIndex: number;
   backgroundColor: string;
+  borderColor: string;
   rotation?: number;
 };
 

@@ -26,28 +26,29 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.translate(node.x + node.width / 2, node.y + node.height / 2);
   ctx.rotate(((node.rotation || 0) * Math.PI) / 180);
 
-  const minWidth = Math.max(node.width, 200);  // 최소 너비를 200으로 설정
-  const minHeight = Math.max(node.height, 120);  // 최소 높이를 120으로 설정
+  const minWidth = Math.max(node.width, 180);  // 최소 너비를 180으로 설정
+  const minHeight = Math.max(node.height, 100);  // 최소 높이를 100으로 설정
 
   ctx.fillStyle = node.backgroundColor || '#ffffff';
   drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
   ctx.fill();
 
-  ctx.strokeStyle = node.selected ? '#1a70ff' : '#1a70ff';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
+  ctx.lineWidth = node.borderColor === '#fd5500' ? 4 : 1;
   ctx.stroke();
 
   // 텍스트 그리기
-  ctx.textAlign = 'left';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
   const padding = 10;  // 왼쪽 패딩
-  const leftX = -minWidth / 2 + padding;  // 왼쪽 정렬 시작 위치
+  // const leftX = -minWidth / 2 + padding;  // 왼쪽 정렬 시작 위치
+  const leftX = 0;  // 왼쪽 정렬 시작 위치
 
   // 위쪽 텍스트
-  ctx.font = 'bold 16px Arial';
-  ctx.fillStyle = '#FF7500';
-  ctx.fillText(node.text1 || '', leftX, -minHeight / 2 + 20);
+  ctx.font = 'bold 14px Arial';
+  ctx.fillStyle = '#f07500';
+  ctx.fillText(node.text1 || '', leftX, -minHeight / 2 + 18);
 
   // 가운데 텍스트 (더 크게)
   ctx.font = 'bold 24px Arial';
@@ -55,9 +56,9 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.fillText(node.text2 || '', leftX, 0);
 
   // 아래쪽 텍스트
-  ctx.font = 'bold 16px Arial';
+  ctx.font = 'bold 14px Arial';
   ctx.fillStyle = 'black';
-  ctx.fillText(node.text3 || '', leftX, minHeight / 2 - 20);
+  ctx.fillText(node.text3 || '', leftX, minHeight / 2 - 18);
 
   if (node.selected) {
     drawResizeHandles(ctx, node, minWidth, minHeight);
@@ -81,7 +82,7 @@ export const drawResizeHandles = (
   ];
 
   positions.forEach((pos) => {
-    ctx.fillStyle = '#1a70ff';
+    ctx.fillStyle = '#05f';
     ctx.fillRect(
       pos.x - handleSize / 2,
       pos.y - handleSize / 2,
@@ -139,13 +140,13 @@ export const drawLinks = (
         ctx.moveTo(fromPoint.x, fromPoint.y);
         
         if (link.lineStyle === 'dashed') {
-          ctx.setLineDash([6, 5]);
-          ctx.lineWidth = 6;
+          ctx.setLineDash([7, 6]);
+          ctx.lineWidth = 7;
           ctx.lineTo(toPoint.x, toPoint.y);
           ctx.strokeStyle = '#333';
           ctx.stroke();
         } else if (link.lineStyle === 'curved') {
-          ctx.strokeStyle = '#17f';
+          ctx.strokeStyle = '#05f';
           ctx.lineWidth = 6;
           const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
 
@@ -157,7 +158,7 @@ export const drawLinks = (
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.stroke();
-          ctx.fillStyle = '#2af';
+          ctx.fillStyle = '#acf';
           ctx.fill();          
         } else {
           ctx.setLineDash([]);
@@ -180,29 +181,37 @@ export const drawLinks = (
 
         // 연결선 텍스트 그리기
         if (link.text) {
-          const midX = (fromPoint.x + toPoint.x) / 2;
-          const midY = (fromPoint.y + toPoint.y) / 2;
-          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
-          const isVertical = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < (3 * Math.PI) / 4;
-        
-          ctx.font = '14px Arial';
-          ctx.fillStyle = '#000';
-          
-          const textOffset = 10; // 텍스트와 선 사이의 거리
           let textX, textY;
-        
-          if (isVertical) {
-            textX = midX + (angle > 0 ? textOffset : -textOffset);
-            textY = midY;
-            ctx.textAlign = angle > 0 ? 'left' : 'right';
-            ctx.textBaseline = 'middle';
-          } else {
-            textX = midX;
-            textY = midY + (Math.abs(angle) < Math.PI / 2 ? -textOffset : textOffset);
+          
+          if (link.lineStyle === 'curved') {
+            const textOffset = 15; // 텍스트와 선 사이의 거리
+            const topPoint = getCurvedLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+            textX = topPoint.x;
+            textY = topPoint.y + textOffset; // 최상위점 바로 아래에 위치
             ctx.textAlign = 'center';
-            ctx.textBaseline = Math.abs(angle) < Math.PI / 2 ? 'bottom' : 'top';
+            ctx.textBaseline = 'top';
+          } else {
+            const textOffset = 10; // 텍스트와 선 사이의 거리
+            const midX = (fromPoint.x + toPoint.x) / 2;
+            const midY = (fromPoint.y + toPoint.y) / 2;
+            const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
+            const isVertical = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < (3 * Math.PI) / 4;
+                        
+            if (isVertical) {
+              textX = midX + (angle > 0 ? textOffset : -textOffset);
+              textY = midY;
+              ctx.textAlign = angle > 0 ? 'left' : 'right';
+              ctx.textBaseline = 'middle';
+            } else {
+              textX = midX;
+              textY = midY + (Math.abs(angle) < Math.PI / 2 ? -textOffset : textOffset);
+              ctx.textAlign = 'center';
+              ctx.textBaseline = Math.abs(angle) < Math.PI / 2 ? 'bottom' : 'top';
+            }
           }
-        
+
+          ctx.font = 'bold 14px Arial';
+          ctx.fillStyle = '#000';
           ctx.fillText(link.text, textX, textY);
         }
 
@@ -336,16 +345,18 @@ export const redrawCanvas = (
 export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => {
   const padding = 20;  // 좌우 패딩 합계
 
-  ctx.font = 'bold 16px Arial';
+  ctx.font = 'bold 14px Arial';
   const text1Width = ctx.measureText(node.text1 || '').width;
-  const text3Width = ctx.measureText(node.text3 || '').width;
   
   ctx.font = 'bold 24px Arial';
   const text2Width = ctx.measureText(node.text2 || '').width;
 
+  ctx.font = 'bold 14px Arial';
+  const text3Width = ctx.measureText(node.text3 || '').width;
+
   const textWidth = Math.max(text1Width, text2Width, text3Width);
-  const width = Math.max(textWidth + padding, 200);  // 패딩 포함, 최소 너비 200px
-  const height = Math.max(120, 100);  // 최소 높이 120px
+  const width = Math.max(textWidth + padding, 180);  // 패딩 포함, 최소 너비 180px
+  const height = 100;  // 최소 높이 100px
 
   return { width, height };
 };
@@ -359,4 +370,24 @@ export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
   const bottom = Math.max(startY, endY);
 
   return node.x < right && node.x + node.width > left && node.y < bottom && node.y + node.height > top;
+};
+
+export const getCurvedLinkTopPoint = (startX: number, startY: number, endX: number, endY: number) => {
+  const midX1 = startX + (endX - startX) * 1 / 12;
+  const midX2 = startX + (endX - startX) * 11 / 12;
+  const midY = (startY + endY) / 2;
+  const controlY = midY - 90;
+
+  // 베지어 곡선의 최상위점 계산 (t = 0.5에서의 점)
+  const t = 0.5;
+  const x = Math.pow(1-t, 3) * startX + 
+            3 * Math.pow(1-t, 2) * t * midX1 + 
+            3 * (1-t) * Math.pow(t, 2) * midX2 + 
+            Math.pow(t, 3) * endX;
+  const y = Math.pow(1-t, 3) * startY + 
+            3 * Math.pow(1-t, 2) * t * controlY + 
+            3 * (1-t) * Math.pow(t, 2) * controlY + 
+            Math.pow(t, 3) * endY;
+
+  return { x, y };
 };

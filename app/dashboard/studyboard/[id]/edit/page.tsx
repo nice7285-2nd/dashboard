@@ -6,7 +6,7 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint } from './utils/canvasUtils';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
 import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link } from './types';
 import { createLesson } from './actions';
@@ -25,6 +25,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('move');
   const [nodeColor, setNodeColor] = useState('#FFF');
+  const [nodeBorderColor, setNodeBorderColor] = useState('#05f');
   const [penColor, setPenColor] = useState('#000');
   const [lineWidth, setLineWidth] = useState<string>('4');
   const [eraserPosition, setEraserPosition] = useState({ x: 0, y: 0, visible: false });
@@ -89,10 +90,10 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const addNode = () => {
     const newId = Date.now();
     const newZIndex = maxZIndex + 1;
-    const newX = lastNodePosition.x + 220; // 기존 노드의 너비(200) + 간격(20)
+    const newX = lastNodePosition.x + 200; // 기존 노드의 너비(180) + 간격(20)
     const newY = lastNodePosition.y;
 
-    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 200, height: 120, selected: false, links: [], zIndex: newZIndex, backgroundColor: '#FFF' };
+    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 180, height: 100, selected: false, links: [], zIndex: newZIndex, backgroundColor: '#FFF', borderColor: '#05f' };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setMaxZIndex(newZIndex);
@@ -128,8 +129,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       }
       setEditingNode(null);
       setEditText({ text1: '', text2: '', text3: '' });
-      addToHistory();
     }
+    addToHistory();
   };
 
   const cancelEditing = () => {
@@ -198,7 +199,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
-            setDragging({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
+            setDragging({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
             setDragging({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
@@ -305,7 +306,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           if (ctx) {
             ctx.font = 'bold 18px Arial';
             const minWidth = Math.max(120, ctx.measureText(node.text2).width + 40);
-            const minHeight = 80;
+            const minHeight = 100;
 
             if (resizing.direction.includes('e')) newWidth = Math.max(minWidth, x - node.x);
             if (resizing.direction.includes('w')) {
@@ -382,6 +383,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
       ]);
       setCurrentDrawingPoints([]);
+      addToHistory();
     }
 
     if (tool === 'link') {
@@ -405,22 +407,44 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
                 return node;
               })
             );
-              // 연결 생성 후 바로 텍스트 입력 모드로 전환
-            const fromPoint = getLinkPoint(fromNode, linking.side);
-            const toPoint = getLinkPoint(clickedNode, side);
-            const midX = (fromPoint.x + toPoint.x) / 2;
-            const midY = (fromPoint.y + toPoint.y) / 2;
+
+            let fromSide = newLink.fromSide;
+            let toSide = newLink.toSide;
+    
+            if (newLink.lineStyle === 'curved') {
+              fromSide = 'topRight';
+              toSide = 'topLeft';
+            }
+                
+            // 연결 생성 후 바로 텍스트 입력 모드로 전환
+            const fromPoint = getLinkPoint(fromNode, fromSide);
+            const toPoint = getLinkPoint(clickedNode, toSide);
+
+            let midX, midY;
+
+            if (newLink && newLink.lineStyle === 'curved') {
+              const textOffset = 15; // 텍스트와 선 사이의 거리
+              const topPoint = getCurvedLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+              midX = topPoint.x;
+              midY = topPoint.y + textOffset;  // 최상위 접선에 바로 위치
+            } else {
+              midX = (fromPoint.x + toPoint.x) / 2;
+              midY = (fromPoint.y + toPoint.y) / 2;
+            }
             
             setEditingLink({ fromNode, toNode: clickedNode, x: midX, y: midY });
-            setLinkText('');
+
+            let link = '';
+            if (newLink.lineStyle === 'curved') {link = 'Describing';}
+            else if (newLink.lineStyle === 'solid') {link = 'Adding';}
+            else if (newLink.lineStyle === 'dashed') {link = 'verbing';}
+
+            setLinkText(link);            
+            addToHistory();
           }
           setLinking(null);
         }
       }
-    }
-
-    if (tool === 'move' || tool === 'draw' || tool === 'erase') {
-      addToHistory();
     }
   };
 
@@ -471,11 +495,21 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   };
 
   const handleNodeColorChange = (color: string) => {
+    setNodeColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, backgroundColor: color } : node
     ));
     // 히스토리에 추가
-    addToHistory();
+    // addToHistory();
+  };
+
+  const handleNodeBorderColorChange = (color: string) => {
+    setNodeBorderColor(color);
+    setNodes((prevNodes) => prevNodes.map((node) => 
+      node.selected ? { ...node, borderColor: color } : node
+    ));
+    // 히스토리에 추가
+    // addToHistory();
   };
 
   const handlePenColorChange = (color: string) => {
@@ -566,6 +600,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     };
     newHistory.nodes.push([...nodes]);
     newHistory.drawings.push(newDrawings || [...drawingActions]);
+    console.log('새로운 히스토리:', newHistory);
     setHistory(newHistory);
     setHistoryIndex(newHistory.nodes.length - 1);
   };
@@ -576,6 +611,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setHistoryIndex(historyIndex - 1);
       setNodes(history.nodes[historyIndex - 1]);
       setDrawingActions(history.drawings[historyIndex - 1]);
+      console.log('새로운 히스토리:', history);
     }
   };
 
@@ -585,6 +621,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
       setHistoryIndex(historyIndex + 1);
       setNodes(history.nodes[historyIndex + 1]);
       setDrawingActions(history.drawings[historyIndex + 1]);
+      console.log('새로운 히스토리:', history);      
     }
   };
 
@@ -761,6 +798,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setHistory({ nodes: [], drawings: [] });
     setHistoryIndex(-1);
     setShowClearConfirmPopup(false);
+    setLastNodePosition({ x: 100, y: 100 });
   };
 
   // 연결선 텍스트 입력 완료 처리 함수
@@ -776,9 +814,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
         return node;
       }));
+      addToHistory();
       setEditingLink(null);
       setLinkText('');
-      // addToHistory();
     }
   };
 
@@ -799,15 +837,15 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
         {editingNode && (
-          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid black', borderRadius: '5px', padding: '5px' }}>
-            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 1" autoFocus />
-            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center' }} placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
+          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '5px', padding: '5px' }}>
+            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
+            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
           </div>
         )}
         {editingLink && (
           <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
-            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #333', fontSize: '14px', color: '#000' }} placeholder="설명 입력" autoFocus />
+            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #333', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }} placeholder="설명 입력" autoFocus />
           </div>
         )}
       </div>
@@ -832,8 +870,19 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
               <select value={nodeColor} onChange={(e) => handleNodeColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
                 <option value="#FFFFFF">흰색</option>
                 <option value="#FFD700">오렌지</option>
-                <option value="#ADD8FF">밝은파랑</option>
+                <option value="#acf">밝은파랑</option>
                 <option value="#90EE90">밝은녹색</option>
+              </select>
+            </div>
+          </>
+        )}
+        {mode !== 'play' && (
+          <>
+            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
+              <label style={{ marginRight: '10px' }}>노드 테두리</label>
+              <select value={nodeBorderColor} onChange={(e) => handleNodeBorderColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
+                <option value="#05f">밝은파랑</option>
+                <option value="#fd5500">빨강</option>
               </select>
             </div>
           </>
