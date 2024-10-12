@@ -225,8 +225,8 @@ export const drawLinks = (
 function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: number, endX: number, endY: number) {
   ctx.beginPath();
   ctx.moveTo(startX, startY);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  ctx.lineCap = 'square';
+  ctx.lineJoin = 'square';
 
   const midX1 = startX + (endX - startX) * 1 / 12;
   const midY1 = (startY + endY) / 2;
