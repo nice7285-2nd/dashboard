@@ -5,6 +5,7 @@ const nextConfig = {
   //   // appDir 옵션 제거
   // },
   optimizeFonts: true,
+  reactStrictMode: false,
   // 다른 필요한 설정들...
 };
 

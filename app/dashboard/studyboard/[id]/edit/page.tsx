@@ -6,7 +6,7 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint } from './utils/canvasUtils';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
 import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link } from './types';
 import { createLesson } from './actions';
@@ -21,6 +21,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
+  const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('move');
@@ -46,13 +47,13 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isDraggingGroup, setIsDraggingGroup] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSavePopup, setShowSavePopup] = useState(false);
   const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
-  const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
   const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
@@ -62,7 +63,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const prevDrawingActionsRef = useRef(drawingActions);
   const isUndoRedoActionRef = useRef(false);
 
-  const MAX_HISTORY_LENGTH = 50; // 적절한 값으로 조정
+  const MAX_HISTORY_LENGTH = 10; // 적절한 값으로 조정
 
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
@@ -203,6 +204,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     } else if (tool === 'move') {
       const { node, handle } = getClickedNodeAndHandle(x, y);
       if (node) {
+        setIsDragging(true);        
         if (handle) {setResizing({ node, direction: handle });}
         else {
           const selectedNodes = nodes.filter((n) => n.selected);
@@ -341,6 +343,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setIsDrawing(false);
     setDragging(null);
     setResizing(null);
+    setIsDragging(false);
 
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
@@ -426,19 +429,21 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             const fromPoint = getLinkPoint(fromNode, fromSide);
             const toPoint = getLinkPoint(clickedNode, toSide);
 
-            let midX, midY;
+            let textX, textY;
 
             if (newLink && newLink.lineStyle === 'curved') {
               const textOffset = 15; // 텍스트와 선 사이의 거리
               const topPoint = getCurvedLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
-              midX = topPoint.x;
-              midY = topPoint.y + textOffset;  // 최상위 접선에 바로 위치
+              textX = topPoint.x;
+              textY = topPoint.y + textOffset;  // 최상위 접선에 바로 위치
             } else {
-              midX = (fromPoint.x + toPoint.x) / 2;
-              midY = (fromPoint.y + toPoint.y) / 2;
+              const textOffset = 10; // 텍스트와 선 사이의 거리
+              const {x, y, textAlign, textBaseline} = getSolidLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, textOffset);
+              textX = x || 0;
+              textY = y || 0;
             }
             
-            setEditingLink({ fromNode, toNode: clickedNode, x: midX, y: midY });
+            setEditingLink({ fromNode, toNode: clickedNode, x: textX, y: textY });
 
             let link = '';
             if (newLink.lineStyle === 'curved') {link = 'Describing';}
@@ -592,26 +597,31 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   };
 
   // 히스토리에 현재 상태 추가 함수 수정
-  const addToHistory = useCallback(() => {
+  const addToHistory = () => {
     setHistory(prevHistory => {
-      // 현재 인덱스 이후의 히스토리는 유지하면서 새로운 상태를 추가합니다.
+      // 새로운 상태를 추가합니다.
       const newNodes = [...prevHistory.nodes, [...nodes]];
       const newDrawings = [...prevHistory.drawings, [...drawingActions]];
       
-      console.log('새로운 히스토리:', newNodes, newDrawings);
+      // 최근 10건만 유지합니다.
+      const slicedNodes = newNodes.slice(-MAX_HISTORY_LENGTH);
+      const slicedDrawings = newDrawings.slice(-MAX_HISTORY_LENGTH);
+      
+      console.log(slicedNodes);
+      console.log(slicedDrawings);
 
       return {
-        nodes: newNodes,
-        drawings: newDrawings
+        nodes: slicedNodes,
+        drawings: slicedDrawings
       };
     });
   
-    // 히스토리가 추가될 때마다 인덱스를 증가시킵니다.
-    setHistoryIndex(prevIndex => prevIndex + 1);
-  }, [nodes, drawingActions]);
+    // 히스토리가 추가될 때마다 인덱스를 업데이트합니다.
+    setHistoryIndex(prevIndex => Math.min(prevIndex + 1, MAX_HISTORY_LENGTH - 1));
+  };
   
   // Undo 기능 수정
-  const undo = useCallback(() => {
+  const undo = () => {
     if (historyIndex > 0) {
       isUndoRedoActionRef.current = true;
       const newIndex = historyIndex - 1;
@@ -623,9 +633,9 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         isUndoRedoActionRef.current = false;
       }, 0);
     }
-  }, [history, historyIndex]);
+  };
 
-  const redo = useCallback(() => {
+  const redo = () => {
     if (historyIndex < history.nodes.length - 1) {
       isUndoRedoActionRef.current = true;
       const newIndex = historyIndex + 1;
@@ -637,7 +647,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         isUndoRedoActionRef.current = false;
       }, 0);
     }
-  }, [history, historyIndex]);
+  };
   
 
   // 저장 기능
@@ -707,6 +717,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     const loadLesson = async () => {
       if (params.id === 'new') {
         setIsLoading(false);
+        addToHistory();
         return;
       }
 
@@ -799,14 +810,15 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   useEffect(() => {
     if (
       !isUndoRedoActionRef.current &&
-      JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes) ||
-      JSON.stringify(prevDrawingActionsRef.current) !== JSON.stringify(drawingActions)
+      !isDragging &&  // 드래그 중이 아닐 때만 히스토리에 추가
+      (JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes) ||
+      JSON.stringify(prevDrawingActionsRef.current) !== JSON.stringify(drawingActions))
     ) {
       addToHistory();
       prevNodesRef.current = nodes;
       prevDrawingActionsRef.current = drawingActions;
     }
-  }, [nodes, drawingActions]);
+  }, [nodes, drawingActions, isDragging]);
 
   const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
     setLineStyle(style);
@@ -841,7 +853,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
         return node;
       }));
-      // addToHistory();
       setEditingLink(null);
       setLinkText('');
     }
@@ -865,14 +876,14 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         )}
         {editingNode && (
           <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
-            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
-            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
+            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
+            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
           </div>
         )}
         {editingLink && (
           <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
-            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '0px', border: '0px solid #333', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }} placeholder="설명 입력" autoFocus />
+            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', border: 'none', outline: 'none', backgroundColor: 'transparent', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', width: '80px' }} placeholder="설명 입력" autoFocus />
           </div>
         )}
       </div>

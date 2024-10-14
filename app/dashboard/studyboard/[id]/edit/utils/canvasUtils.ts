@@ -192,22 +192,11 @@ export const drawLinks = (
             ctx.textBaseline = 'top';
           } else {
             const textOffset = 10; // 텍스트와 선 사이의 거리
-            const midX = (fromPoint.x + toPoint.x) / 2;
-            const midY = (fromPoint.y + toPoint.y) / 2;
-            const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
-            const isVertical = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < (3 * Math.PI) / 4;
-                        
-            if (isVertical) {
-              textX = midX + (angle > 0 ? textOffset : -textOffset);
-              textY = midY;
-              ctx.textAlign = angle > 0 ? 'left' : 'right';
-              ctx.textBaseline = 'middle';
-            } else {
-              textX = midX;
-              textY = midY + (Math.abs(angle) < Math.PI / 2 ? -textOffset : textOffset);
-              ctx.textAlign = 'center';
-              ctx.textBaseline = Math.abs(angle) < Math.PI / 2 ? 'bottom' : 'top';
-            }
+            const {x, y, textAlign, textBaseline} = getSolidLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, textOffset);
+            textX = x || 0;
+            textY = y || 0;
+            ctx.textAlign = textAlign || 'center';
+            ctx.textBaseline = textBaseline || 'middle';
           }
 
           ctx.font = 'bold 14px Arial';
@@ -391,3 +380,26 @@ export const getCurvedLinkTopPoint = (startX: number, startY: number, endX: numb
 
   return { x, y };
 };
+
+export const getSolidLinkTopPoint = (startX: number, startY: number, endX: number, endY: number, offset: number) => {
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const angle = Math.atan2(endY - startY, endX - startX);
+  const isVertical = Math.abs(angle) > Math.PI / 4 && Math.abs(angle) < (3 * Math.PI) / 4;
+              
+  let x, y, textAlign: CanvasTextAlign, textBaseline: CanvasTextBaseline;
+
+  if (isVertical) {
+    x = midX + (angle > 0 ? offset : -offset);
+    y = midY;
+    textAlign = angle > 0 ? 'left' : 'right';
+    textBaseline = 'middle';
+  } else {
+    x = midX;
+    y = midY + (Math.abs(angle) < Math.PI / 2 ? -offset : offset);
+    textAlign = 'center';
+    textBaseline = Math.abs(angle) < Math.PI / 2 ? 'bottom' : 'top';
+  }
+
+  return {x, y, textAlign, textBaseline};
+};  
