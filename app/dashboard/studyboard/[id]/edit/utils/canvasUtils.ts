@@ -226,7 +226,7 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
   ctx.beginPath();
   ctx.moveTo(startX, startY);
   ctx.lineCap = 'square';
-  ctx.lineJoin = 'square';
+  ctx.lineJoin = 'miter';
 
   const midX1 = startX + (endX - startX) * 1 / 12;
   const midY1 = (startY + endY) / 2;
@@ -283,8 +283,8 @@ export const drawDrawings = (
 
           ctx.strokeStyle = action.color || '#000';
           ctx.lineWidth = action.lineWidth;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
+          ctx.lineCap = 'square';
+          ctx.lineJoin = 'miter';
 
           ctx.beginPath();
           ctx.moveTo(action.points[0].x, action.points[0].y);
@@ -306,8 +306,8 @@ export const drawDrawings = (
           ctx.lineTo(point.x, point.y);
           ctx.strokeStyle = '#FFF';
           ctx.lineWidth = action.lineWidth;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
+          ctx.lineCap = 'square';
+          ctx.lineJoin = 'miter';
           ctx.stroke();
         }
       });

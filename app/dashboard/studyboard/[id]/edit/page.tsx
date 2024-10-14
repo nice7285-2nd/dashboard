@@ -58,7 +58,12 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
   const [editingLink, setEditingLink] = useState<{ fromNode: Node, toNode: Node, x: number, y: number } | null>(null);
   const [linkText, setLinkText] = useState('');
-  
+  const prevNodesRef = useRef(nodes);
+  const prevDrawingActionsRef = useRef(drawingActions);
+  const isUndoRedoActionRef = useRef(false);
+
+  const MAX_HISTORY_LENGTH = 50; // 적절한 값으로 조정
+
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
 
@@ -102,17 +107,14 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setMaxZIndex(newZIndex);
     setLastNodePosition({ x: newX, y: newY });
     startEditing(newNode);
-    addToHistory();
   };
 
   const deleteSelectedNodes = () => {
     const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
-    const updatedNodes = nodes.filter(node => !node.selected).map(node => ({
-      ...node,
+    const updatedNodes = nodes.filter(node => !node.selected).map(node => ({...node,
       links: node.links.filter(link => !selectedNodeIds.includes(Number(link.id)))
     }));
     setNodes(updatedNodes);
-    addToHistory();
   };
 
   const startEditing = (node: Node) => {
@@ -127,13 +129,17 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
-          setNodes(prevNodes => prevNodes.map(node => node.id === editingNode.id ? { ...node, ...editText, width, height } : node));
+          setNodes(prevNodes => prevNodes.map(node => {
+            if (node.id === editingNode.id) {
+              return { ...node, ...editText, width, height };
+            }
+            return node;
+          }));
         }
       }
       setEditingNode(null);
       setEditText({ text1: '', text2: '', text3: '' });
     }
-    addToHistory();
   };
 
   const cancelEditing = () => {
@@ -208,8 +214,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
           }
         }
-        // 노드 이동 시작 시 현재 상태를 히스토리에 추가
-        // addToHistory();
       } else {
         setSelectionArea({ startX: x, startY: y, endX: x, endY: y });
         setNodes(nodes.map((n) => ({ ...n, selected: false })));
@@ -386,7 +390,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
       ]);
       setCurrentDrawingPoints([]);
-      addToHistory();
     }
 
     if (tool === 'link') {
@@ -443,7 +446,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
             else if (newLink.lineStyle === 'dashed') {link = 'verbing';}
 
             setLinkText(link);            
-            // addToHistory();
           }
           setLinking(null);
         }
@@ -502,8 +504,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, backgroundColor: color } : node
     ));
-    // 히스토리에 추가
-    // addToHistory();
   };
 
   const handleNodeBorderColorChange = (color: string) => {
@@ -511,8 +511,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, borderColor: color } : node
     ));
-    // 히스토리에 추가
-    // addToHistory();
   };
 
   const handlePenColorChange = (color: string) => {
@@ -578,7 +576,6 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     });
 
     setNodes(newNodes);
-    addToHistory();
   };
 
   const alignNodesHorizontally = () => {
@@ -592,41 +589,56 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     });
 
     setNodes(newNodes);
-    addToHistory();
   };
 
   // 히스토리에 현재 상태 추가 함수 수정
-  const addToHistory = (newDrawings?: DrawingAction[]) => {
-    const newHistory = {
-      nodes: history.nodes.slice(0, historyIndex + 1),
-      drawings: history.drawings.slice(0, historyIndex + 1)
-    };
-    newHistory.nodes.push([...nodes]);
-    newHistory.drawings.push(newDrawings || [...drawingActions]);
-    console.log('새로운 히스토리:', newHistory);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.nodes.length - 1);
-  };
+  const addToHistory = useCallback(() => {
+    setHistory(prevHistory => {
+      // 현재 인덱스 이후의 히스토리는 유지하면서 새로운 상태를 추가합니다.
+      const newNodes = [...prevHistory.nodes, [...nodes]];
+      const newDrawings = [...prevHistory.drawings, [...drawingActions]];
+      
+      console.log('새로운 히스토리:', newNodes, newDrawings);
 
+      return {
+        nodes: newNodes,
+        drawings: newDrawings
+      };
+    });
+  
+    // 히스토리가 추가될 때마다 인덱스를 증가시킵니다.
+    setHistoryIndex(prevIndex => prevIndex + 1);
+  }, [nodes, drawingActions]);
+  
   // Undo 기능 수정
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
-      setHistoryIndex(historyIndex - 1);
-      setNodes(history.nodes[historyIndex - 1]);
-      setDrawingActions(history.drawings[historyIndex - 1]);
-      console.log('새로운 히스토리:', history);
+      isUndoRedoActionRef.current = true;
+      const newIndex = historyIndex - 1;
+      setNodes(history.nodes[newIndex]);
+      setDrawingActions(history.drawings[newIndex]);
+      setHistoryIndex(newIndex);
+      // setTimeout을 사용하여 상태 업데이트 후 플래그를 리셋
+      setTimeout(() => {
+        isUndoRedoActionRef.current = false;
+      }, 0);
     }
-  };
+  }, [history, historyIndex]);
 
-  // Redo 기능 수정
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.nodes.length - 1) {
-      setHistoryIndex(historyIndex + 1);
-      setNodes(history.nodes[historyIndex + 1]);
-      setDrawingActions(history.drawings[historyIndex + 1]);
-      console.log('새로운 히스토리:', history);      
+      isUndoRedoActionRef.current = true;
+      const newIndex = historyIndex + 1;
+      setNodes(history.nodes[newIndex]);
+      setDrawingActions(history.drawings[newIndex]);
+      setHistoryIndex(newIndex);
+      // setTimeout을 사용하여 상태 업데이트 후 플래그를 리셋
+      setTimeout(() => {
+        isUndoRedoActionRef.current = false;
+      }, 0);
     }
-  };
+  }, [history, historyIndex]);
+  
 
   // 저장 기능
   const saveCanvas = async (title: string) => {
@@ -784,6 +796,18 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
   }, [nodes, selectionArea, dragging]);
 
+  useEffect(() => {
+    if (
+      !isUndoRedoActionRef.current &&
+      JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes) ||
+      JSON.stringify(prevDrawingActionsRef.current) !== JSON.stringify(drawingActions)
+    ) {
+      addToHistory();
+      prevNodesRef.current = nodes;
+      prevDrawingActionsRef.current = drawingActions;
+    }
+  }, [nodes, drawingActions]);
+
   const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
     setLineStyle(style);
     handleToolChange('link');
@@ -817,7 +841,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         }
         return node;
       }));
-      addToHistory();
+      // addToHistory();
       setEditingLink(null);
       setLinkText('');
     }
@@ -840,7 +864,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
         {editingNode && (
-          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '5px', padding: '5px' }}>
+          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
             <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
             <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
             <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
@@ -848,7 +872,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         )}
         {editingLink && (
           <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
-            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #333', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }} placeholder="설명 입력" autoFocus />
+            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', borderRadius: '0px', border: '0px solid #333', textAlign: 'center', fontSize: '12px', fontWeight: 'bold' }} placeholder="설명 입력" autoFocus />
           </div>
         )}
       </div>
