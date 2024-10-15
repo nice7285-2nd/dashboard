@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 interface ToolButtonProps {
   tool: string;
-  icon: string;
+  icon: string | React.ReactElement;
   onClick: () => void;
   currentTool: string;
 }
@@ -21,7 +21,11 @@ const ToolButton: React.FC<ToolButtonProps> = ({
     onMouseUp={(e) =>(e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)')}
     onMouseLeave={(e) =>(e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)')}
   >
-    <Image src={icon} alt={tool} width={24} height={24} />
+    {typeof icon === 'string' ? (
+      <Image src={icon} alt={tool} width={24} height={24} />
+    ) : (
+      React.cloneElement(icon, { width: 24, height: 24 })
+    )}
   </button>
 );
 

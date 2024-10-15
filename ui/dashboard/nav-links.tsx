@@ -3,7 +3,9 @@
 import {
   HomeIcon,
   UserCircleIcon,
-  DocumentChartBarIcon,
+  UsersIcon,
+  PlayCircleIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -13,17 +15,17 @@ const links = [
   {
     name: '교안목록보기',
     href: '/dashboard/lessons',
-    icon: DocumentChartBarIcon,
+    icon: ClipboardDocumentListIcon,
   },
   {
     name: '학습영상 보기',
     href: '/dashboard/studyvideo',
-    icon: DocumentChartBarIcon,
+    icon: PlayCircleIcon,
   },
   {
     name: '계정관리',
-    href: '/dashboard/projects',
-    icon: DocumentChartBarIcon,
+    href: '/dashboard/accounts',
+    icon: UsersIcon,
   },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
