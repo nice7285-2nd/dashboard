@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { PencilIcon, PlusIcon, TrashIcon, ChartBarIcon, PlayIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-import { deleteLesson } from '@/backend/lessons-actions';
+import { deleteUser } from '@/backend/account-actions';
 
 export function CreateAccount() {
   return (
@@ -28,10 +28,10 @@ export function PlayAccount({ id }: { id: string }) {
   );
 }
 
-export function EditAccount({ id }: { id: string }) {
+export function EditAccount({ email }: { email: string }) {
   return (
     <Link
-      href={`/dashboard/studyboard/${id}/edit/?mode=edit`}
+      href={`/dashboard/studyboard/${email}/edit/?mode=edit`}
       className="p-2 border rounded-md hover:bg-gray-100"
     >
       <PencilIcon className="w-5" />
@@ -39,14 +39,14 @@ export function EditAccount({ id }: { id: string }) {
   );
 }
 
-export function DeleteAccount({ id }: { id: string }) {
+export function DeleteAccount({ email }: { email: string }) {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const openPopup = () => setIsPopupOpen(true);
   const closePopup = () => setIsPopupOpen(false);
 
-  const deleteLessonWithId = async () => {
-    await deleteLesson(id);
+  const deleteAccountWithEmail = async () => {
+    await deleteUser(email);
     closePopup();
   };
 
@@ -58,7 +58,7 @@ export function DeleteAccount({ id }: { id: string }) {
       </button>
       {isPopupOpen && (
         <DeleteConfirmPopup
-          onConfirm={deleteLessonWithId}
+          onConfirm={deleteAccountWithEmail}
           onCancel={closePopup}
         />
       )}

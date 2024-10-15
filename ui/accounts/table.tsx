@@ -35,8 +35,8 @@ export default async function AccountsTable({
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <EditAccount id={account.id} />
-                    <DeleteAccount id={account.id} />
+                    <EditAccount email={account.email} />
+                    <DeleteAccount email={account.email} />
                   </div>
                 </div>
               </div>
@@ -72,8 +72,8 @@ export default async function AccountsTable({
                   </td>
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <EditAccount id={account.id} />
-                      <DeleteAccount id={account.id} />
+                      <EditAccount email={account.email} />
+                      <DeleteAccount email={account.email} />
                     </div>
                   </td>
                 </tr>
