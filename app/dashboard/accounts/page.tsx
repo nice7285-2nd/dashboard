@@ -1,10 +1,9 @@
 import Pagination from '@/ui/projects/pagination';
 import Search from '@/ui/search';
-import LessonsTable from '@/ui/lessons/table';
-import { CreateLesson } from '@/ui/lessons/buttons';
+import AccountsTable from '@/ui/accounts/table';
 import { LessonTableSkeleton } from '@/ui/skeletons';
 import { Suspense } from 'react';
-import { fetchLessonsPages } from '@/backend/lessons-data';
+import { fetchAccountsPages } from '@/backend/accounts-data';
 import { Metadata } from 'next';
 import { auth } from '@/auth';
 
@@ -29,7 +28,7 @@ export default async function Page({
     return null;
   }
 
-  const totalPages = await fetchLessonsPages(query, session?.user?.email);
+  const totalPages = await fetchAccountsPages(query, session?.user?.email);
 
   return (
     <div className="w-full">
@@ -38,10 +37,9 @@ export default async function Page({
       </div>
       <div className="flex items-center justify-between gap-2 mt-4 md:mt-8">
         <Search placeholder="계정 검색..." />
-        <CreateLesson />
       </div>
        <Suspense key={query + currentPage} fallback={<LessonTableSkeleton />}>
-        <LessonsTable query={query} currentPage={currentPage} email={session?.user?.email} />
+        <AccountsTable query={query} currentPage={currentPage} email={session?.user?.email} />
       </Suspense>
       <div className="flex justify-center w-full mt-5">
         <Pagination totalPages={totalPages} />

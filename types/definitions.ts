@@ -18,3 +18,12 @@ export type LessonsTable = {
   name: string;
   path: string;
 };
+
+
+export type AccountsTable = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+

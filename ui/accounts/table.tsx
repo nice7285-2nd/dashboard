@@ -1,11 +1,10 @@
 import {
-  EditLesson,
-  DeleteLesson,
-  PlayLesson
-} from '@/ui/lessons/buttons';
-import { fetchFilteredLessonsSimple } from '@/backend/lessons-data';
+  EditAccount,
+  DeleteAccount,
+} from '@/ui/accounts/buttons';
+import { fetchFilteredAccountsSimple } from '@/backend/accounts-data';
 
-export default async function LessonsTable({
+export default async function AccountsTable({
   query,
   currentPage,
   email,
@@ -14,31 +13,30 @@ export default async function LessonsTable({
   currentPage: number;
   email: string
 }) {
-  const lessons = await fetchFilteredLessonsSimple(query, currentPage, email);
+  const accounts = await fetchFilteredAccountsSimple(query, currentPage, email);
 
   return (
     <div className="flow-root mt-6">
       <div className="inline-block min-w-full align-middle">
         <div className="p-2 rounded-lg bg-gray-50 md:pt-0">
           <div className="md:hidden">
-            {lessons?.map((lesson) => (
+            {accounts?.map((account) => (
               <div
-                key={lesson.id}
+                key={account.id}
                 className="w-full p-4 mb-2 bg-white rounded-md"
               >
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div>
                     <div className="flex items-center mb-2">
-                      <p>{lesson.name}</p>
+                      <p>{account.name}</p>
                     </div>
-                    <p className="text-sm text-gray-500">{lesson.path}</p>
+                    <p className="text-sm text-gray-500">{account.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <PlayLesson id={lesson.id} />
-                    <EditLesson id={lesson.id} />
-                    <DeleteLesson id={lesson.id} />
+                    <EditAccount id={account.id} />
+                    <DeleteAccount id={account.id} />
                   </div>
                 </div>
               </div>
@@ -59,24 +57,23 @@ export default async function LessonsTable({
               </tr>
             </thead>
             <tbody className="bg-white">
-              {lessons?.map((lesson) => (
+              {accounts?.map((account) => (
                 <tr
-                  key={lesson.id}
+                  key={account.id}
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <p>{lesson.name}</p>
+                      <p>{account.name}</p>
                     </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {lesson.path}
+                    {account.email}
                   </td>
                   <td className="py-3 pl-6 pr-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <PlayLesson id={lesson.id} />
-                      <EditLesson id={lesson.id} />
-                      <DeleteLesson id={lesson.id} />
+                      <EditAccount id={account.id} />
+                      <DeleteAccount id={account.id} />
                     </div>
                   </td>
                 </tr>
