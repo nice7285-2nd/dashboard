@@ -62,8 +62,10 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
   const prevNodesRef = useRef(nodes);
   const prevDrawingActionsRef = useRef(drawingActions);
   const isUndoRedoActionRef = useRef(false);
+  const [undoCount, setUndoCount] = useState(0);
+  const [redoCount, setRedoCount] = useState(0);
 
-  const MAX_HISTORY_LENGTH = 10; // 적절한 값으로 조정
+  const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
@@ -596,6 +598,39 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     setNodes(newNodes);
   };
 
+  // 전체 지우기 함수
+  const clearAll = () => {
+    const canvas = drawingCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
+    }
+    setNodes([]);
+    setDrawingActions([]);
+    setHistory({ nodes: [], drawings: [] });
+    setHistoryIndex(-1);
+    setShowClearConfirmPopup(false);
+    setLastNodePosition({ x: 100, y: 200 });
+  };
+
+  // 연결선 텍스트 입력 완료 처리 함수
+  const finishEditingLink = () => {
+    if (editingLink) {
+      setNodes(prevNodes => prevNodes.map(node => {
+        if (node.id === editingLink.fromNode.id) {
+          const updatedLinks = node.links.map(link => {
+            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
+            return link;
+          });
+          return { ...node, links: updatedLinks };
+        }
+        return node;
+      }));
+      setEditingLink(null);
+      setLinkText('');
+    }
+  };
+
   // 히스토리에 현재 상태 추가 함수 수정
   const addToHistory = () => {
     setHistory(prevHistory => {
@@ -709,6 +744,32 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     }
   };
 
+  // 노드 선택 이벤트를 제외한 변경사항만 감지하는 함수
+  const hasSignificantChanges = (prevNodes: Node[], currentNodes: Node[]) => {
+    if (prevNodes.length !== currentNodes.length) return true;
+    
+    for (let i = 0; i < prevNodes.length; i++) {
+      const prevNode = prevNodes[i];
+      const currentNode = currentNodes[i];
+      
+      for (const key in prevNode) {
+        if (key === 'selected') continue; // 'selected' 속성 변경은 무시
+        if (key === 'links') {
+          // links 배열의 길이나 내용이 변경되었는지 확인
+          if (!Array.isArray(prevNode.links) || !Array.isArray(currentNode.links) ||
+              prevNode.links.length !== currentNode.links.length ||
+              JSON.stringify(prevNode.links) !== JSON.stringify(currentNode.links)) {
+            return true;
+          }
+        } else if (prevNode[key as keyof Node] !== currentNode[key as keyof Node]) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  };
+  
   const handleStartRecording = () => {startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);};
   const handleStopRecording = () => {stopRecording(mediaRecorderRef);};
   const handleSaveRecording = (title: string) => {saveRecording(title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
@@ -811,7 +872,7 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     if (
       !isUndoRedoActionRef.current &&
       !isDragging &&  // 드래그 중이 아닐 때만 히스토리에 추가
-      (JSON.stringify(prevNodesRef.current) !== JSON.stringify(nodes) ||
+      (hasSignificantChanges(prevNodesRef.current, nodes) ||
       JSON.stringify(prevDrawingActionsRef.current) !== JSON.stringify(drawingActions))
     ) {
       addToHistory();
@@ -825,38 +886,11 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
     handleToolChange('link');
   };
 
-  // 전체 지우기 함수
-  const clearAll = () => {
-    const canvas = drawingCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
-    }
-    setNodes([]);
-    setDrawingActions([]);
-    setHistory({ nodes: [], drawings: [] });
-    setHistoryIndex(-1);
-    setShowClearConfirmPopup(false);
-    setLastNodePosition({ x: 100, y: 200 });
-  };
+  useEffect(() => {
+    setUndoCount(historyIndex);
+    setRedoCount(history.nodes.length - historyIndex - 1);
+  }, [historyIndex]);
 
-  // 연결선 텍스트 입력 완료 처리 함수
-  const finishEditingLink = () => {
-    if (editingLink) {
-      setNodes(prevNodes => prevNodes.map(node => {
-        if (node.id === editingLink.fromNode.id) {
-          const updatedLinks = node.links.map(link => {
-            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
-            return link;
-          });
-          return { ...node, links: updatedLinks };
-        }
-        return node;
-      }));
-      setEditingLink(null);
-      setLinkText('');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -898,8 +932,8 @@ const EditStudyBoard = ({ params }: { params: { id: string } }) => {
         {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />}
         {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={alignNodesHorizontally} currentTool={tool} />}
         {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
-        <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} />
-        <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} />
+        <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} count={undoCount} />
+        <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} count={redoCount}/>
         <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currentTool={isVoiceEnabled ? 'voice' : ''} />
         {mode !== 'play' && (
           <>
