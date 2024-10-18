@@ -15,15 +15,20 @@ export type ProjectTable = {
 
 export type LessonsTable = {
   id: string;
-  name: string;
+  author: string;
+  title: string;
+  created_at: Date;
   path: string;
 };
 
 
-export type AccountsTable = {
+export type UsersTable = {
   id: string;
   name: string;
   email: string;
-};
+  role: string;
+  created_at: Date;
+  login_at: Date;
+};  
 
 

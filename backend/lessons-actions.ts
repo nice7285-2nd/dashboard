@@ -8,13 +8,13 @@ import { auth } from '@/auth';
 import path from 'path';
 
 const CreateLessonSchema = z.object({
-  name: z.string().nonempty({ message: 'Please enter a project name.' }),
+  title: z.string().nonempty({ message: 'Please enter a project name.' }),
   path: z.string().optional(),
 });
 
 export type LessonState = {
   errors?: {
-    name?: string[];
+    title?: string[];
     path?: string[];
   };
   message?: string | undefined;
@@ -23,7 +23,7 @@ export type LessonState = {
 export async function createLesson(prevState: LessonState, formData: FormData) {
   // 폼 데이터 유효성 검사
   const validatedFields = CreateLessonSchema.safeParse({
-    name: formData.get('name'),
+    title: formData.get('title'),
     path: formData.get('path'),
   });
 
@@ -35,7 +35,7 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
     };
   }
 
-  const { name, path } = validatedFields.data;
+  const { title, path } = validatedFields.data;
   const session = await auth();
   const userEmail = session?.user?.email || '';
 
@@ -46,7 +46,7 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
   }
 
   try {
-    const existingLesson = await sql`SELECT * FROM lessons WHERE name = ${name}`;
+    const existingLesson = await sql`SELECT * FROM lessons WHERE title = ${title}`;
     if (existingLesson.rowCount > 0) {
       return { message: 'Lesson name already exists.' };
     }
@@ -55,12 +55,12 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
       message: 'Database Error: Failed to Create Lesson.',
     };
   }
-
+  
   // 데이터베이스에 데이터 삽입
   try {
     await sql`
-      INSERT INTO lessons (name, path)
-      VALUES (${name}, ${path})
+      INSERT INTO lessons (title, path)
+      VALUES (${title}, ${path})
     `;
   } catch (error) {
     return {
@@ -75,7 +75,7 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
 
 
 const UpdateLessonSchema = z.object({
-  name: z.string().nonempty({ message: 'Please enter a lesson name.' }),
+  title: z.string().nonempty({ message: 'Please enter a lesson name.' }),
   path: z.string().optional(),
 });
 
@@ -85,7 +85,7 @@ export async function updateLesson(
   formData: FormData,
 ) {
   const validatedFields = UpdateLessonSchema.safeParse({
-    name: formData.get('name'),
+    title: formData.get('title'),
     path: formData.get('path')
   });
 
@@ -96,12 +96,12 @@ export async function updateLesson(
     };
   }
 
-  const { name, path } = validatedFields.data;
+  const { title, path } = validatedFields.data;
 
   try {
     await sql`
       UPDATE lessons
-      SET name = ${name}, path = ${path}
+      SET title = ${title}, path = ${path}
       WHERE id = ${id}
     `;
   } catch (error) {

@@ -62,8 +62,8 @@ export async function signUp(
     // 비밀번호 해싱 및 사용자 추가
     const hashedPassword = await bcrypt.hash(password, 10);
     await sql`
-      INSERT INTO users (name, email, password, auth_key)
-      VALUES (${name}, ${email}, ${hashedPassword}, ${authKey})
+      INSERT INTO users (name, email, role, password, auth_key)
+      VALUES (${name}, ${email}, 'manager', ${hashedPassword}, ${authKey})
     `;
     // return 'User successfully created.';
   } catch (error) {

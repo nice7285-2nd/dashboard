@@ -24,7 +24,7 @@ const links = [
   },
   {
     name: '계정관리',
-    href: '/dashboard/accounts',
+    href: '/dashboard/users',
     icon: UsersIcon,
   },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },

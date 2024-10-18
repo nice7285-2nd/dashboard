@@ -2,6 +2,7 @@ import '@/ui/globals.css';
 import { notoSansKR } from '@/ui/fonts';
 import { Metadata } from 'next';
 import { WebVitals } from '@/utils/web-vitals';
+import { SessionProvider } from "next-auth/react"
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +22,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className={`${notoSansKR.className} antialiased`}>
         <WebVitals />
-        {children}
+          {children}
       </body>
     </html>
   );

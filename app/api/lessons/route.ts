@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server';
 
 type LessonsTable = {
   id: string;
-  name: string;
+  author: string;
+  title: string;
   path: string;
 };
 
@@ -15,7 +16,8 @@ export async function GET(request: Request) {
     const result = await sql<LessonsTable>`
       SELECT
         id,
-        name,
+        author,
+        title,
         path
       FROM lessons
       WHERE id = ${id};

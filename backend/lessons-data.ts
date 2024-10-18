@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 
 const LESSONS_PER_PAGE = 12;
 
-export async function fetchFilteredLessonsSimple(
+export async function fetchFilteredLessons(
   query: string,
   currentPage: number,
   email: string,
@@ -17,11 +17,14 @@ export async function fetchFilteredLessonsSimple(
     const lessons = await sql<LessonsTable>`
       SELECT
         lessons.id,
-        lessons.name,
+        lessons.author,
+        lessons.title,
+        lessons.created_at,
         lessons.path
       FROM lessons
       WHERE
-        lessons.name ILIKE ${`%${query}%`}
+        lessons.title ILIKE ${`%${query}%`}
+      ORDER BY lessons.created_at DESC
       LIMIT ${LESSONS_PER_PAGE} OFFSET ${offset}
     `;
     return lessons.rows;
@@ -38,7 +41,9 @@ export async function fetchLessonById(id: string) {
     const data = await sql<LessonsTable>`
       SELECT
         id,
-        name,
+        title,
+        author,
+        created_at,
         path
       FROM lessons
       WHERE id = ${id};
@@ -62,7 +67,7 @@ export async function fetchLessonsPages(query: string, email: string) {
     const count = await sql`SELECT COUNT(*)
       FROM lessons
       WHERE
-        (lessons.name ILIKE ${`%${query}%`} OR
+        (lessons.title ILIKE ${`%${query}%`} OR
         lessons.path ILIKE ${`%${query}%`})
     `;
 

@@ -97,7 +97,7 @@ export const saveRecording = async (
 
     if (response.ok) {
       const dbFormData = new FormData();
-      dbFormData.append('name', title);
+      dbFormData.append('title', title);
       dbFormData.append('path', filePath);
       const result = await createStudyRec(dbFormData);
 

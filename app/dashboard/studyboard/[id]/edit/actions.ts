@@ -5,25 +5,25 @@ import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 
 const FormSchema = z.object({
-  name: z.string(),
+  title: z.string(),
   path: z.string(),
 });
 
 const StudyRecSchema = z.object({
-  name: z.string(),
+  title: z.string(),
   path: z.string(),
 });
 
 export async function createLesson(formData: FormData) {
-  const { name, path } = FormSchema.parse({
-    name: formData.get('name'),
+  const { title, path } = FormSchema.parse({
+    title: formData.get('title'),
     path: formData.get('path'),
   });
 
   try {
     await sql`
-      INSERT INTO lessons (name, path)
-      VALUES (${name}, ${path})
+      INSERT INTO lessons (title, path)
+      VALUES (${title}, ${path})
     `;
   } catch (error) {
     return {
@@ -36,15 +36,15 @@ export async function createLesson(formData: FormData) {
 }
 
 export async function createStudyRec(formData: FormData) {
-  const { name, path } = StudyRecSchema.parse({
-    name: formData.get('name'),
+  const { title, path } = StudyRecSchema.parse({
+    title: formData.get('title'),
     path: formData.get('path'),
   });
 
   try {
     await sql`
-      INSERT INTO studyRecList (name, path)
-      VALUES (${name}, ${path})
+      INSERT INTO studyRecList (title, path)
+      VALUES (${title}, ${path})
     `;
   } catch (error) {
     return {
