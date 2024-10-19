@@ -7,7 +7,6 @@ const LESSONS_PER_PAGE = 12;
 export async function fetchFilteredLessons(
   query: string,
   currentPage: number,
-  email: string,
 ) {
   noStore();
 
@@ -18,6 +17,7 @@ export async function fetchFilteredLessons(
       SELECT
         lessons.id,
         lessons.author,
+        lessons.email,
         lessons.title,
         lessons.created_at,
         lessons.path
@@ -60,7 +60,7 @@ export async function fetchLessonById(id: string) {
   }
 }
 
-export async function fetchLessonsPages(query: string, email: string) {
+export async function fetchLessonsPages(query: string) {
   noStore();
 
   try {

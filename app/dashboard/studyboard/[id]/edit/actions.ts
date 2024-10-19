@@ -7,6 +7,8 @@ import { revalidatePath } from 'next/cache';
 const FormSchema = z.object({
   title: z.string(),
   path: z.string(),
+  author: z.string(),
+  email: z.string(),
 });
 
 const StudyRecSchema = z.object({
@@ -15,15 +17,17 @@ const StudyRecSchema = z.object({
 });
 
 export async function createLesson(formData: FormData) {
-  const { title, path } = FormSchema.parse({
+  const { author, email, title, path } = FormSchema.parse({
     title: formData.get('title'),
     path: formData.get('path'),
+    author: formData.get('author'),
+    email: formData.get('email'),
   });
 
   try {
     await sql`
-      INSERT INTO lessons (title, path)
-      VALUES (${title}, ${path})
+      INSERT INTO lessons (title, path, author, email, created_at)
+      VALUES (${title}, ${path}, ${author}, ${email}, CURRENT_TIMESTAMP(3))
     `;
   } catch (error) {
     return {

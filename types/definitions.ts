@@ -16,6 +16,7 @@ export type ProjectTable = {
 export type LessonsTable = {
   id: string;
   author: string;
+  email: string;
   title: string;
   created_at: Date;
   path: string;

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PencilIcon, PlusIcon, TrashIcon, ChartBarIcon, PlayIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { deleteLesson } from '@/backend/lessons-actions';
+import { useRouter } from 'next/navigation';
 
 export function CreateLesson() {
   return (
@@ -17,29 +18,57 @@ export function CreateLesson() {
   );
 }
 
-export function PlayLesson({ id }: { id: string }) {
+export function PlayLesson({ id, disabled }: { id: string; disabled: boolean }) {
+  const router = useRouter();
+  const linkPath = `/dashboard/studyboard/${id}/edit/?mode=play`;
+
+  const handlePlay = () => {
+    if (!disabled) {
+      router.push(linkPath);
+    }
+  };
+
   return (
-    <Link
-      href={`/dashboard/studyboard/${id}/edit/?mode=play`}
-      className="p-2 text-white transition-colors bg-blue-600 border rounded-md hover:bg-blue-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+    <button
+      onClick={handlePlay}
+      disabled={disabled}
+      className={`px-3 py-1 rounded-md ${
+        disabled
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'bg-blue-500 text-white hover:bg-blue-600'
+      }`}
     >
-      <PlayIcon className="w-5" />
-    </Link>
+      학습
+    </button>
   );
 }
 
-export function EditLesson({ id }: { id: string }) {
+export function EditLesson({ id, disabled }: { id: string; disabled: boolean }) {
+  const router = useRouter();
+  const linkPath = `/dashboard/studyboard/${id}/edit/?mode=edit`;
+
+  const handlePlay = () => {
+    if (!disabled) {
+      router.push(linkPath);
+    }
+  };
+
   return (
-    <Link
-      href={`/dashboard/studyboard/${id}/edit/?mode=edit`}
-      className="p-2 border rounded-md hover:bg-gray-100"
+    <button
+      onClick={handlePlay}
+      disabled={disabled}
+      className={`px-3 py-1 rounded-md ${
+        disabled
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'p-2 border rounded-md hover:bg-gray-100'
+      }`}
     >
-      <PencilIcon className="w-5" />
-    </Link>
+      수정
+    </button>
   );
 }
 
-export function DeleteLesson({ id }: { id: string }) {
+export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }) {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
   const openPopup = () => setIsPopupOpen(true);
@@ -52,7 +81,15 @@ export function DeleteLesson({ id }: { id: string }) {
 
   return (
     <>
-      <button onClick={openPopup} className="p-2 border rounded-md hover:bg-gray-100">
+      <button
+        onClick={openPopup}
+        disabled={disabled}
+        className={`px-3 py-1 rounded-md ${
+          disabled
+          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          : 'p-2 border rounded-md hover:bg-gray-100'
+      }`}
+>
         <span className="sr-only">삭제</span>
         <TrashIcon className="w-5" />
       </button>
@@ -90,4 +127,3 @@ function DeleteConfirmPopup({ onConfirm, onCancel }: { onConfirm: () => void, on
     </div>
   );
 }
-

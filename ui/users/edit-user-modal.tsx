@@ -73,7 +73,7 @@ export default function EditUserModal({ user, onClose }: { user: User, onClose: 
                 </select>
               </div>
               {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
-              <div className="flex items-center justify-end p-4">
+              <div className="flex items-center justify-end">
                 <button
                   className="text-slate-500 background-transparent font-bold uppercase px-4 py-2 text-xs outline-none focus:outline-none mr-2"
                   type="button"

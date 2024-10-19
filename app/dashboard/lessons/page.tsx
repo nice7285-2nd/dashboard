@@ -29,7 +29,7 @@ export default async function Page({
     return null;
   }
 
-  const totalPages = await fetchLessonsPages(query, session?.user?.email);
+  const totalPages = await fetchLessonsPages(query);
 
   return (
     <div className="w-full">
@@ -41,7 +41,7 @@ export default async function Page({
         <CreateLesson />
       </div>
        <Suspense key={query + currentPage} fallback={<LessonTableSkeleton />}>
-        <LessonsTable query={query} currentPage={currentPage} email={session?.user?.email} />
+        <LessonsTable query={query} currentPage={currentPage} email={session.user.email} />
       </Suspense>
       <div className="flex justify-center w-full mt-5">
         <Pagination totalPages={totalPages} />

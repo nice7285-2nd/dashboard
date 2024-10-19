@@ -4,7 +4,7 @@ import path from 'path';
 
 export async function POST(request: Request) {
   const data = await request.json();
-  const { filedir, filename, title, nodes, drawings } = data;
+  const { filedir, filename } = data;
   const lessonsDir = path.join(process.cwd(), 'public', filedir);
   const filePath = path.join(lessonsDir, filename);
 

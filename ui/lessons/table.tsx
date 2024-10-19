@@ -4,6 +4,7 @@ import {
   PlayLesson
 } from '@/ui/lessons/buttons';
 import { fetchFilteredLessons } from '@/backend/lessons-data';
+import { auth } from '@/auth';
 
 function formatDate(date: Date) {
   const year = date.getFullYear().toString().slice(-2);
@@ -23,9 +24,9 @@ export default async function LessonsTable({
 }: {
   query: string;
   currentPage: number;
-  email: string
+  email: string;
 }) {
-  const lessons = await fetchFilteredLessons(query, currentPage, email);
+  const lessons = await fetchFilteredLessons(query, currentPage);
 
   return (
     <div className="flow-root mt-6">
@@ -48,9 +49,9 @@ export default async function LessonsTable({
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <PlayLesson id={lesson.id} />
-                    <EditLesson id={lesson.id} />
-                    <DeleteLesson id={lesson.id} />
+                    <PlayLesson id={lesson.id} disabled={email !== lesson.email}  />
+                    <EditLesson id={lesson.id} disabled={email !== lesson.email} />
+                    <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
                   </div>
                 </div>
               </div>
@@ -90,9 +91,9 @@ export default async function LessonsTable({
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <PlayLesson id={lesson.id} />
-                      <EditLesson id={lesson.id} />
-                      <DeleteLesson id={lesson.id} />
+                      <PlayLesson id={lesson.id} disabled={email !== lesson.email}  />
+                      <EditLesson id={lesson.id} disabled={email !== lesson.email} />
+                      <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
                     </div>
                   </td>
                 </tr>

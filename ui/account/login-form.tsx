@@ -16,8 +16,8 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [errorMessage, dispatch] = useFormState(authenticate, undefined);
   const searchParams = useSearchParams();
-  const signup = searchParams.get('signup');
-  const signupEmail = searchParams.get('email');
+  const signup = searchParams?.get('signup');
+  const signupEmail = searchParams?.get('email');
 
   // 쿼리 파라미터에서 이메일 값을 받아와서 상태를 설정합니다.
   useEffect(() => {

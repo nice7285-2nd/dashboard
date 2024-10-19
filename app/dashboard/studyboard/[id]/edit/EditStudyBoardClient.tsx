@@ -17,9 +17,10 @@ import 'react-toastify/dist/ReactToastify.css';
 interface EditStudyBoardClientProps {
   params: { id: string };
   author: string | null;
+  email: string | null;
 }
 
-const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, author }) => {
+const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, author, email }) => {
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode') || 'edit';
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -81,7 +82,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
-    // navWidth를 제외하�� 않고 계산
+    // navWidth를 제외하 않고 계산
     const x = (touch.clientX - rect.left) * scaleX;
     const y = (touch.clientY - rect.top) * scaleY;
 
@@ -690,6 +691,15 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
   
 
+  // 저장 버튼 클릭 핸들러 함수 추가
+  const handleSaveClick = () => {
+    if (nodes.length === 0 && drawingActions.length === 0) {
+      toast.warning('저장할 내용이 없습니다. 노드를 추가하거나 그림을 그려주세요.');
+      return;
+    }
+    setShowSavePopup(true);
+  };
+
   // 저장 기능 수정
   const saveCanvas = async (title: string) => {
     setShowSavePopup(false);
@@ -713,8 +723,9 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       if (response.ok) {
         // 데이터베이스에 저장
         const formData = new FormData();
-        formData.append('title', title);
         formData.append('author', author || '');
+        formData.append('email', email || '');
+        formData.append('title', title);
         formData.append('path', filePath);
         const result = await createLesson(formData);
 
@@ -785,6 +796,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       if (params.id === 'new') {
         setIsLoading(false);
         addToHistory();
+        setTool('addNode');
         return;
       }
 
@@ -928,7 +940,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         )}
       </div>
       <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        {shouldRenderTool('save') && <ToolButton tool="save" icon="/icon-save.svg" onClick={() => setShowSavePopup(true)} currentTool={tool} />}
+        {shouldRenderTool('save') && <ToolButton tool="save" icon="/icon-save.svg" onClick={handleSaveClick} currentTool={tool} />}
         {shouldRenderTool('move') && <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />}
         {shouldRenderTool('draw') && <ToolButton tool="draw" icon="/icon-draw.svg" onClick={() => handleToolChange('draw')} currentTool={tool} />}
         {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon="/icon-addnode.svg" onClick={() => handleToolChange('addNode')} currentTool={tool} />}
