@@ -34,7 +34,7 @@ export function PlayLesson({ id, disabled }: { id: string; disabled: boolean }) 
       disabled={disabled}
       className={`px-3 py-1 rounded-md ${
         disabled
-          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
           : 'bg-blue-500 text-white hover:bg-blue-600'
       }`}
     >
@@ -59,7 +59,7 @@ export function EditLesson({ id, disabled }: { id: string; disabled: boolean }) 
       disabled={disabled}
       className={`px-3 py-1 rounded-md ${
         disabled
-          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
           : 'p-2 border rounded-md hover:bg-gray-100'
       }`}
     >
@@ -86,7 +86,7 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
         disabled={disabled}
         className={`px-3 py-1 rounded-md ${
           disabled
-          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
           : 'p-2 border rounded-md hover:bg-gray-100'
       }`}
 >

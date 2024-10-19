@@ -147,7 +147,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     toast[type](message, {
       position: "bottom-right",
-      autoClose: 3000,
+      autoClose: 1000,
       hideProgressBar: false,
       closeOnClick: true,
       pauseOnHover: true,
