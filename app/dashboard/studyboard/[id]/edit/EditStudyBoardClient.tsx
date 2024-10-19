@@ -789,7 +789,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   
   const handleStartRecording = () => {startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);};
   const handleStopRecording = () => {stopRecording(mediaRecorderRef);};
-  const handleSaveRecording = (title: string) => {saveRecording(title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
+  const handleSaveRecording = (author: string, email: string, title: string) => {saveRecording(author, email, title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
 
   useEffect(() => {
     const loadLesson = async () => {
@@ -1026,7 +1026,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         )}
       </div>
       {showSavePopup && <SaveLessonPopup onSave={saveCanvas} onCancel={() => setShowSavePopup(false)} />}
-      {showSaveRecordingPopup && <SaveRecordingPopup onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
+      {showSaveRecordingPopup && <SaveRecordingPopup author={author || ''} email={email || ''} onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />
     </div>

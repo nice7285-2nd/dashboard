@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 interface SaveRecordingPopupProps {
-  onSave: (title: string) => void;
+  author: string;
+  email: string;
+  onSave: (author: string, email: string, title: string) => void;
   onCancel: () => void;
 }
 
-const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ onSave, onCancel }) => {
+const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ author, email, onSave, onCancel }) => {
   const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -18,7 +20,7 @@ const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ onSave, onCance
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      onSave(title);
+      onSave(author, email, title);
     }
   };
 
@@ -37,7 +39,7 @@ const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ onSave, onCance
         />
         <div className="flex justify-end">
           <button
-            onClick={() => onSave(title)}
+            onClick={() => onSave(author, email, title)}
             className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
           >
             저장

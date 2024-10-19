@@ -7,16 +7,18 @@ import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-interface Video { id: string; title: string; channelName: string; views: number; videoUrl: string; }
+interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; }
 
 interface VideoListProps {
   userRole: string | undefined;
+  email: string | undefined;
 }
 
-const VideoItem = ({ video, openVideo, onDelete, userRole }: { video: Video; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined }) => {
+const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video: Video; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined; userEmail: string | undefined }) => {
   const [isHovering, setIsHovering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isManager = userRole === 'admin';
+  const isOwner = userEmail === video.email;
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -54,7 +56,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole }: { video: Video; ope
       />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
         <h3 style={{ fontSize: '16px', fontFamily: 'Noto Sans KR, sans-serif', fontWeight: 400, margin: 0, flex: 1 }}>{video.title}</h3>
-        {isManager && (
+        {(isOwner) && (
           <button 
             onClick={(e) => {
               e.stopPropagation();
@@ -75,13 +77,13 @@ const VideoItem = ({ video, openVideo, onDelete, userRole }: { video: Video; ope
           </button>
         )}
       </div>
-      <p style={{ fontSize: '14px', color: '#606060', marginBottom: '3px' }}>{video.channelName}</p>
+      <p style={{ fontSize: '14px', color: '#606060', marginBottom: '3px' }}>{video.author}</p>
       <p style={{ fontSize: '14px', color: '#606060' }}>조회수 {video.views.toLocaleString()}회</p>
     </div>
   );
 };
 
-const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
+const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [filteredVideos, setFilteredVideos] = useState<Video[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -107,9 +109,11 @@ const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
 
         const modifiedData = data.rows.map((video: any) => ({  
           id: video.id || video.row,
-          title: video.name || '제목 없음',
-          channelName: video.channelName || '영어 채널',
-          views: video.views || 10000,
+          title: video.title || '제목 없음',
+          author: video.author || '저자 없음',
+          email: video.email || '이메일 없음',
+          path: video.path || '#',
+          views: video.views || 0,
           videoUrl: video.website_url || video.path || '#',
         }));
 
@@ -132,8 +136,24 @@ const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
     setFilteredVideos(filtered);
   }, [videos, searchTerm]);
 
-  const openVideo = (video: Video) => {
+  const openVideo = async (video: Video) => {
     setSelectedVideo(video);
+    try {
+      const response = await fetch(`/api/incrementViews?id=${video.id}`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error('조회수 업데이트에 실패했습니다');
+      }
+      // 로컬 상태 업데이트
+      setVideos(prevVideos =>
+        prevVideos.map(v =>
+          v.id === video.id ? { ...v, views: v.views + 1 } : v
+        )
+      );
+    } catch (error) {
+      console.error('조회수 업데이트 중 오류 발생:', error);
+    }
   };
 
   const closeVideo = () => {
@@ -186,7 +206,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
         }
 
         setVideos(prevVideos => prevVideos.filter(video => video.id !== id));
-        showToast('비디오가 성공적으로 삭제되었습니다.', 'success');
+        showToast('비디오가 성공적으로 삭제되��습니다.', 'success');
         router.refresh();
       } catch (error) {
         console.error('삭제 중 오류 발생:', error);
@@ -233,6 +253,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole }) => {
             openVideo={openVideo} 
             onDelete={handleDelete}
             userRole={userRole}
+            userEmail={email}
           />
         ))}
       </div>

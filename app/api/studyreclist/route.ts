@@ -5,8 +5,11 @@ export const revalidate = 0; // 이 줄을 추가합니다
 
 type StudyRecListTable = {
   id: string;
-  name: string;
-  website_url: string;
+  title: string;
+  path: string;
+  author: string;
+  email: string;
+  views: number;
 };
 
 export async function GET() {

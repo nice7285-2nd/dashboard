@@ -34,8 +34,8 @@ export function PlayLesson({ id, disabled }: { id: string; disabled: boolean }) 
       disabled={disabled}
       className={`px-3 py-1 rounded-md ${
         disabled
-          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-          : 'bg-blue-500 text-white hover:bg-blue-600'
+          ? 'border bg-gray-200 text-gray-600 cursor-not-allowed'
+          : 'border bg-blue-500 text-white hover:bg-blue-600'
       }`}
     >
       학습
@@ -59,8 +59,8 @@ export function EditLesson({ id, disabled }: { id: string; disabled: boolean }) 
       disabled={disabled}
       className={`px-3 py-1 rounded-md ${
         disabled
-          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-          : 'p-2 border rounded-md hover:bg-gray-100'
+          ? 'border bg-gray-200 text-gray-600 cursor-not-allowed'
+          : 'border rounded-md hover:bg-gray-100'
       }`}
     >
       수정
@@ -86,8 +86,8 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
         disabled={disabled}
         className={`px-3 py-1 rounded-md ${
           disabled
-          ? 'bg-gray-200 text-gray-600 cursor-not-allowed'
-          : 'p-2 border rounded-md hover:bg-gray-100'
+          ? 'border bg-gray-200 text-gray-600 cursor-not-allowed'
+          : 'border rounded-md hover:bg-gray-100'
       }`}
 >
         <span className="sr-only">삭제</span>

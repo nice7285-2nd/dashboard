@@ -71,6 +71,8 @@ export const stopRecording = (mediaRecorderRef: React.MutableRefObject<MediaReco
 };
 
 export const saveRecording = async (
+  author: string,
+  email: string,
   title: string,
   recordingBlob: Blob | null,
   setShowSaveRecordingPopup: (show: boolean) => void,
@@ -97,6 +99,8 @@ export const saveRecording = async (
 
     if (response.ok) {
       const dbFormData = new FormData();
+      dbFormData.append('author', author);
+      dbFormData.append('email', email);
       dbFormData.append('title', title);
       dbFormData.append('path', filePath);
       const result = await createStudyRec(dbFormData);

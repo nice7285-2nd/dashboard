@@ -14,6 +14,8 @@ const FormSchema = z.object({
 const StudyRecSchema = z.object({
   title: z.string(),
   path: z.string(),
+  author: z.string(),
+  email: z.string(),
 });
 
 export async function createLesson(formData: FormData) {
@@ -40,15 +42,17 @@ export async function createLesson(formData: FormData) {
 }
 
 export async function createStudyRec(formData: FormData) {
-  const { title, path } = StudyRecSchema.parse({
+  const { title, path, author, email } = StudyRecSchema.parse({
     title: formData.get('title'),
     path: formData.get('path'),
+    author: formData.get('author'),
+    email: formData.get('email'),
   });
 
   try {
     await sql`
-      INSERT INTO studyRecList (title, path)
-      VALUES (${title}, ${path})
+      INSERT INTO studyRecList (title, path, author, email)
+      VALUES (${title}, ${path}, ${author}, ${email})
     `;
   } catch (error) {
     return {
