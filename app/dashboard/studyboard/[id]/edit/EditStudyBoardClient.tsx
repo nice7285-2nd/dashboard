@@ -833,7 +833,11 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
         setNodes(fileData.nodes);
         setDrawingActions(fileData.drawings);
-
+        // maxIndex 업데이트
+        const maxNodeIndex = Math.max(...fileData.nodes.map((node: Node) => node.zIndex), 0);
+        setMaxZIndex(maxNodeIndex);
+        setLastNodePosition({ x: fileData.nodes[fileData.nodes.length - 1].x, y: fileData.nodes[fileData.nodes.length - 1].y });
+        
         // 그리기 객체 복원
         const drawingCanvas = drawingCanvasRef.current;
         if (drawingCanvas) { 
