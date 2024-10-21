@@ -6,9 +6,9 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint } from './utils/canvasUtils';
+import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint, drawLinks } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
-import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link } from './types';
+import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link, TemporaryLink } from './types';
 import { createLesson } from './actions';
 import { CircularProgress, Box, Typography } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
@@ -70,11 +70,118 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const isUndoRedoActionRef = useRef(false);
   const [undoCount, setUndoCount] = useState(0);
   const [redoCount, setRedoCount] = useState(0);
-
+  const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
+
+  const getClickedNodeAndHandle = (x: number, y: number) => {
+    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
+
+    for (const node of sortedNodes) {
+      if (node.selected) {
+        const rotateHandleX = node.x + node.width / 2;
+        const rotateHandleY = node.y - 20;
+        if (Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5) {
+          return { node, handle: 'rotate' };
+        }
+
+        const handleSize = 10;
+        const handles = [
+          { x: node.x, y: node.y, dir: 'nw' },
+          { x: node.x + node.width, y: node.y, dir: 'ne' },
+          { x: node.x, y: node.y + node.height, dir: 'sw' },
+          { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
+        ];
+
+        for (const handle of handles) {
+          if (x >= handle.x - handleSize / 2 && x <= handle.x + handleSize / 2 && y >= handle.y - handleSize / 2 && y <= handle.y + handleSize / 2) {
+            return { node, handle: handle.dir };
+          }
+        }
+      }
+
+      if (x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) {
+        return { node, handle: null };
+      }
+    }
+    return { node: null, handle: null };
+  };
+
+  const getClickedNode = (x: number, y: number) => {
+    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
+    return sortedNodes.find((node) => x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
+  };
+
+  const getNodeSide = (node: Node, x: number, y: number): 'top' | 'right' | 'bottom' | 'left' => {
+    const centerX = node.x + node.width / 2;
+    const centerY = node.y + node.height / 2;
+    const dx = x - centerX;
+    const dy = y - centerY;
+
+    if (Math.abs(dx) > Math.abs(dy)) {return dx > 0 ? 'right' : 'left';}
+    else {return dy > 0 ? 'bottom' : 'top';}
+  };
+
+  const alignNodesVertically = () => {
+    const selectedNodes = nodes.filter((node) => node.selected);
+    if (selectedNodes.length < 2) return;
+    const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
+    const baseY = leftmostNode.y;
+    const newNodes = nodes.map((node) => {
+      if (node.selected) {return { ...node, y: baseY };}
+      return node;
+    });
+
+    setNodes(newNodes);
+  };
+
+  const alignNodesHorizontally = () => {
+    const selectedNodes = nodes.filter((node) => node.selected);
+    if (selectedNodes.length < 2) return;
+    const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
+    const baseX = topmostNode.x;
+    const newNodes = nodes.map((node) => {
+      if (node.selected) {return { ...node, x: baseX };}
+      return node;
+    });
+
+    setNodes(newNodes);
+  };
+
+  // 전체 지우기 함수
+  const clearAll = () => {
+    const canvas = drawingCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
+    }
+    setNodes([]);
+    setDrawingActions([]);
+    setHistory({ nodes: [], drawings: [] });
+    setHistoryIndex(-1);
+    setShowClearConfirmPopup(false);
+    setLastNodePosition({ x: 100, y: 200 });
+  };
+
+  // 연결선 텍스트 입력 완료 처리 함수
+  const finishEditingLink = () => {
+    if (editingLink) {
+      setNodes(prevNodes => prevNodes.map(node => {
+        if (node.id === editingLink.fromNode.id) {
+          const updatedLinks = node.links.map(link => {
+            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
+            return link;
+          });
+          return { ...node, links: updatedLinks };
+        }
+        return node;
+      }));
+      setEditingLink(null);
+      setLinkText('');
+    }
+  };
 
   // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
   const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
@@ -158,6 +265,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Delete') {deleteSelectedNodes();
+    } else if (e.key === 'Escape') {
+      // ESC 키를 눌렀을 때 연결선 그리기 초기화
+      setLinking(null);
+      setTemporaryLink(null);
     } else if (editingNode) {
       if (e.key === 'Enter') {
         if (e.target instanceof HTMLInputElement) {
@@ -192,6 +303,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       }
       
       setDragStartPosition({ x: offsetX, y: offsetY });
+    } else if (tool === 'link') {
+      const { offsetX, offsetY } = e.nativeEvent;
+      const clickedNode = getClickedNode(offsetX, offsetY);
+      if (clickedNode) {
+        const side = getNodeSide(clickedNode, offsetX, offsetY);
+        setTemporaryLink({ startNode: clickedNode, startSide: side, endX: offsetX, endY: offsetY });
+      }
     }
 
     const canvas = drawingCanvasRef.current;
@@ -241,6 +359,9 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         // 다중 선택을 위한 드래그 (리사이징 중이 아닐 때만)
         setSelectionArea(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
       }
+    } else if (tool === 'link' && temporaryLink) {
+      const { offsetX, offsetY } = e.nativeEvent;
+      setTemporaryLink(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
     }
 
     const canvas = drawingCanvasRef.current;
@@ -403,7 +524,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setCurrentDrawingPoints([]);
     }
 
-    if (tool === 'link') {
+    if (tool === 'link' && temporaryLink) {      
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -461,6 +582,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             setLinkText(link);            
           }
           setLinking(null);
+          setTemporaryLink(null);
         }
       }
     }
@@ -530,112 +652,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setPenColor(color);
   };
   
-  const getClickedNodeAndHandle = (x: number, y: number) => {
-    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
-
-    for (const node of sortedNodes) {
-      if (node.selected) {
-        const rotateHandleX = node.x + node.width / 2;
-        const rotateHandleY = node.y - 20;
-        if (Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5) {
-          return { node, handle: 'rotate' };
-        }
-
-        const handleSize = 10;
-        const handles = [
-          { x: node.x, y: node.y, dir: 'nw' },
-          { x: node.x + node.width, y: node.y, dir: 'ne' },
-          { x: node.x, y: node.y + node.height, dir: 'sw' },
-          { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
-        ];
-
-        for (const handle of handles) {
-          if (x >= handle.x - handleSize / 2 && x <= handle.x + handleSize / 2 && y >= handle.y - handleSize / 2 && y <= handle.y + handleSize / 2) {
-            return { node, handle: handle.dir };
-          }
-        }
-      }
-
-      if (x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) {
-        return { node, handle: null };
-      }
-    }
-    return { node: null, handle: null };
-  };
-
-  const getClickedNode = (x: number, y: number) => {
-    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
-    return sortedNodes.find((node) => x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
-  };
-
-  const getNodeSide = (node: Node, x: number, y: number): 'top' | 'right' | 'bottom' | 'left' => {
-    const centerX = node.x + node.width / 2;
-    const centerY = node.y + node.height / 2;
-    const dx = x - centerX;
-    const dy = y - centerY;
-
-    if (Math.abs(dx) > Math.abs(dy)) {return dx > 0 ? 'right' : 'left';}
-    else {return dy > 0 ? 'bottom' : 'top';}
-  };
-
-  const alignNodesVertically = () => {
-    const selectedNodes = nodes.filter((node) => node.selected);
-    if (selectedNodes.length < 2) return;
-    const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
-    const baseY = leftmostNode.y;
-    const newNodes = nodes.map((node) => {
-      if (node.selected) {return { ...node, y: baseY };}
-      return node;
-    });
-
-    setNodes(newNodes);
-  };
-
-  const alignNodesHorizontally = () => {
-    const selectedNodes = nodes.filter((node) => node.selected);
-    if (selectedNodes.length < 2) return;
-    const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
-    const baseX = topmostNode.x;
-    const newNodes = nodes.map((node) => {
-      if (node.selected) {return { ...node, x: baseX };}
-      return node;
-    });
-
-    setNodes(newNodes);
-  };
-
-  // 전체 지우기 함수
-  const clearAll = () => {
-    const canvas = drawingCanvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
-    }
-    setNodes([]);
-    setDrawingActions([]);
-    setHistory({ nodes: [], drawings: [] });
-    setHistoryIndex(-1);
-    setShowClearConfirmPopup(false);
-    setLastNodePosition({ x: 100, y: 200 });
-  };
-
-  // 연결선 텍스트 입력 완료 처리 함수
-  const finishEditingLink = () => {
-    if (editingLink) {
-      setNodes(prevNodes => prevNodes.map(node => {
-        if (node.id === editingLink.fromNode.id) {
-          const updatedLinks = node.links.map(link => {
-            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
-            return link;
-          });
-          return { ...node, links: updatedLinks };
-        }
-        return node;
-      }));
-      setEditingLink(null);
-      setLinkText('');
-    }
-  };
 
   // 히스토리에 현재 상태 추가 함수 수정
   const addToHistory = () => {
@@ -648,8 +664,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const slicedNodes = newNodes.slice(-MAX_HISTORY_LENGTH);
       const slicedDrawings = newDrawings.slice(-MAX_HISTORY_LENGTH);
       
-      console.log(slicedNodes);
-      console.log(slicedDrawings);
+      // console.log(slicedNodes);
+      // console.log(slicedDrawings);
 
       return {
         nodes: slicedNodes,
@@ -796,7 +812,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       if (params.id === 'new') {
         setIsLoading(false);
         addToHistory();
-        setTool('addNode');
         return;
       }
 
@@ -882,9 +897,32 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     const drawingCanvas = drawingCanvasRef.current;
     if (canvas && drawingCanvas) {
       const ctx = canvas.getContext('2d');
-      if (ctx) {redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);}
+      if (ctx) {
+        redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);      
+
+        // 임시 연결선 그리기
+        if (temporaryLink) {
+          let nodesWithTemporaryLink = nodes;
+      
+          if (temporaryLink) {
+            const tempNode: Node = {id: -1, x: temporaryLink.endX, y: temporaryLink.endY, width: 1, height: 1, text1: '', text2: '', text3: '', backgroundColor: '', borderColor: '', links: [], zIndex: 0, selected: false, rotation: 0};
+            
+            const tempLink: Link = {id: '-1', fromSide: temporaryLink.startSide, toSide: 'left', lineStyle: lineStyle};
+            
+            nodesWithTemporaryLink = [
+              ...nodes.map(node => 
+                node.id === temporaryLink.startNode.id ? { ...node, links: [...node.links, tempLink] } : node
+              ),
+              tempNode
+            ];
+          }
+    
+          // redrawCanvas(ctx, nodesWithTemporaryLink, drawingActions, dragging ? null : selectionArea);
+          drawLinks(ctx, nodesWithTemporaryLink);
+        }
+      }
     }
-  }, [nodes, selectionArea, dragging]);
+  }, [nodes, selectionArea, dragging, temporaryLink, lineStyle, drawingActions]);
 
   useEffect(() => {
     if (

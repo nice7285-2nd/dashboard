@@ -57,3 +57,11 @@ export type Link = {
   lineStyle: 'solid' | 'dashed' | 'curved';
   text?: string;
 }
+
+export type TemporaryLink = {
+  startNode: Node;
+  startSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';
+  endX: number;
+  endY: number;
+}
+
