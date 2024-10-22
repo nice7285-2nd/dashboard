@@ -1,4 +1,6 @@
-import { Node, SelectionArea, DrawingAction, Link } from '../types';
+import { Node, SelectionArea, DrawingAction, Link, EditingLink } from '../types';
+import { createLesson } from '../actions';
+import { toast } from 'react-toastify';
 
 export const drawRoundedRect = (
   ctx: CanvasRenderingContext2D,
@@ -232,7 +234,7 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
   ctx.stroke();
 
 // 베지어 곡선의 끝점에서의 접선 각도 계산
-  const t = 1; // 곡선의 끝점
+  const t = 1; // 곡선의 점
   const dx = 3 * (1 - t) * (1 - t) * (controlX1 - startX) + 
              6 * (1 - t) * t * (controlX2 - controlX1) + 
              3 * t * t * (endX - controlX2);
@@ -405,3 +407,329 @@ export const getSolidLinkTopPoint = (startX: number, startY: number, endX: numbe
 
   return {x, y, textAlign, textBaseline};
 };  
+
+export const addNode = (
+  nodes: Node[],
+  canvasWidth: number,
+  canvasHeight: number,
+  lastNodePosition: { x: number; y: number },
+  maxZIndex: number
+): { newNode: Node; newMaxZIndex: number; newLastNodePosition: { x: number; y: number } } => {
+  const nodeWidth = 180;
+  const nodeHeight = 100;
+  const gridSize = 20;
+  const MIN_GAP = 20; // 노드 간 최소 간격
+
+  const newId = Date.now();
+  const newZIndex = maxZIndex + 1;
+
+  const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
+
+  // 기존 노드들의 x, y 좌표 수집
+  const existingXPositions = nodes.map(node => node.x);
+  const existingYPositions = nodes.map(node => node.y);
+
+  // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
+  const findAlignedPosition = (positions: number[], value: number, size: number) => {
+    const sortedPositions = Array.from(new Set(positions)).sort((a, b) => a - b);
+
+    // 먼저 같은 위치에 정렬을 시도
+    const samePosition = sortedPositions.find(pos => Math.abs(pos - value) < gridSize);
+    if (samePosition !== undefined) return samePosition;
+
+    // 같은 위치가 없으면 최소 간격을 고려하여 새 위치 찾기
+    for (let i = 0; i < sortedPositions.length; i++) {
+      const currentPos = sortedPositions[i];
+      const nextPos = sortedPositions[i + 1] || canvasWidth;
+      
+      if (value > currentPos + size + MIN_GAP && value < nextPos - MIN_GAP) {
+        return nextPos;
+      }
+      
+      if (value < currentPos - MIN_GAP) {
+        return currentPos;
+      }
+    }
+
+    // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
+    return snapToGrid(Math.max(...sortedPositions, 0) + size + MIN_GAP);
+  };
+
+  let newX = snapToGrid(lastNodePosition.x + nodeWidth + MIN_GAP);
+  let newY = snapToGrid(lastNodePosition.y);
+
+  // 가장 가까운 정렬된 x, y 위치 찾기
+  newX = findAlignedPosition(existingXPositions, newX, nodeWidth);
+  newY = findAlignedPosition(existingYPositions, newY, nodeHeight);
+
+  // 캔버스 경계 체크 및 조정
+  if (newX + nodeWidth > canvasWidth) {
+    newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
+    newY = snapToGrid(Math.max(...existingYPositions) + nodeHeight + MIN_GAP);
+  }
+
+  if (newY + nodeHeight > canvasHeight) {
+    newY = snapToGrid(0);
+    newX = snapToGrid(Math.max(...existingXPositions) + nodeWidth + MIN_GAP);
+  }
+
+  // 겹침 방지
+  const isOverlapping = (x: number, y: number) => {
+    return nodes.some(node => 
+      x < node.x + node.width + MIN_GAP && 
+      x + nodeWidth + MIN_GAP > node.x && 
+      y < node.y + node.height + MIN_GAP && 
+      y + nodeHeight + MIN_GAP > node.y
+    );
+  };
+
+  while (isOverlapping(newX, newY)) {
+    newX = findAlignedPosition(existingXPositions, newX + nodeWidth + MIN_GAP, nodeWidth);
+    if (newX + nodeWidth > canvasWidth) {
+      newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
+      newY = findAlignedPosition(existingYPositions, newY + nodeHeight + MIN_GAP, nodeHeight);
+      if (newY + nodeHeight > canvasHeight) {
+        newY = snapToGrid(0);
+      }
+    }
+  }
+
+  const newNode: Node = {
+    id: newId,
+    x: newX,
+    y: newY,
+    text1: '',
+    text2: '',
+    text3: '',
+    width: nodeWidth,
+    height: nodeHeight,
+    selected: false,
+    links: [],
+    zIndex: newZIndex,
+    backgroundColor: '#FFF',
+    borderColor: '#05f'
+  };
+
+  return { newNode, newMaxZIndex: newZIndex, newLastNodePosition: { x: newX, y: newY } };
+};
+
+export const getClickedNodeAndHandle = (nodes: Node[], x: number, y: number) => {
+  const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
+
+  for (const node of sortedNodes) {
+    if (node.selected) {
+      const rotateHandleX = node.x + node.width / 2;
+      const rotateHandleY = node.y - 20;
+      if (Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5) {
+        return { node, handle: 'rotate' };
+      }
+
+      const handleSize = 10;
+      const handles = [
+        { x: node.x, y: node.y, dir: 'nw' },
+        { x: node.x + node.width, y: node.y, dir: 'ne' },
+        { x: node.x, y: node.y + node.height, dir: 'sw' },
+        { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
+      ];
+
+      for (const handle of handles) {
+        if (x >= handle.x - handleSize / 2 && x <= handle.x + handleSize / 2 && y >= handle.y - handleSize / 2 && y <= handle.y + handleSize / 2) {
+          return { node, handle: handle.dir };
+        }
+      }
+    }
+
+    if (x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) {
+      return { node, handle: null };
+    }
+  }
+  return { node: null, handle: null };
+};
+
+export const getClickedNode = (nodes: Node[], x: number, y: number) => {
+  const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
+  return sortedNodes.find((node) => x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
+};
+
+export const getNodeSide = (node: Node, x: number, y: number): 'top' | 'right' | 'bottom' | 'left' => {
+  const centerX = node.x + node.width / 2;
+  const centerY = node.y + node.height / 2;
+  const dx = x - centerX;
+  const dy = y - centerY;
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    return dx > 0 ? 'right' : 'left';
+  } else {
+    return dy > 0 ? 'bottom' : 'top';
+  }
+};
+
+export const getTouchPos = (
+  canvas: HTMLCanvasElement, 
+  touch: React.Touch
+): { x: number; y: number } => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  
+  const x = (touch.clientX - rect.left) * scaleX;
+  const y = (touch.clientY - rect.top) * scaleY;
+
+  return { x, y };
+};
+
+export const isDragSignificant = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  return Math.sqrt(dx * dx + dy * dy) > 5; // 5픽셀 이상 이동했을 때 드래그로 간주
+};
+
+export const deleteSelectedNodes = (nodes: Node[]): Node[] => {
+  const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+  return nodes.filter(node => !node.selected).map(node => ({
+    ...node,
+    links: node.links.filter(link => !selectedNodeIds.includes(Number(link.id)))
+  }));
+};
+
+export const startEditing = (
+  node: Node,
+  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+  setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
+) => {
+  setEditingNode(node);
+  setEditText({ text1: node.text1, text2: node.text2, text3: node.text3 });
+};
+
+export const finishEditing = (
+  editingNode: Node | null,
+  editText: { text1: string; text2: string; text3: string; },
+  canvas: HTMLCanvasElement | null,
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
+  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+  setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
+) => {
+  if (editingNode && canvas) {
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
+      setNodes(prevNodes => prevNodes.map(node => {
+        if (node.id === editingNode.id) {
+          return { ...node, ...editText, width, height };
+        }
+        return node;
+      }));
+    }
+  }
+  setEditingNode(null);
+  setEditText({ text1: '', text2: '', text3: '' });
+};
+
+export const cancelEditing = (
+  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+  setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
+) => {
+  setEditingNode(null);
+  setEditText({ text1: '', text2: '', text3: '' });
+};
+
+export const finishEditingLink = (
+  editingLink: EditingLink | null,
+  linkText: string,
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
+  setEditingLink: React.Dispatch<React.SetStateAction<EditingLink | null>>,
+  setLinkText: React.Dispatch<React.SetStateAction<string>>
+): void => {
+  if (editingLink) {
+    setNodes(prevNodes => prevNodes.map(node => {
+      if (node.id === editingLink.startNode.id) {
+        const updatedLinks = node.links.map(link => {
+          if (link.id === editingLink.endNode.id.toString()) {
+            return { ...link, text: linkText };
+          }
+          return link;
+        });
+        return { ...node, links: updatedLinks };
+      }
+      return node;
+    }));
+    setEditingLink(null);
+    setLinkText('');
+  }
+};
+export const alignNodesVertically = (nodes: Node[]): Node[] => {
+  const selectedNodes = nodes.filter((node) => node.selected);
+  if (selectedNodes.length < 2) return nodes;
+  const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
+  const baseY = leftmostNode.y;
+  return nodes.map((node) => {
+    if (node.selected) {
+      return { ...node, y: baseY };
+    }
+    return node;
+  });
+};
+
+export const alignNodesHorizontally = (nodes: Node[]): Node[] => {
+  const selectedNodes = nodes.filter((node) => node.selected);
+  if (selectedNodes.length < 2) return nodes;
+  const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
+  const baseX = topmostNode.x;
+  return nodes.map((node) => {
+    if (node.selected) {
+      return { ...node, x: baseX };
+    }
+    return node;
+  });
+};
+
+export const saveCanvas = async (
+  title: string,
+  nodes: Node[],
+  drawingActions: DrawingAction[],
+  author: string | null,
+  email: string | null,
+  setShowSavePopup: React.Dispatch<React.SetStateAction<boolean>>
+): Promise<void> => {
+  setShowSavePopup(false);
+  const filename = `${new Date().toLocaleString('ko-KR', { 
+    timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
+  }).replace(/[^\d]/g, '')}.json`;
+  const filedir = `lessons`;
+  const filePath = `/${filedir}/${filename}`;
+  const data = { filedir, filename, title, nodes, drawings: drawingActions };
+
+  try {
+    // 파일 저장
+    const response = await fetch('/api/save-lesson', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+      // 데이터베이스에 저장
+      const formData = new FormData();
+      formData.append('author', author || '');
+      formData.append('email', email || '');
+      formData.append('title', title);
+      formData.append('path', filePath);
+      const result = await createLesson(formData);
+
+      if (result.message === 'Created Lesson.') {
+        toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
+      } else {
+        throw new Error(result.message);
+      }
+    } else {
+      throw new Error('교안 파일 저장에 실패했습니다.');
+    }
+  } catch (error) {
+    console.error('교안 저장 중 오류 발생:', error);
+    toast.error('교안 저장에 실패했습니다. 다시 시도해 주세요.');
+  }
+};
+
+ 

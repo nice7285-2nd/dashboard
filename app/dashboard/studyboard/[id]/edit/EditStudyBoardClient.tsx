@@ -6,13 +6,17 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import { redrawCanvas, calculateNodeSize, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint, drawLinks } from './utils/canvasUtils';
+import { redrawCanvas, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
-import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link, TemporaryLink } from './types';
-import { createLesson } from './actions';
-import { CircularProgress, Box, Typography } from '@mui/material';
+import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link, TemporaryLink, EditingLink } from './types';
+import { CircularProgress, Box } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { deleteSelectedNodes } from './utils/canvasUtils';
+import { startEditing, finishEditing, cancelEditing } from './utils/canvasUtils';
+import { alignNodesVertically, alignNodesHorizontally } from './utils/canvasUtils';
+import { saveCanvas } from './utils/canvasUtils';
+import { finishEditingLink } from './utils/canvasUtils';
 
 interface EditStudyBoardClientProps {
   params: { id: string };
@@ -62,8 +66,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
   const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [debugInfo, setDebugInfo] = useState<{ original: { x: number, y: number }, calculated: { x: number, y: number } } | null>(null);
-  const [editingLink, setEditingLink] = useState<{ fromNode: Node, toNode: Node, x: number, y: number } | null>(null);
+  const [editingLink, setEditingLink] = useState<EditingLink | null>(null);
   const [linkText, setLinkText] = useState('');
   const prevNodesRef = useRef(nodes);
   const prevDrawingActionsRef = useRef(drawingActions);
@@ -73,82 +76,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
-  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
+  const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
-
-  const getClickedNodeAndHandle = (x: number, y: number) => {
-    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
-
-    for (const node of sortedNodes) {
-      if (node.selected) {
-        const rotateHandleX = node.x + node.width / 2;
-        const rotateHandleY = node.y - 20;
-        if (Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5) {
-          return { node, handle: 'rotate' };
-        }
-
-        const handleSize = 10;
-        const handles = [
-          { x: node.x, y: node.y, dir: 'nw' },
-          { x: node.x + node.width, y: node.y, dir: 'ne' },
-          { x: node.x, y: node.y + node.height, dir: 'sw' },
-          { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
-        ];
-
-        for (const handle of handles) {
-          if (x >= handle.x - handleSize / 2 && x <= handle.x + handleSize / 2 && y >= handle.y - handleSize / 2 && y <= handle.y + handleSize / 2) {
-            return { node, handle: handle.dir };
-          }
-        }
-      }
-
-      if (x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) {
-        return { node, handle: null };
-      }
-    }
-    return { node: null, handle: null };
-  };
-
-  const getClickedNode = (x: number, y: number) => {
-    const sortedNodes = [...nodes].sort((a, b) => b.zIndex - a.zIndex);
-    return sortedNodes.find((node) => x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
-  };
-
-  const getNodeSide = (node: Node, x: number, y: number): 'top' | 'right' | 'bottom' | 'left' => {
-    const centerX = node.x + node.width / 2;
-    const centerY = node.y + node.height / 2;
-    const dx = x - centerX;
-    const dy = y - centerY;
-
-    if (Math.abs(dx) > Math.abs(dy)) {return dx > 0 ? 'right' : 'left';}
-    else {return dy > 0 ? 'bottom' : 'top';}
-  };
-
-  const alignNodesVertically = () => {
-    const selectedNodes = nodes.filter((node) => node.selected);
-    if (selectedNodes.length < 2) return;
-    const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
-    const baseY = leftmostNode.y;
-    const newNodes = nodes.map((node) => {
-      if (node.selected) {return { ...node, y: baseY };}
-      return node;
-    });
-
-    setNodes(newNodes);
-  };
-
-  const alignNodesHorizontally = () => {
-    const selectedNodes = nodes.filter((node) => node.selected);
-    if (selectedNodes.length < 2) return;
-    const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
-    const baseX = topmostNode.x;
-    const newNodes = nodes.map((node) => {
-      if (node.selected) {return { ...node, x: baseX };}
-      return node;
-    });
-
-    setNodes(newNodes);
-  };
 
   // 전체 지우기 함수
   const clearAll = () => {
@@ -165,40 +94,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setLastNodePosition({ x: 100, y: 200 });
   };
 
-  // 연결선 텍스트 입력 완료 처리 함수
-  const finishEditingLink = () => {
-    if (editingLink) {
-      setNodes(prevNodes => prevNodes.map(node => {
-        if (node.id === editingLink.fromNode.id) {
-          const updatedLinks = node.links.map(link => {
-            if (link.id === editingLink.toNode.id.toString()) {return { ...link, text: linkText };}
-            return link;
-          });
-          return { ...node, links: updatedLinks };
-        }
-        return node;
-      }));
-      setEditingLink(null);
-      setLinkText('');
-    }
-  };
-
-  // 터치 좌표를 캔버스 상대 좌표로 변환하는 함수
-  const getTouchPos = (canvas: HTMLCanvasElement, touch: React.Touch) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    // navWidth를 제외하 않고 계산
-    const x = (touch.clientX - rect.left) * scaleX;
-    const y = (touch.clientY - rect.top) * scaleY;
-
-    setDebugInfo({
-      original: { x: touch.clientX, y: touch.clientY },
-      calculated: { x, y }
-    });
-
-    return { x, y };
+  const handleFinishEditingLink = () => {
+    finishEditingLink(
+      editingLink,
+      linkText,
+      setNodes,
+      setEditingLink,
+      setLinkText
+    );
   };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
@@ -208,153 +111,48 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     return true;
   };
 
-  const addNode = () => {
+  const handleAddNode = () => {
     if (!canvasRef.current) return;
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
-    const canvasWidth = canvasRect.width;
-    const canvasHeight = canvasRect.height;
-    const nodeWidth = 180;
-    const nodeHeight = 100;
-    const gridSize = 20;
-    const MIN_GAP = 20; // 노드 간 최소 간격
-
-    const newId = Date.now();
-    const newZIndex = maxZIndex + 1;
-
-    const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
-
-    // 기존 노드들의 x, y 좌표 수집
-    const existingXPositions = nodes.map(node => node.x);
-    const existingYPositions = nodes.map(node => node.y);
-
-    // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
-    const findAlignedPosition = (positions: number[], value: number, size: number) => {
-      const sortedPositions = Array.from(new Set(positions)).sort((a, b) => a - b);
-
-      // 먼저 같은 위치에 정렬을 시도
-      const samePosition = sortedPositions.find(pos => Math.abs(pos - value) < gridSize);
-      if (samePosition !== undefined) return samePosition;
-
-      // 같은 위치가 없으면 최소 간격을 고려하여 새 위치 찾기
-      for (let i = 0; i < sortedPositions.length; i++) {
-        const currentPos = sortedPositions[i];
-        const nextPos = sortedPositions[i + 1] || canvasWidth;
-        
-        if (value > currentPos + size + MIN_GAP && value < nextPos - MIN_GAP) {
-          return nextPos;
-        }
-        
-        if (value < currentPos - MIN_GAP) {
-          return currentPos;
-        }
-      }
-
-      // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
-      return snapToGrid(Math.max(...sortedPositions, 0) + size + MIN_GAP);
-    };
-
-    let newX = snapToGrid(lastNodePosition.x + nodeWidth + MIN_GAP);
-    let newY = snapToGrid(lastNodePosition.y);
-
-    // 가장 가까운 정렬된 x, y 위치 찾기
-    newX = findAlignedPosition(existingXPositions, newX, nodeWidth);
-    newY = findAlignedPosition(existingYPositions, newY, nodeHeight);
-
-    // 캔버스 경계 체크 및 조정
-    if (newX + nodeWidth > canvasWidth) {
-      newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
-      newY = snapToGrid(Math.max(...existingYPositions) + nodeHeight + MIN_GAP);
-    }
-
-    if (newY + nodeHeight > canvasHeight) {
-      newY = snapToGrid(0);
-      newX = snapToGrid(Math.max(...existingXPositions) + nodeWidth + MIN_GAP);
-    }
-
-    // 겹침 방지
-    const isOverlapping = (x: number, y: number) => {
-      return nodes.some(node => 
-        x < node.x + node.width + MIN_GAP && 
-        x + nodeWidth + MIN_GAP > node.x && 
-        y < node.y + node.height + MIN_GAP && 
-        y + nodeHeight + MIN_GAP > node.y
-      );
-    };
-
-    while (isOverlapping(newX, newY)) {
-      newX = findAlignedPosition(existingXPositions, newX + nodeWidth + MIN_GAP, nodeWidth);
-      if (newX + nodeWidth > canvasWidth) {
-        newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
-        newY = findAlignedPosition(existingYPositions, newY + nodeHeight + MIN_GAP, nodeHeight);
-        if (newY + nodeHeight > canvasHeight) {
-          newY = snapToGrid(0);
-        }
-      }
-    }
-
-    const newNode: Node = {
-      id: newId,
-      x: newX,
-      y: newY,
-      text1: '',
-      text2: '',
-      text3: '',
-      width: nodeWidth,
-      height: nodeHeight,
-      selected: false,
-      links: [],
-      zIndex: newZIndex,
-      backgroundColor: '#FFF',
-      borderColor: '#05f'
-    };
+    const { newNode, newMaxZIndex, newLastNodePosition } = addNode(
+      nodes,
+      canvasRect.width,
+      canvasRect.height,
+      lastNodePosition,
+      maxZIndex
+    );
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
-    setMaxZIndex(newZIndex);
-    setLastNodePosition({ x: newX, y: newY });
-    startEditing(newNode);
+    setMaxZIndex(newMaxZIndex);
+    setLastNodePosition(newLastNodePosition);
+    startEditing(newNode, setEditingNode, setEditText);
   };
 
-  const deleteSelectedNodes = () => {
-    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
-    const updatedNodes = nodes.filter(node => !node.selected).map(node => ({...node,
-      links: node.links.filter(link => !selectedNodeIds.includes(Number(link.id)))
-    }));
+  const handleDeleteSelectedNodes = () => {
+    const updatedNodes = deleteSelectedNodes(nodes);
     setNodes(updatedNodes);
   };
 
-  const startEditing = (node: Node) => {
-    setEditingNode(node);
-    setEditText({ text1: node.text1, text2: node.text2, text3: node.text3 });
+  const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
+    setLineStyle(style);
+    handleToolChange('link');
+  };
+  
+  const handleStartEditing = (node: Node) => {
+    startEditing(node, setEditingNode, setEditText);
   };
 
-  const finishEditing = () => {
-    if (editingNode) {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
-          setNodes(prevNodes => prevNodes.map(node => {
-            if (node.id === editingNode.id) {
-              return { ...node, ...editText, width, height };
-            }
-            return node;
-          }));
-        }
-      }
-      setEditingNode(null);
-      setEditText({ text1: '', text2: '', text3: '' });
-    }
+  const handleFinishEditing = () => {
+    finishEditing(editingNode, editText, canvasRef.current, setNodes, setEditingNode, setEditText);
   };
 
-  const cancelEditing = () => {
-    setEditingNode(null);
-    setEditText({ text1: '', text2: '', text3: '' });
+  const handleCancelEditing = () => {
+    cancelEditing(setEditingNode, setEditText);
   };
   
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Delete') {deleteSelectedNodes();
+    if (e.key === 'Delete') {handleDeleteSelectedNodes();
     } else if (e.key === 'Escape') {
       // ESC 키를 눌렀을 때 연결선 그리기 초기화
       setLinking(null);
@@ -365,19 +163,19 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           const inputs = document.querySelectorAll('input');
           const currentIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
           if (currentIndex < inputs.length - 1) {(inputs[currentIndex + 1] as HTMLInputElement).focus();
-          } else {finishEditing();}
-        } else {finishEditing();}
-      } else if (e.key === 'Escape') {cancelEditing();}
+          } else {handleFinishEditing();}
+        } else {handleFinishEditing();}
+      } else if (e.key === 'Escape') {handleCancelEditing();}
     } else {
       const selectedNode = nodes.find(node => node.selected);
-      if (selectedNode && e.key.length === 1) {startEditing(selectedNode);}
+      if (selectedNode && e.key.length === 1) {handleStartEditing(selectedNode);}
     }
   }, [nodes, editingNode]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
-      const clickedNode = getClickedNode(offsetX, offsetY);
+      const clickedNode = getClickedNode(nodes, offsetX, offsetY);
       
       if (clickedNode) {
         if (!clickedNode.selected) {
@@ -395,7 +193,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setDragStartPosition({ x: offsetX, y: offsetY });
     } else if (tool === 'link') {
       const { offsetX, offsetY } = e.nativeEvent;
-      const clickedNode = getClickedNode(offsetX, offsetY);
+      const clickedNode = getClickedNode(nodes, offsetX, offsetY);
       if (clickedNode) {
         const side = getNodeSide(clickedNode, offsetX, offsetY);
         setTemporaryLink({ startNode: clickedNode, startSide: side, endX: offsetX, endY: offsetY });
@@ -418,7 +216,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         setCurrentDrawingPoints([{ x, y }]);
       }
     } else if (tool === 'move') {
-      const { node, handle } = getClickedNodeAndHandle(x, y);
+      const { node, handle } = getClickedNodeAndHandle(nodes, x, y);
       if (node) {
         setIsDragging(true);        
         if (handle) {setResizing({ node, direction: handle });}
@@ -591,7 +389,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const selectedNodes = nodes.map((node) => ({...node, selected: isNodeInSelectionArea(node, selectionArea),}));
       setNodes(selectedNodes);
 
-      // 선택된 노드들의 텍스트를 읽어주는 기능 추가
+      // 선택된 노드들의 텍트를 읽어주는 기능 추가
       if (isVoiceEnabled) {
         const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text2);
         readSelectedTexts(selectedTexts);
@@ -621,7 +419,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      const clickedNode = getClickedNode(x, y);
+      const clickedNode = getClickedNode(nodes, x, y);
       if (clickedNode) {
         const side = getNodeSide(clickedNode, x, y);
         if (linking === null) {setLinking({ id: clickedNode.id, side });}
@@ -662,7 +460,15 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
               textY = y || 0;
             }
             
-            setEditingLink({ fromNode, toNode: clickedNode, x: textX, y: textY });
+            setEditingLink({
+              startNode: fromNode,
+              endNode: clickedNode,
+              fromSide: linking.side,
+              toSide: side,
+              lineStyle: lineStyle,
+              x: textX,
+              y: textY
+            });
 
             let link = '';
             if (newLink.lineStyle === 'curved') {link = 'Describing';}
@@ -717,13 +523,21 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setTool(newTool);
     if (newTool === 'addNode') {
       setPenColor('#FFFFFF');
-      addNode();
+      handleAddNode();
       setTool('move');
     } else if (newTool === 'draw') {
       setPenColor('#000000');
     }
   };
 
+  const handleAlignNodesVertically = () => {
+    setNodes(alignNodesVertically(nodes));
+  };
+
+  const handleAlignNodesHorizontally = () => {
+    setNodes(alignNodesHorizontally(nodes));
+  };
+  
   const handleNodeColorChange = (color: string) => {
     setNodeColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
@@ -731,7 +545,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     ));
   };
 
-  const handleNodeBorderColorChange = (color: string) => {
+  const handleNodeBorderColorChange = (color: string): void => {
     setNodeBorderColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, borderColor: color } : node
@@ -743,7 +557,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
   
 
-  // 히스토리에 현재 상태 추가 함수 수정
+  // 히토리에 현재 상태 추가 함수 수정
   const addToHistory = () => {
     setHistory(prevHistory => {
       // 새로운 상태를 추가합니다.
@@ -807,52 +621,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
 
   // 저장 기능 수정
-  const saveCanvas = async (title: string) => {
-    setShowSavePopup(false);
-    const filename = `${new Date().toLocaleString('ko-KR', { 
-      timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
-    }).replace(/[^\d]/g, '')}.json`;
-    const filedir = `lessons`;
-    const filePath = `/${filedir}/${filename}`;
-    const data = { filedir, filename, title, nodes, drawings: drawingActions };
-
-    try {
-      // 파일 저장
-      const response = await fetch('/api/save-lesson', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        // 데이터베이스에 저장
-        const formData = new FormData();
-        formData.append('author', author || '');
-        formData.append('email', email || '');
-        formData.append('title', title);
-        formData.append('path', filePath);
-        const result = await createLesson(formData);
-
-        if (result.message === 'Created Lesson.') {
-          toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
-        } else {
-          throw new Error(result.message);
-        }
-      } else {
-        throw new Error('교안 파일 저장에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('교안 저장 중 오류 발생:', error);
-      toast.error('교안 저장에 실패했습니다. 다시 시도해 주세요.');
-    }
-  };
-
-  const isDragSignificant = (start: { x: number; y: number }, end: { x: number; y: number }) => {
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    return Math.sqrt(dx * dx + dy * dy) > 5; // 5픽셀 이상 이동했을 때 드래그로 간주
+  const handleSaveCanvas = (title: string) => {
+    saveCanvas(title, nodes, drawingActions, author, email, setShowSavePopup);
   };
 
   // 음성 읽기 함수 수정
@@ -862,7 +632,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'en-US'; // 영어로 설정
       utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
-      utterance.pitch = 1.0; // 음높이 설정 (1.0이 ���본)
+      utterance.pitch = 1.0; // 음높이 설정 (1.0이 본)
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -1031,11 +801,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     }
   }, [nodes, drawingActions, isDragging]);
 
-  const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
-    setLineStyle(style);
-    handleToolChange('link');
-  };
-
   useEffect(() => {
     setUndoCount(historyIndex);
     setRedoCount(history.nodes.length - historyIndex - 1);
@@ -1062,12 +827,20 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
             <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
             <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={finishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { finishEditing(); } }} />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={handleFinishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { handleFinishEditing(); } }} />
           </div>
         )}
         {editingLink && (
           <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
-            <input value={linkText} onChange={(e) => setLinkText(e.target.value)} onBlur={finishEditingLink} onKeyDown={(e) => { if (e.key === 'Enter') finishEditingLink(); }} style={{ padding: '5px', border: 'none', outline: 'none', backgroundColor: 'transparent', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', width: '80px' }} placeholder="설명 입력" autoFocus />
+            <input 
+              value={linkText} 
+              onChange={(e) => setLinkText(e.target.value)} 
+              onBlur={handleFinishEditingLink} 
+              onKeyDown={(e) => { if (e.key === 'Enter') handleFinishEditingLink(); }} 
+              style={{ padding: '5px', border: 'none', outline: 'none', backgroundColor: 'transparent', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', width: '80px' }} 
+              placeholder="설명 입력" 
+              autoFocus 
+            />
           </div>
         )}
       </div>
@@ -1079,8 +852,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         {shouldRenderTool('link') && <ToolButton tool="link" icon="/icon-connect.svg" onClick={() => handleToolChange('link')} currentTool={tool} />}
         {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
         {shouldRenderTool('clear') && <ToolButton tool="clear" icon="/icon-clear.svg" onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
-        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={alignNodesVertically} currentTool={tool} />}
-        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={alignNodesHorizontally} currentTool={tool} />}
+        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={handleAlignNodesVertically} currentTool={tool} />}
+        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={handleAlignNodesHorizontally} currentTool={tool} />}
         {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
         <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} count={undoCount} />
         <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} count={redoCount}/>
@@ -1157,7 +930,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           </div>
         )}
       </div>
-      {showSavePopup && <SaveLessonPopup onSave={saveCanvas} onCancel={() => setShowSavePopup(false)} />}
+      {showSavePopup && <SaveLessonPopup onSave={handleSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
       {showSaveRecordingPopup && <SaveRecordingPopup author={author || ''} email={email || ''} onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />

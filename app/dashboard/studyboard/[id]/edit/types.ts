@@ -65,3 +65,12 @@ export type TemporaryLink = {
   endY: number;
 }
 
+export type EditingLink = {
+  startNode: Node;
+  endNode: Node;
+  fromSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';
+  toSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';
+  lineStyle: 'solid' | 'dashed' | 'curved';
+  x: number;
+  y: number;
+};
