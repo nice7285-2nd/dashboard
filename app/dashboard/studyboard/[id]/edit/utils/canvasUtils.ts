@@ -152,6 +152,8 @@ export const drawLinks = (
 
           // 화살표 그리기
           const headlen = 22;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
           ctx.beginPath();
           ctx.moveTo(toPoint.x, toPoint.y);
           ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
