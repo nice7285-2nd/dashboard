@@ -231,7 +231,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
     const findAlignedPosition = (positions: number[], value: number, size: number) => {
       const sortedPositions = Array.from(new Set(positions)).sort((a, b) => a - b);
-        
+
       // 먼저 같은 위치에 정렬을 시도
       const samePosition = sortedPositions.find(pos => Math.abs(pos - value) < gridSize);
       if (samePosition !== undefined) return samePosition;
