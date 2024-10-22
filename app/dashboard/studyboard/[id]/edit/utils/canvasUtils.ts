@@ -317,13 +317,13 @@ export const redrawCanvas = (
   // 지우개 영역 교안 복구를 위해서 맨위에 와야함
   drawDrawings(ctx, drawings);
 
-  // 연결선 먼저 그리기 (z-index가 가장 낮도록)
-  drawLinks(ctx, nodes);
-
   // 노드 그리기
   nodes.forEach(node => {
     drawNode(ctx, node);
   });
+
+  // 연결선 먼저 그리기 (z-index가 가장 낮도록)
+  drawLinks(ctx, nodes);
 
   // 선택 영역 그리기
   if (selectionArea) {

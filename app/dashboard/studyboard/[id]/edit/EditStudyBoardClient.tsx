@@ -209,15 +209,105 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
 
   const addNode = () => {
-    let offsetX = 0;
-    if (nodes.length > 0) {offsetX = 360;} 
+    if (!canvasRef.current) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const canvasWidth = canvasRect.width;
+    const canvasHeight = canvasRect.height;
+    const nodeWidth = 180;
+    const nodeHeight = 100;
+    const gridSize = 20;
+    const MIN_GAP = 20; // 노드 간 최소 간격
 
     const newId = Date.now();
     const newZIndex = maxZIndex + 1;
-    const newX = lastNodePosition.x + offsetX; // 기존 노드의 너비(180) + 간격(180)
-    const newY = lastNodePosition.y;
 
-    const newNode: Node = { id: newId, x: newX, y: newY, text1: '', text2: '', text3: '', width: 180, height: 100, selected: false, links: [], zIndex: newZIndex, backgroundColor: '#FFF', borderColor: '#05f' };
+    const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
+
+    // 기존 노드들의 x, y 좌표 수집
+    const existingXPositions = nodes.map(node => node.x);
+    const existingYPositions = nodes.map(node => node.y);
+
+    // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
+    const findAlignedPosition = (positions: number[], value: number, size: number) => {
+      const sortedPositions = Array.from(new Set(positions)).sort((a, b) => a - b);
+        
+      // 먼저 같은 위치에 정렬을 시도
+      const samePosition = sortedPositions.find(pos => Math.abs(pos - value) < gridSize);
+      if (samePosition !== undefined) return samePosition;
+
+      // 같은 위치가 없으면 최소 간격을 고려하여 새 위치 찾기
+      for (let i = 0; i < sortedPositions.length; i++) {
+        const currentPos = sortedPositions[i];
+        const nextPos = sortedPositions[i + 1] || canvasWidth;
+        
+        if (value > currentPos + size + MIN_GAP && value < nextPos - MIN_GAP) {
+          return nextPos;
+        }
+        
+        if (value < currentPos - MIN_GAP) {
+          return currentPos;
+        }
+      }
+
+      // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
+      return snapToGrid(Math.max(...sortedPositions, 0) + size + MIN_GAP);
+    };
+
+    let newX = snapToGrid(lastNodePosition.x + nodeWidth + MIN_GAP);
+    let newY = snapToGrid(lastNodePosition.y);
+
+    // 가장 가까운 정렬된 x, y 위치 찾기
+    newX = findAlignedPosition(existingXPositions, newX, nodeWidth);
+    newY = findAlignedPosition(existingYPositions, newY, nodeHeight);
+
+    // 캔버스 경계 체크 및 조정
+    if (newX + nodeWidth > canvasWidth) {
+      newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
+      newY = snapToGrid(Math.max(...existingYPositions) + nodeHeight + MIN_GAP);
+    }
+
+    if (newY + nodeHeight > canvasHeight) {
+      newY = snapToGrid(0);
+      newX = snapToGrid(Math.max(...existingXPositions) + nodeWidth + MIN_GAP);
+    }
+
+    // 겹침 방지
+    const isOverlapping = (x: number, y: number) => {
+      return nodes.some(node => 
+        x < node.x + node.width + MIN_GAP && 
+        x + nodeWidth + MIN_GAP > node.x && 
+        y < node.y + node.height + MIN_GAP && 
+        y + nodeHeight + MIN_GAP > node.y
+      );
+    };
+
+    while (isOverlapping(newX, newY)) {
+      newX = findAlignedPosition(existingXPositions, newX + nodeWidth + MIN_GAP, nodeWidth);
+      if (newX + nodeWidth > canvasWidth) {
+        newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
+        newY = findAlignedPosition(existingYPositions, newY + nodeHeight + MIN_GAP, nodeHeight);
+        if (newY + nodeHeight > canvasHeight) {
+          newY = snapToGrid(0);
+        }
+      }
+    }
+
+    const newNode: Node = {
+      id: newId,
+      x: newX,
+      y: newY,
+      text1: '',
+      text2: '',
+      text3: '',
+      width: nodeWidth,
+      height: nodeHeight,
+      selected: false,
+      links: [],
+      zIndex: newZIndex,
+      backgroundColor: '#FFF',
+      borderColor: '#05f'
+    };
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setMaxZIndex(newZIndex);
@@ -772,7 +862,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'en-US'; // 영어로 설정
       utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
-      utterance.pitch = 1.0; // 음높이 설정 (1.0이 기본값)
+      utterance.pitch = 1.0; // 음높이 설정 (1.0이 ���본)
       window.speechSynthesis.speak(utterance);
     }
   };
