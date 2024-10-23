@@ -2,6 +2,9 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  role: string;
+  created_at: Date;
+  login_at: Date;
   password: string;
   auth_key: string;
 };

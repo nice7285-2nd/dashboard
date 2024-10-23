@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } from 'react';
+import { PencilIcon, CloudArrowUpIcon, ArrowLongLeftIcon, ArrowsPointingOutIcon, CursorArrowRippleIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, SquaresPlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useSearchParams } from 'next/navigation';
 import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
@@ -822,18 +823,18 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         )}
       </div>
       <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        {shouldRenderTool('save') && <ToolButton tool="save" icon="/icon-save.svg" onClick={handleSaveClick} currentTool={tool} />}
-        {shouldRenderTool('move') && <ToolButton tool="move" icon="/icon-move.svg" onClick={() => handleToolChange('move')} currentTool={tool} />}
-        {shouldRenderTool('draw') && <ToolButton tool="draw" icon="/icon-draw.svg" onClick={() => handleToolChange('draw')} currentTool={tool} />}
-        {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon="/icon-addnode.svg" onClick={() => handleToolChange('addNode')} currentTool={tool} />}
-        {shouldRenderTool('link') && <ToolButton tool="link" icon="/icon-connect.svg" onClick={() => handleToolChange('link')} currentTool={tool} />}
+        {shouldRenderTool('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={handleSaveClick} currentTool={tool} />}
+        {shouldRenderTool('move') && <ToolButton tool="move" icon={<ArrowsPointingOutIcon className="h-6 w-6" />} onClick={() => handleToolChange('move')} currentTool={tool} />}
+        {shouldRenderTool('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => handleToolChange('draw')} currentTool={tool} />}
+        {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => handleToolChange('addNode')} currentTool={tool} />}
+        {shouldRenderTool('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => handleToolChange('link')} currentTool={tool} />}
         {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
-        {shouldRenderTool('clear') && <ToolButton tool="clear" icon="/icon-clear.svg" onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
+        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
         {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon="/icon-alignv.svg" onClick={handleAlignNodesVertically} currentTool={tool} />}
         {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon="/icon-alignh.svg" onClick={handleAlignNodesHorizontally} currentTool={tool} />}
         {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
-        <ToolButton tool="undo" icon="/icon-undo.svg" onClick={undo} currentTool={tool} count={undoCount} />
-        <ToolButton tool="redo" icon="/icon-redo.svg" onClick={redo} currentTool={tool} count={redoCount}/>
+        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currentTool={tool} count={undoCount} />
+        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currentTool={tool} count={redoCount}/>
         <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currentTool={isVoiceEnabled ? 'voice' : ''} />
         {mode !== 'play' && (
           <>

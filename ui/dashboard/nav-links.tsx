@@ -6,6 +6,7 @@ import {
   UsersIcon,
   PlayCircleIcon,
   ClipboardDocumentListIcon,
+  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,6 +28,11 @@ const links = [
     href: '/dashboard/users',
     icon: UsersIcon,
   },
+  {
+    name: 'AI학습',
+    href: '/dashboard/ai-study',
+    icon: ComputerDesktopIcon,
+  },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
 
@@ -44,7 +50,7 @@ export default function NavLinks() {
             { 'bg-sky-100 text-blue-600': pathname === href }
           )}
         >
-          <LinkIcon className="w-6" />
+          <LinkIcon className="h-6 w-6" />
           <span className="hidden md:block">{name}</span>
         </Link>
       ))}
