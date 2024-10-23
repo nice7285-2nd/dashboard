@@ -62,16 +62,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
               e.stopPropagation();
               onDelete(video.id);
             }}
-            style={{
-              backgroundColor: 'rgba(255, 0, 0, 0.7)',
-              color: 'white',
-              border: 'none',
-              padding: '3px 8px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '12px',
-              marginLeft: '10px'
-            }}
+            className="bg-orange-600 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-orange-700"
           >
             삭제
           </button>
@@ -206,7 +197,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         }
 
         setVideos(prevVideos => prevVideos.filter(video => video.id !== id));
-        showToast('비디오가 성공적으로 삭제되��습니다.', 'success');
+        showToast('비디오가 성공적으로 삭제되었습니다.', 'success');
         router.refresh();
       } catch (error) {
         console.error('삭제 중 오류 발생:', error);

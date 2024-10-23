@@ -86,9 +86,11 @@ export function DeleteUser({ email }: { email: string }) {
 function DeleteConfirmPopup({ onConfirm, onCancel }: { onConfirm: () => void, onCancel: () => void }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl">
-        <h2 className="text-xl font-bold mb-4">삭제 확인</h2>
-        <p className="mb-6">이 계정을 삭제하시겠습니까?</p>
+      <div className="bg-white p-4 rounded-lg shadow-xl min-w-[300px]">
+        <div className="mb-8">
+          <h2 className="text-lg font-bold mb-3">삭제 확인</h2>
+          <p className="mb-8">이 계정을 삭제하시겠습니까?</p>
+        </div>
         <div className="flex justify-end space-x-4">
           <button
             onClick={onCancel}
@@ -98,7 +100,7 @@ function DeleteConfirmPopup({ onConfirm, onCancel }: { onConfirm: () => void, on
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
           >
             삭제
           </button>

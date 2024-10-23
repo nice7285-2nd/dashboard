@@ -106,7 +106,7 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
 function DeleteConfirmPopup({ onConfirm, onCancel }: { onConfirm: () => void, onCancel: () => void }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl">
+      <div className="bg-white p-4 rounded-lg shadow-xl">
         <h2 className="text-xl font-bold mb-4">삭제 확인</h2>
         <p className="mb-6">이 교안을 삭제하시겠습니까?</p>
         <div className="flex justify-end space-x-4">

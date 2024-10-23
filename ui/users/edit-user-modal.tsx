@@ -49,18 +49,18 @@ export default function EditUserModal({ user, onClose }: { user: User, onClose: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none">
-      <div className="relative w-full max-w-xs mx-auto">
-        <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
-          <div className="p-5">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none">
+      <div className="relative max-w-xs mx-auto min-w-[300px]">
+        <div className="relative flex flex-col bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
+          <div className="p-4">
             <h3 className="text-lg font-semibold mb-3">사용자 정보 수정</h3>
             <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label className="block text-slate-700 text-sm font-bold mb-2" htmlFor="role">
+              <div className="mb-8">
+                <label className="block mb-2" htmlFor="role">
                   역할
                 </label>
                 <select
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-slate-700 leading-tight focus:outline-none focus:shadow-outline text-sm"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                   id="role"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
@@ -75,7 +75,7 @@ export default function EditUserModal({ user, onClose }: { user: User, onClose: 
               {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
               <div className="flex items-center justify-end">
                 <button
-                  className="text-slate-500 background-transparent font-bold uppercase px-4 py-2 text-xs outline-none focus:outline-none mr-2"
+                  className="background-transparent uppercase px-4 py-2 outline-none focus:outline-none mr-2"
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
@@ -83,7 +83,7 @@ export default function EditUserModal({ user, onClose }: { user: User, onClose: 
                   취소
                 </button>
                 <button
-                  className="bg-blue-500 text-white active:bg-blue-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none"
+                  className="bg-blue-500 text-white active:bg-blue-600 uppercase px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none"
                   type="submit"
                   disabled={isSubmitting}
                 >

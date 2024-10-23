@@ -25,7 +25,7 @@ export default async function Page() {
           <div className="space-y-1">
             <h2 className="text-sm font-medium text-gray-700">Name</h2>
             <input
-              className="w-full px-3 py-2 text-lg font-semibold border border-gray-300 rounded-md"
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md"
               type="text"
               value={user.name}
               readOnly
@@ -36,7 +36,7 @@ export default async function Page() {
           <div className="space-y-1">
             <h2 className="text-sm font-medium text-gray-700">Email</h2>
             <input
-              className="w-full px-3 py-2 text-lg font-semibold border border-gray-300 rounded-md"
+              className="px-3 py-2 text-sm border border-gray-300 rounded-md"
               type="email"
               value={user.email}
               readOnly
@@ -46,13 +46,13 @@ export default async function Page() {
           {/* UUID*/}
           <div className="space-y-1">
             <h2 className="text-sm font-medium text-gray-700">UUID</h2>
-            <p className="text-lg font-semibold">{user.id}</p>
+            <p className="text-sm">{user.id}</p>
           </div>
 
           {/* Auth Key */}
           <div className="space-y-1">
             <h2 className="text-sm font-medium text-gray-700">Auth Key</h2>
-            <p className="text-lg font-semibold">{user.auth_key}</p>
+            <p className="text-sm">{user.auth_key}</p>
           </div>
         </div>
       </div>

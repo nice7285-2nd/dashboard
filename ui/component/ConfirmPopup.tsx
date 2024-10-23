@@ -8,25 +8,25 @@ interface ConfirmPopupProps {
 
 const ConfirmPopup: React.FC<ConfirmPopupProps> = ({ message, onConfirm, onCancel }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none">
-      <div className="relative w-full max-w-sm mx-auto">
-        <div className="relative flex flex-col w-full bg-white border-0 rounded-lg shadow-lg outline-none focus:outline-none">
-          <div className="p-5">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none">
+      <div className="relative max-w-sm mx-auto min-w-[300px]">
+        <div className="relative flex flex-col bg-white p-4 border-0 rounded-lg shadow-lg outline-none focus:outline-none">
+          <div className="mb-8">
             <h3 className="text-lg font-semibold mb-3">확인</h3>
-            <p className="text-slate-500 text-sm leading-relaxed">
+            <p className="leading-relaxed text-sm">
               {message}
             </p>
           </div>
-          <div className="flex items-center justify-end p-4">
+          <div className="flex items-center justify-end">
             <button
-              className="text-slate-500 background-transparent font-bold uppercase px-4 py-2 text-xs outline-none focus:outline-none mr-2"
+              className="background-transparent uppercase px-4 py-2 outline-none focus:outline-none mr-2 text-sm"
               type="button"
               onClick={onCancel}
             >
               취소
             </button>
             <button
-              className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none"
+              className="bg-orange-600 text-white uppercase px-4 py-2 rounded shadow hover:bg-orange-700 outline-none focus:outline-none text-sm"
               type="button"
               onClick={onConfirm}
             >

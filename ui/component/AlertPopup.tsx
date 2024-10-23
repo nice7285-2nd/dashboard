@@ -18,7 +18,7 @@ const AlertPopup: React.FC<AlertPopupProps> = ({ message, onClose }) => {
           </div>
           <div className="flex items-center justify-end p-4">
             <button
-              className="bg-emerald-500 text-white active:bg-emerald-600 font-bold uppercase text-xs px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none"
+              className="bg-emerald-500 text-white active:bg-emerald-600 uppercase text-xs px-4 py-2 rounded shadow hover:shadow-lg outline-none focus:outline-none"
               type="button"
               onClick={onClose}
             >
