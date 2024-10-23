@@ -6,7 +6,7 @@ interface ToolButtonProps {
   icon: string | React.ReactElement;
   onClick: () => void;
   currentTool: string;
-  count?: number;
+  label?: string;
 }
 
 const ToolButton: React.FC<ToolButtonProps> = ({
@@ -14,7 +14,7 @@ const ToolButton: React.FC<ToolButtonProps> = ({
   icon,
   onClick,
   currentTool,
-  count
+  label
 }) => (
   <button
     onClick={onClick}
@@ -30,19 +30,19 @@ const ToolButton: React.FC<ToolButtonProps> = ({
       flexDirection: 'column',
       justifyContent: 'center', 
       alignItems: 'center', 
-      boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+      boxShadow: currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)'
       // transition: 'all 0.3s ease' 
     }}
-    onMouseDown={(e) =>(e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)')}
-    onMouseUp={(e) =>(e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)')}
-    onMouseLeave={(e) =>(e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)')}
+    onMouseDown={(e) =>(e.currentTarget.style.boxShadow = 'none')}
+    onMouseUp={(e) =>(e.currentTarget.style.boxShadow = currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)')}
+    // onMouseLeave={(e) =>(e.currentTarget.style.boxShadow = currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)')}
   >
     {typeof icon === 'string' ? (
       <Image src={icon} alt={tool} width={24} height={24} />
     ) : (
       React.cloneElement(icon, { width: 24, height: 24 })
     )}
-    {count !== undefined && <span className="count">{count}</span>}    
+    {label !== undefined && <span className="label text-xs">{label}</span>}    
   </button>
 );
 
