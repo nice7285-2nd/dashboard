@@ -17,6 +17,7 @@ import { startEditing, finishEditing, cancelEditing } from './utils/canvasUtils'
 import { alignNodesVertically, alignNodesHorizontally } from './utils/canvasUtils';
 import { saveCanvas } from './utils/canvasUtils';
 import { finishEditingLink } from './utils/canvasUtils';
+import { handleTouchStart, handleTouchMove, handleTouchEnd } from './utils/touchHandlers';
 
 interface EditStudyBoardClientProps {
   params: { id: string };
@@ -94,16 +95,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setLastNodePosition({ x: 100, y: 200 });
   };
 
-  const handleFinishEditingLink = () => {
-    finishEditingLink(
-      editingLink,
-      linkText,
-      setNodes,
-      setEditingLink,
-      setLinkText
-    );
-  };
-
   // 툴 버튼을 렌더링할지 결정하는 함수
   const shouldRenderTool = (toolName: string) => {
     if (mode === 'play' && hiddenToolsInPlayMode.includes(toolName)) {return false;}
@@ -151,6 +142,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     cancelEditing(setEditingNode, setEditText);
   };
   
+  const handleFinishEditingLink = () => {
+    finishEditingLink(editingLink, linkText, setNodes, setEditingLink, setLinkText);
+  };
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Delete') {handleDeleteSelectedNodes();
     } else if (e.key === 'Escape') {
@@ -484,38 +479,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     }
   };
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const { x, y } = getTouchPos(canvas, touch);
-    setTouchStartPos({ x, y });
-    handleMouseDown({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    if (!touchStartPos) return;
-    const canvas = e.currentTarget;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const { x, y } = getTouchPos(canvas, touch);
-    handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    const canvas = drawingCanvasRef.current;
-    if (!canvas) return;
-    const touch = e.changedTouches[0];
-    if (!touch) return;
-    const { x, y } = getTouchPos(canvas, touch);
-    setTouchStartPos(null);
-    handleMouseUp({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
-  };
-
   const handleToolChange = (newTool: Tool) => {
     if (newTool !== 'move') {
       setNodes((prevNodes) => prevNodes.map((node) => ({ ...node, selected: false })));
@@ -668,6 +631,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const handleSaveRecording = (author: string, email: string, title: string) => {saveRecording(author, email, title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
 
   useEffect(() => {
+    const mode = searchParams?.get('mode') || 'edit';
+    if (mode === 'play') {setTool('draw');}
+    else {setTool('move');}
+
     const loadLesson = async () => {
       if (params.id === 'new') {
         setIsLoading(false);
@@ -819,7 +786,17 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
-        <canvas ref={drawingCanvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
+        <canvas
+          ref={drawingCanvasRef}
+          style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={(e) => handleTouchStart(e, drawingCanvasRef, setTouchStartPos, handleMouseDown)}
+          onTouchMove={(e) => handleTouchMove(e, touchStartPos, handleMouseMove)}
+          onTouchEnd={(e) => handleTouchEnd(e, drawingCanvasRef, setTouchStartPos, handleMouseUp)}
+        />
         {eraserPosition.visible && (
           <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
