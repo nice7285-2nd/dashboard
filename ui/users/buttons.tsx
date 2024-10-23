@@ -100,7 +100,7 @@ function DeleteConfirmPopup({ onConfirm, onCancel }: { onConfirm: () => void, on
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+            className="px-4 py-2 bg-rose-600 bg-opacity-90 text-white rounded-md hover:bg-rose-700"
           >
             삭제
           </button>

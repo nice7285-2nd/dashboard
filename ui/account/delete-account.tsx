@@ -23,7 +23,7 @@ export default function DeleteAccount({ deleteEmail }: { deleteEmail: string }) 
     <>
       <button
         onClick={handleDeleteAccount}
-        className="px-4 py-2 mt-4 text-white text-sm bg-orange-600 rounded-md hover:bg-orange-700"
+        className="px-4 py-2 mt-4 text-white text-sm bg-rose-600 bg-opacity-90 rounded-md hover:bg-rose-700"
       >
         회원 탈퇴
       </button>

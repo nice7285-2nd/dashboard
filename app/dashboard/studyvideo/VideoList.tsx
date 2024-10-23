@@ -62,7 +62,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
               e.stopPropagation();
               onDelete(video.id);
             }}
-            className="bg-orange-600 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-orange-700"
+            className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700"
           >
             삭제
           </button>

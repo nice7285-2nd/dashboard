@@ -26,7 +26,7 @@ const ConfirmPopup: React.FC<ConfirmPopupProps> = ({ message, onConfirm, onCance
               취소
             </button>
             <button
-              className="bg-orange-600 text-white uppercase px-4 py-2 rounded shadow hover:bg-orange-700 outline-none focus:outline-none text-sm"
+              className="bg-rose-600 bg-opacity-90 text-white uppercase px-4 py-2 rounded shadow hover:bg-rose-700 outline-none focus:outline-none text-sm"
               type="button"
               onClick={onConfirm}
             >
