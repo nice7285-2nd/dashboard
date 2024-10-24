@@ -7,6 +7,7 @@ interface ToolButtonProps {
   onClick: () => void;
   currentTool: string;
   label?: string;
+  disabled?: boolean;
 }
 
 const ToolButton: React.FC<ToolButtonProps> = ({
@@ -14,7 +15,8 @@ const ToolButton: React.FC<ToolButtonProps> = ({
   icon,
   onClick,
   currentTool,
-  label
+  label,
+  disabled
 }) => (
   <button
     onClick={onClick}
@@ -22,7 +24,7 @@ const ToolButton: React.FC<ToolButtonProps> = ({
       marginBottom: '0px', 
       width: '50px', 
       height: '50px', 
-      backgroundColor: currentTool === tool ? '#e0e0e0' : 'white', 
+      backgroundColor: currentTool === tool || disabled ? '#e0e0e0' : 'white', 
       border: '1px solid #ccc', 
       borderRadius: '5px', 
       cursor: 'pointer', 
@@ -30,11 +32,11 @@ const ToolButton: React.FC<ToolButtonProps> = ({
       flexDirection: 'column',
       justifyContent: 'center', 
       alignItems: 'center', 
-      boxShadow: currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)'
+      boxShadow: currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)',
       // transition: 'all 0.3s ease' 
     }}
     onMouseDown={(e) =>(e.currentTarget.style.boxShadow = 'none')}
-    onMouseUp={(e) =>(e.currentTarget.style.boxShadow = currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)')}
+    onMouseUp={(e) =>(e.currentTarget.style.boxShadow = currentTool === tool || disabled ? 'none' : '0 2px 5px rgba(0,0,0,0.1)')}
     // onMouseLeave={(e) =>(e.currentTarget.style.boxShadow = currentTool === tool ? 'none' : '0 2px 5px rgba(0,0,0,0.1)')}
   >
     {typeof icon === 'string' ? (

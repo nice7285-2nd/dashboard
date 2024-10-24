@@ -7,6 +7,7 @@ import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
+import NodeSelector from '@/ui/component/NodeSelector';
 import { redrawCanvas, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
 import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
 import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link, TemporaryLink, EditingLink } from './types';
@@ -80,6 +81,37 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
+  const nodeColors = [
+    { value: "#FFFFFF", label: "흰색" },
+    { value: "#FFD700", label: "오렌지" },
+    { value: "#acf", label: "밝은파랑" },
+    { value: "#90EE90", label: "밝은녹색" },
+  ];
+  const nodeBorderColors = [
+    { value: "#05F", label: "밝은파랑" },
+    { value: "#FD5500", label: "빨강" },
+  ];
+  const penColors = [
+    { value: "#000000", label: "검정" },
+    { value: "#FF4500", label: "빨강" },
+    { value: "#0000FF", label: "파랑" },
+  ];
+  const lineWidths = [
+    { value: "1", label: "얇게" },
+    { value: "2", label: "보통" },
+    { value: "4", label: "굵게" },
+    { value: "8", label: "매우 굵게" },
+  ];
+  const eraserSizes = [
+    { value: "50", label: "작게" },
+    { value: "100", label: "보통" },
+    { value: "200", label: "크게" },
+  ];
+  const linkStyles = [
+    { value: "solid", label: "실선" },
+    { value: "dashed", label: "점선" },
+    { value: "curved", label: "곡선" },
+  ];
 
   // 전체 지우기 함수
   const clearAll = () => {
@@ -126,8 +158,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setNodes(updatedNodes);
   };
 
-  const handleLineStyleChange = (style: 'solid' | 'dashed' | 'curved') => {
-    setLineStyle(style);
+  const handleLineStyleChange = (style: string) => {
+    setLineStyle(style as 'solid' | 'dashed' | 'curved');
     handleToolChange('link');
   };
   
@@ -508,6 +540,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setPenColor(color);
   };
   
+  const handleLineWidthChange = (lineWidth: string) => {
+    setLineWidth(lineWidth);
+  };
+  
+  const handleEraserSizeChange = (eraserSize: string) => {
+    setEraserSize(Number(eraserSize));
+  };
 
   // 히토리에 현재 상태 추가 함수 수정
   const addToHistory = () => {
@@ -669,7 +708,9 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       } catch (error) {
         console.error('레슨 불러오기 실패:', error);
         toast.error('레슨을 불러오는 데 실패했습니다: ' + (error as Error).message);
-      } finally {setIsLoading(false);}
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadLesson();
@@ -737,7 +778,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             ];
           }
     
-          // redrawCanvas(ctx, nodesWithTemporaryLink, drawingActions, dragging ? null : selectionArea);
           drawLinks(ctx, nodesWithTemporaryLink);
         }
       }
@@ -761,15 +801,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setUndoCount(historyIndex);
     setRedoCount(history.nodes.length - historyIndex - 1);
   }, [historyIndex]);
-
-
-  if (isLoading) {
-    return (
-      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100vh" bgcolor="#f5f5f5">
-        <CircularProgress size={60} thickness={4} />
-      </Box>
-    );
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -817,89 +848,29 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => handleToolChange('addNode')} currentTool={tool} />}
         {shouldRenderTool('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => handleToolChange('link')} currentTool={tool} />}
         {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
-        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
-        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={handleAlignNodesVertically} currentTool={tool} />}
-        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={handleAlignNodesHorizontally} currentTool={tool} />}
+        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={handleAlignNodesVertically} currentTool={tool} />}
+        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={handleAlignNodesHorizontally} currentTool={tool} />}
         {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
-        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currentTool={tool} label={undoCount.toString()} />
-        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currentTool={tool} label={redoCount.toString()}/>
+        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currentTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
+        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currentTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
         <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currentTool={isVoiceEnabled ? 'voice' : ''} />
-        {mode !== 'play' && (
-          <>
-            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>노드 색상</label>
-              <select value={nodeColor} onChange={(e) => handleNodeColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
-                <option value="#FFFFFF">흰색</option>
-                <option value="#FFD700">오렌지</option>
-                <option value="#acf">밝은파랑</option>
-                <option value="#90EE90">밝은녹색</option>
-              </select>
-            </div>
-          </>
-        )}
-        {mode !== 'play' && (
-          <>
-            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>노드 테두리</label>
-              <select value={nodeBorderColor} onChange={(e) => handleNodeBorderColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
-                <option value="#05f">밝은파랑</option>
-                <option value="#fd5500">빨강</option>
-              </select>
-            </div>
-          </>
-        )}
-        {mode !== 'edit' && (
-          <>
-            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>펜색상</label>
-              <select value={penColor} onChange={(e) => handlePenColorChange(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
-                <option value="#000000">검정</option>
-                <option value="#FF4500">빨강</option>
-                <option value="#0000FF">파랑</option>
-              </select>
-            </div>
-          </>
-        )}
-        {mode !== 'edit' && (
-          <>
-            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>펜굵기</label>
-              <select value={lineWidth} onChange={(e) => setLineWidth(e.target.value)} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
-                <option value="1">얇게</option>
-                <option value="2">보통</option>
-                <option value="4">굵게</option>
-                <option value="8">매우 굵게</option>
-              </select>
-            </div>
-            <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-              <label style={{ marginRight: '10px' }}>지우개 크기</label>
-              <select value={eraserSize.toString()} onChange={(e) => setEraserSize(Number(e.target.value))} style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}>
-                <option value="50">작게</option>
-                <option value="100">보통</option>
-                <option value="200">크게</option>
-              </select>
-            </div>
-          </>
-        )}
-        {mode !== 'play' && (
-          <div style={{ marginLeft: '20px', display: 'flex', alignItems: 'center' }}>
-            <label style={{ marginRight: '10px' }}>연결선 스타일</label>
-            <select 
-              value={lineStyle} 
-              onChange={(e) => handleLineStyleChange(e.target.value as 'solid' | 'dashed' | 'curved')} 
-              style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', backgroundColor: 'white', fontSize: '14px' }}
-            >
-              <option value="solid">실선</option>
-              <option value="dashed">점선</option>
-              <option value="curved">곡선</option>
-            </select>
-          </div>
-        )}
+        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
+        {mode !== 'play' && (<NodeSelector title="노드 색상" value={nodeColor} onChange={handleNodeColorChange} options={nodeColors} />)}
+        {mode !== 'play' && (<NodeSelector title="노드 테두리" value={nodeBorderColor} onChange={handleNodeBorderColorChange} options={nodeBorderColors} />)}
+        {mode !== 'edit' && (<NodeSelector title="펜색상" value={penColor} onChange={handlePenColorChange} options={penColors} />)}
+        {mode !== 'edit' && (<NodeSelector title="펜굵기" value={lineWidth} onChange={handleLineWidthChange} options={lineWidths} />)}
+        {mode !== 'edit' && (<NodeSelector title="지우개 크기" value={eraserSize.toString()} onChange={handleEraserSizeChange} options={eraserSizes} />)}
+        {mode !== 'play' && (<NodeSelector title="선종류" value={lineStyle} onChange={handleLineStyleChange as (value: string) => void} options={linkStyles} />)}
       </div>
       {showSavePopup && <SaveLessonPopup onSave={handleSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
       {showSaveRecordingPopup && <SaveRecordingPopup author={author || ''} email={email || ''} onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <CircularProgress />
+        </div>
+      )}
     </div>
   );
 };
