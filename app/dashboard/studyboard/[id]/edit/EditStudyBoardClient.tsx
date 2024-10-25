@@ -22,7 +22,6 @@ import { finishEditLink } from './utils/canvasUtils';
 import { hndTouchStart, hndTouchMove, hndTouchEnd } from './utils/touchHandlers';
 
 interface EditStudyBoardClientProps {params: { id: string }; author: string | null; email: string | null;}
-
 const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, author, email }) => {
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode') || 'edit';
@@ -75,7 +74,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
-  const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
+  const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
   const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
   ];
@@ -101,7 +100,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
-  const shouldRenderTool = (toolName: string) => {
+  const isRender = (toolName: string) => {
     if (mode === 'play' && hiddenToolsInPlayMode.includes(toolName)) {return false;}
     if (mode === 'edit' && hiddenToolsInEditMode.includes(toolName)) {return false;}
     return true;
@@ -749,8 +748,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   }, [historyIndex]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
-      <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      <div ref={containerRef} className="relative flex-1 overflow-hidden m-0.5 rounded-lg bg-white shadow-sm">
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
         <canvas
           ref={drawCanvasRef}
@@ -788,19 +787,19 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         )}
       </div>
       <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        {shouldRenderTool('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
-        {shouldRenderTool('move') && <ToolButton tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
-        {shouldRenderTool('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
-        {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
-        {shouldRenderTool('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
-        {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
-        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
-        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
-        {shouldRenderTool('record') && <ToolButton tool="record" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
+        {isRender('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
+        {isRender('move') && <ToolButton tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
+        {isRender('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
+        {isRender('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
+        {isRender('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
+        {isRender('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
+        {isRender('alignV') && <ToolButton tool="alignV" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
+        {isRender('alignH') && <ToolButton tool="alignH" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
+        {isRender('record') && <ToolButton tool="record" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
         <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
         <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
         <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currTool={isVoiceEnabled ? 'voice' : ''} />
-        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
+        {isRender('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
         {mode !== 'play' && (<NodeSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
         {mode !== 'play' && (<NodeSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
         {mode !== 'edit' && (<NodeSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
