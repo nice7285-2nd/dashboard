@@ -1,4 +1,4 @@
-import { Node, SelectionArea, DrawingAction, Link, EditingLink } from '../types';
+import { Node, SelectionArea, DrawAction, Link, EditLink } from '../types';
 import { createLesson } from '../actions';
 import { toast } from 'react-toastify';
 
@@ -43,8 +43,8 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   
-  const padding = 10;  // 왼쪽 패딩
-  // const leftX = -minWidth / 2 + padding;  // 왼쪽 정렬 시작 위치
+  const padd = 10;  // 왼쪽 패딩
+  // const leftX = -minWidth / 2 + padd;  // 왼쪽 정렬 시작 위치
   const leftX = 0;  // 왼쪽 정렬 시작 위치
 
   // 위쪽 텍스트
@@ -94,7 +94,7 @@ export const drawResizeHandles = (
   });
 };
 
-export const getLinkPoint = (node: Node, side: Link['fromSide'] | Link['toSide']) => {
+export const getLinkPnt = (node: Node, side: Link['fromSide'] | Link['toSide']) => {
   switch (side) {
     case 'top':
       return { x: node.x + node.width / 2, y: node.y };
@@ -123,7 +123,7 @@ export const drawLinks = (
 ) => {
   nodes.forEach((node) => {
     node.links.forEach((link) => {
-      const fromPoint = getLinkPoint(node, link.fromSide);
+      const fromPnt = getLinkPnt(node, link.fromSide);
       const toNode = nodes.find(n => n.id === Number(link.id));
       if (toNode) {
         let fromSide = link.fromSide;
@@ -134,32 +134,32 @@ export const drawLinks = (
           toSide = 'topLeft';
         }
 
-        const fromPoint = getLinkPoint(node, fromSide);
-        const toPoint = getLinkPoint(toNode, toSide);
+        const fromPnt = getLinkPnt(node, fromSide);
+        const toPnt = getLinkPnt(toNode, toSide);
 
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(fromPoint.x, fromPoint.y);
+        ctx.moveTo(fromPnt.x, fromPnt.y);
         
         if (link.lineStyle === 'dashed') {
           ctx.setLineDash([7, 6]);
           ctx.lineWidth = 7;
-          ctx.lineTo(toPoint.x, toPoint.y);
+          ctx.lineTo(toPnt.x, toPnt.y);
           ctx.strokeStyle = '#333';
           ctx.stroke();
         } else if (link.lineStyle === 'curved') {
           ctx.strokeStyle = '#05f';
           ctx.lineWidth = 6;
-          const angle = drawCurvedLine(ctx, fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+          const angle = drawCurvedLine(ctx, fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
 
           // 화살표 그리기
           const headlen = 22;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.beginPath();
-          ctx.moveTo(toPoint.x, toPoint.y);
-          ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
-          ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
+          ctx.moveTo(toPnt.x, toPnt.y);
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle - Math.PI / 6), toPnt.y - headlen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.stroke();
           ctx.fillStyle = '#acf';
@@ -167,17 +167,17 @@ export const drawLinks = (
         } else {
           ctx.setLineDash([]);
           ctx.lineWidth = 1;
-          ctx.lineTo(toPoint.x, toPoint.y);
+          ctx.lineTo(toPnt.x, toPnt.y);
           ctx.strokeStyle = '#333';
           ctx.stroke();
 
           // 화살표 그리기
-          const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
+          const angle = Math.atan2(toPnt.y - fromPnt.y, toPnt.x - fromPnt.x);
           const headlen = 10;
           ctx.beginPath();
-          ctx.moveTo(toPoint.x, toPoint.y);
-          ctx.lineTo(toPoint.x - headlen * Math.cos(angle - Math.PI / 6), toPoint.y - headlen * Math.sin(angle - Math.PI / 6));
-          ctx.lineTo(toPoint.x - headlen * Math.cos(angle + Math.PI / 6), toPoint.y - headlen * Math.sin(angle + Math.PI / 6));
+          ctx.moveTo(toPnt.x, toPnt.y);
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle - Math.PI / 6), toPnt.y - headlen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.fillStyle = '#333';
           ctx.fill();
@@ -189,14 +189,14 @@ export const drawLinks = (
           
           if (link.lineStyle === 'curved') {
             const textOffset = 15; // 텍스트와 선 사이의 거리
-            const topPoint = getCurvedLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
-            textX = topPoint.x;
-            textY = topPoint.y + textOffset; // 최상위점 바로 아래에 위치
+            const topPnt = getCurvedLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
+            textX = topPnt.x;
+            textY = topPnt.y + textOffset; // 최상위점 바로 아래에 위치
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
           } else {
             const textOffset = 10; // 텍스트와 선 사이의 거리
-            const {x, y, textAlign, textBaseline} = getSolidLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, textOffset);
+            const {x, y, textAlign, textBaseline} = getSolidLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y, textOffset);
             textX = x || 0;
             textY = y || 0;
             ctx.textAlign = textAlign || 'center';
@@ -235,12 +235,8 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
 
 // 베지어 곡선의 끝점에서의 접선 각도 계산
   const t = 1; // 곡선의 점
-  const dx = 3 * (1 - t) * (1 - t) * (controlX1 - startX) + 
-             6 * (1 - t) * t * (controlX2 - controlX1) + 
-             3 * t * t * (endX - controlX2);
-  const dy = 3 * (1 - t) * (1 - t) * (controlY1 - startY) + 
-             6 * (1 - t) * t * (controlY2 - controlY1) + 
-             3 * t * t * (endY - controlY2);
+  const dx = 3 * (1 - t) * (1 - t) * (controlX1 - startX) + 6 * (1 - t) * t * (controlX2 - controlX1) + 3 * t * t * (endX - controlX2);
+  const dy = 3 * (1 - t) * (1 - t) * (controlY1 - startY) + 6 * (1 - t) * t * (controlY2 - controlY1) + 3 * t * t * (endY - controlY2);
   const angle = Math.atan2(dy, dx);
 
   return angle;
@@ -262,17 +258,17 @@ export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: Selection
 };
 
 
-export const drawDrawings = (
+export const drawDraws = (
   ctx: CanvasRenderingContext2D,
-  drawingActions: DrawingAction[]
+  drawActions: DrawAction[]
 ) => {
   if (ctx) {
     // 그리기 작업 다시 그리기
     ctx.save();
-    drawingActions.forEach(action => {
-      action.points.forEach(point => {
+    drawActions.forEach(action => {
+      action.pnts.forEach(pnt => {
         if (action.type === 'draw') {
-          if (action.points.length < 2) return;
+          if (action.pnts.length < 2) return;
 
           ctx.strokeStyle = action.color || '#000';
           ctx.lineWidth = action.lineWidth;
@@ -280,23 +276,23 @@ export const drawDrawings = (
           ctx.lineJoin = 'miter';
 
           ctx.beginPath();
-          ctx.moveTo(action.points[0].x, action.points[0].y);
+          ctx.moveTo(action.pnts[0].x, action.pnts[0].y);
       
-          for (let i = 1; i < action.points.length; i++) {
-            const currentPoint = action.points[i];
-            const previousPoint = action.points[i - 1];
-            const midPoint = {x: (previousPoint.x + currentPoint.x) / 2, y: (previousPoint.y + currentPoint.y) / 2};
+          for (let i = 1; i < action.pnts.length; i++) {
+            const currentPnt = action.pnts[i];
+            const previousPnt = action.pnts[i - 1];
+            const midPnt = {x: (previousPnt.x + currentPnt.x) / 2, y: (previousPnt.y + currentPnt.y) / 2};
       
-            ctx.quadraticCurveTo(previousPoint.x, previousPoint.y, midPoint.x, midPoint.y);
+            ctx.quadraticCurveTo(previousPnt.x, previousPnt.y, midPnt.x, midPnt.y);
           }    
-          // const lastPoint = action.points[action.points.length - 1];
-          // ctx.lineTo(lastPoint.x, lastPoint.y);    
+          // const lastPnt = action.pnts[action.pnts.length - 1];
+          // ctx.lineTo(lastPnt.x, lastPnt.y);    
           ctx.stroke();          
 
         } else if (action.type === 'erase') {
           ctx.beginPath();
-          ctx.moveTo(action.points[0].x, action.points[0].y);
-          ctx.lineTo(point.x, point.y);
+          ctx.moveTo(action.pnts[0].x, action.pnts[0].y);
+          ctx.lineTo(pnt.x, pnt.y);
           ctx.strokeStyle = '#FFF';
           ctx.lineWidth = action.lineWidth;
           ctx.lineCap = 'square';
@@ -312,14 +308,14 @@ export const drawDrawings = (
 export const redrawCanvas = (
   ctx: CanvasRenderingContext2D,
   nodes: Node[],
-  drawings: DrawingAction[],
+  draws: DrawAction[],
   selectionArea: SelectionArea | null
 ) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   // 그리기 그리기
   // 지우개 영역 교안 복구를 위해서 맨위에 와야함
-  drawDrawings(ctx, drawings);
+  drawDraws(ctx, draws);
 
   // 노드 그리기
   nodes.forEach(node => {
@@ -336,7 +332,7 @@ export const redrawCanvas = (
 };
 
 export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => {
-  const padding = 20;  // 좌우 패딩 합계
+  const padd = 20;  // 좌우 패딩 합계
 
   ctx.font = 'bold 14px Arial';
   const text1Width = ctx.measureText(node.text1 || '').width;
@@ -348,7 +344,7 @@ export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => 
   const text3Width = ctx.measureText(node.text3 || '').width;
 
   const textWidth = Math.max(text1Width, text2Width, text3Width);
-  const width = Math.max(textWidth + padding, 180);  // 패딩 포함, 최소 너비 180px
+  const width = Math.max(textWidth + padd, 180);  // 패딩 포함, 최소 너비 180px
   const height = 100;  // 최소 높이 100px
 
   return { width, height };
@@ -365,7 +361,7 @@ export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
   return node.x < right && node.x + node.width > left && node.y < bottom && node.y + node.height > top;
 };
 
-export const getCurvedLinkTopPoint = (startX: number, startY: number, endX: number, endY: number) => {
+export const getCurvedLinkTopPnt = (startX: number, startY: number, endX: number, endY: number) => {
   const midX1 = startX + (endX - startX) * 1 / 12;
   const midX2 = startX + (endX - startX) * 11 / 12;
   const midY = (startY + endY) / 2;
@@ -373,19 +369,13 @@ export const getCurvedLinkTopPoint = (startX: number, startY: number, endX: numb
 
   // 베지어 곡선의 최상위점 계산 (t = 0.5에서의 점)
   const t = 0.5;
-  const x = Math.pow(1-t, 3) * startX + 
-            3 * Math.pow(1-t, 2) * t * midX1 + 
-            3 * (1-t) * Math.pow(t, 2) * midX2 + 
-            Math.pow(t, 3) * endX;
-  const y = Math.pow(1-t, 3) * startY + 
-            3 * Math.pow(1-t, 2) * t * controlY + 
-            3 * (1-t) * Math.pow(t, 2) * controlY + 
-            Math.pow(t, 3) * endY;
+  const x = Math.pow(1-t, 3) * startX + 3 * Math.pow(1-t, 2) * t * midX1 + 3 * (1-t) * Math.pow(t, 2) * midX2 + Math.pow(t, 3) * endX;
+  const y = Math.pow(1-t, 3) * startY + 3 * Math.pow(1-t, 2) * t * controlY + 3 * (1-t) * Math.pow(t, 2) * controlY + Math.pow(t, 3) * endY;
 
   return { x, y };
 };
 
-export const getSolidLinkTopPoint = (startX: number, startY: number, endX: number, endY: number, offset: number) => {
+export const getSolidLinkTopPnt = (startX: number, startY: number, endX: number, endY: number, offset: number) => {
   const midX = (startX + endX) / 2;
   const midY = (startY + endY) / 2;
   const angle = Math.atan2(endY - startY, endX - startX);
@@ -412,9 +402,9 @@ export const addNode = (
   nodes: Node[],
   canvasWidth: number,
   canvasHeight: number,
-  lastNodePosition: { x: number; y: number },
+  lastNodePos: { x: number; y: number },
   maxZIndex: number
-): { newNode: Node; newMaxZIndex: number; newLastNodePosition: { x: number; y: number } } => {
+): { newNode: Node; newMaxZIndex: number; newLastNodePos: { x: number; y: number } } => {
   const nodeWidth = 180;
   const nodeHeight = 100;
   const gridSize = 20;
@@ -426,21 +416,21 @@ export const addNode = (
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
   // 기존 노드들의 x, y 좌표 수집
-  const existingXPositions = nodes.map(node => node.x);
-  const existingYPositions = nodes.map(node => node.y);
+  const existXPoss = nodes.map(node => node.x);
+  const existYPoss = nodes.map(node => node.y);
 
   // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
-  const findAlignedPosition = (positions: number[], value: number, size: number) => {
-    const sortedPositions = Array.from(new Set(positions)).sort((a, b) => a - b);
+  const findAlignedPos = (positions: number[], value: number, size: number) => {
+    const sortedPoss = Array.from(new Set(positions)).sort((a, b) => a - b);
 
     // 먼저 같은 위치에 정렬을 시도
-    const samePosition = sortedPositions.find(pos => Math.abs(pos - value) < gridSize);
-    if (samePosition !== undefined) return samePosition;
+    const samePos = sortedPoss.find(pos => Math.abs(pos - value) < gridSize);
+    if (samePos !== undefined) return samePos;
 
     // 같은 위치가 없으면 최소 간격을 고려하여 새 위치 찾기
-    for (let i = 0; i < sortedPositions.length; i++) {
-      const currentPos = sortedPositions[i];
-      const nextPos = sortedPositions[i + 1] || canvasWidth;
+    for (let i = 0; i < sortedPoss.length; i++) {
+      const currentPos = sortedPoss[i];
+      const nextPos = sortedPoss[i + 1] || canvasWidth;
       
       if (value > currentPos + size + MIN_GAP && value < nextPos - MIN_GAP) {
         return nextPos;
@@ -452,42 +442,40 @@ export const addNode = (
     }
 
     // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
-    return snapToGrid(Math.max(...sortedPositions, 0) + size + MIN_GAP);
+    return snapToGrid(Math.max(...sortedPoss, 0) + size + MIN_GAP);
   };
 
-  let newX = snapToGrid(lastNodePosition.x + nodeWidth + MIN_GAP);
-  let newY = snapToGrid(lastNodePosition.y);
+  let newX = snapToGrid(lastNodePos.x + nodeWidth + MIN_GAP);
+  let newY = snapToGrid(lastNodePos.y);
 
   // 가장 가까운 정렬된 x, y 위치 찾기
-  newX = findAlignedPosition(existingXPositions, newX, nodeWidth);
-  newY = findAlignedPosition(existingYPositions, newY, nodeHeight);
+  newX = findAlignedPos(existXPoss, newX, nodeWidth);
+  newY = findAlignedPos(existYPoss, newY, nodeHeight);
 
   // 캔버스 경계 체크 및 조정
   if (newX + nodeWidth > canvasWidth) {
-    newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
-    newY = snapToGrid(Math.max(...existingYPositions) + nodeHeight + MIN_GAP);
+    newX = findAlignedPos(existXPoss, 0, nodeWidth);
+    newY = snapToGrid(Math.max(...existYPoss) + nodeHeight + MIN_GAP);
   }
 
   if (newY + nodeHeight > canvasHeight) {
     newY = snapToGrid(0);
-    newX = snapToGrid(Math.max(...existingXPositions) + nodeWidth + MIN_GAP);
+    newX = snapToGrid(Math.max(...existXPoss) + nodeWidth + MIN_GAP);
   }
 
   // 겹침 방지
-  const isOverlapping = (x: number, y: number) => {
+  const isOverlapp = (x: number, y: number) => {
     return nodes.some(node => 
-      x < node.x + node.width + MIN_GAP && 
-      x + nodeWidth + MIN_GAP > node.x && 
-      y < node.y + node.height + MIN_GAP && 
-      y + nodeHeight + MIN_GAP > node.y
+      x < node.x + node.width + MIN_GAP && x + nodeWidth + MIN_GAP > node.x && 
+      y < node.y + node.height + MIN_GAP && y + nodeHeight + MIN_GAP > node.y
     );
   };
 
-  while (isOverlapping(newX, newY)) {
-    newX = findAlignedPosition(existingXPositions, newX + nodeWidth + MIN_GAP, nodeWidth);
+  while (isOverlapp(newX, newY)) {
+    newX = findAlignedPos(existXPoss, newX + nodeWidth + MIN_GAP, nodeWidth);
     if (newX + nodeWidth > canvasWidth) {
-      newX = findAlignedPosition(existingXPositions, 0, nodeWidth);
-      newY = findAlignedPosition(existingYPositions, newY + nodeHeight + MIN_GAP, nodeHeight);
+      newX = findAlignedPos(existXPoss, 0, nodeWidth);
+      newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
       if (newY + nodeHeight > canvasHeight) {
         newY = snapToGrid(0);
       }
@@ -510,7 +498,7 @@ export const addNode = (
     borderColor: '#05f'
   };
 
-  return { newNode, newMaxZIndex: newZIndex, newLastNodePosition: { x: newX, y: newY } };
+  return { newNode, newMaxZIndex: newZIndex, newLastNodePos: { x: newX, y: newY } };
 };
 
 export const getClickedNodeAndHandle = (nodes: Node[], x: number, y: number) => {
@@ -592,59 +580,59 @@ export const deleteSelectedNodes = (nodes: Node[]): Node[] => {
   }));
 };
 
-export const startEditing = (
+export const startEdit = (
   node: Node,
-  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+  setEditNode: React.Dispatch<React.SetStateAction<Node | null>>,
   setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
 ) => {
-  setEditingNode(node);
+  setEditNode(node);
   setEditText({ text1: node.text1, text2: node.text2, text3: node.text3 });
 };
 
-export const finishEditing = (
-  editingNode: Node | null,
+export const finishEdit = (
+  editNode: Node | null,
   editText: { text1: string; text2: string; text3: string; },
   canvas: HTMLCanvasElement | null,
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
-  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+  setEditNode: React.Dispatch<React.SetStateAction<Node | null>>,
   setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
 ) => {
-  if (editingNode && canvas) {
+  if (editNode && canvas) {
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      const { width, height } = calculateNodeSize(ctx, { ...editingNode, ...editText });
+      const { width, height } = calculateNodeSize(ctx, { ...editNode, ...editText });
       setNodes(prevNodes => prevNodes.map(node => {
-        if (node.id === editingNode.id) {
+        if (node.id === editNode.id) {
           return { ...node, ...editText, width, height };
         }
         return node;
       }));
     }
   }
-  setEditingNode(null);
+  setEditNode(null);
   setEditText({ text1: '', text2: '', text3: '' });
 };
 
-export const cancelEditing = (
-  setEditingNode: React.Dispatch<React.SetStateAction<Node | null>>,
+export const cancelEdit = (
+  setEditNode: React.Dispatch<React.SetStateAction<Node | null>>,
   setEditText: React.Dispatch<React.SetStateAction<{ text1: string; text2: string; text3: string; }>>
 ) => {
-  setEditingNode(null);
+  setEditNode(null);
   setEditText({ text1: '', text2: '', text3: '' });
 };
 
-export const finishEditingLink = (
-  editingLink: EditingLink | null,
+export const finishEditLink = (
+  editLink: EditLink | null,
   linkText: string,
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>,
-  setEditingLink: React.Dispatch<React.SetStateAction<EditingLink | null>>,
+  setEditLink: React.Dispatch<React.SetStateAction<EditLink | null>>,
   setLinkText: React.Dispatch<React.SetStateAction<string>>
 ): void => {
-  if (editingLink) {
+  if (editLink) {
     setNodes(prevNodes => prevNodes.map(node => {
-      if (node.id === editingLink.startNode.id) {
+      if (node.id === editLink.startNode.id) {
         const updatedLinks = node.links.map(link => {
-          if (link.id === editingLink.endNode.id.toString()) {
+          if (link.id === editLink.endNode.id.toString()) {
             return { ...link, text: linkText };
           }
           return link;
@@ -653,11 +641,11 @@ export const finishEditingLink = (
       }
       return node;
     }));
-    setEditingLink(null);
+    setEditLink(null);
     setLinkText('');
   }
 };
-export const alignNodesVertically = (nodes: Node[]): Node[] => {
+export const alignNodesV = (nodes: Node[]): Node[] => {
   const selectedNodes = nodes.filter((node) => node.selected);
   if (selectedNodes.length < 2) return nodes;
   const leftmostNode = selectedNodes.reduce((left, node) => (node.x < left.x ? node : left));
@@ -670,7 +658,7 @@ export const alignNodesVertically = (nodes: Node[]): Node[] => {
   });
 };
 
-export const alignNodesHorizontally = (nodes: Node[]): Node[] => {
+export const alignNodesH = (nodes: Node[]): Node[] => {
   const selectedNodes = nodes.filter((node) => node.selected);
   if (selectedNodes.length < 2) return nodes;
   const topmostNode = selectedNodes.reduce((top, node) => (node.y < top.y ? node : top));
@@ -686,7 +674,7 @@ export const alignNodesHorizontally = (nodes: Node[]): Node[] => {
 export const saveCanvas = async (
   title: string,
   nodes: Node[],
-  drawingActions: DrawingAction[],
+  drawActions: DrawAction[],
   author: string | null,
   email: string | null,
   setShowSavePopup: React.Dispatch<React.SetStateAction<boolean>>
@@ -697,7 +685,7 @@ export const saveCanvas = async (
   }).replace(/[^\d]/g, '')}.json`;
   const filedir = `lessons`;
   const filePath = `/${filedir}/${filename}`;
-  const data = { filedir, filename, title, nodes, drawings: drawingActions };
+  const data = { filedir, filename, title, nodes, draws: drawActions };
 
   try {
     // 파일 저장

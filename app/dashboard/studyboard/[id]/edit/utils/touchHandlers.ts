@@ -1,11 +1,11 @@
 import { getTouchPos } from './canvasUtils';
 import { Node, Tool } from '../types';
 
-export const handleTouchStart = (
+export const hndTouchStart = (
   e: React.TouchEvent<HTMLCanvasElement>,
   drawingCanvasRef: React.RefObject<HTMLCanvasElement>,
   setTouchStartPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>,
-  handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void
+  hndMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void
 ) => {
   e.preventDefault();
   const canvas = drawingCanvasRef.current;
@@ -14,13 +14,13 @@ export const handleTouchStart = (
   if (!touch) return;
   const { x, y } = getTouchPos(canvas, touch);
   setTouchStartPos({ x, y });
-  handleMouseDown({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
+  hndMouseDown({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
 };
 
-export const handleTouchMove = (
+export const hndTouchMove = (
   e: React.TouchEvent<HTMLCanvasElement>,
   touchStartPos: { x: number; y: number } | null,
-  handleMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void
+  hndMouseMove: (e: React.MouseEvent<HTMLCanvasElement>) => void
 ) => {
   e.preventDefault();
   if (!touchStartPos) return;
@@ -28,14 +28,14 @@ export const handleTouchMove = (
   const touch = e.touches[0];
   if (!touch) return;
   const { x, y } = getTouchPos(canvas, touch);
-  handleMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
+  hndMouseMove({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
 };
 
-export const handleTouchEnd = (
+export const hndTouchEnd = (
   e: React.TouchEvent<HTMLCanvasElement>,
   drawingCanvasRef: React.RefObject<HTMLCanvasElement>,
   setTouchStartPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>,
-  handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void
+  hndMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void
 ) => {
   e.preventDefault();
   const canvas = drawingCanvasRef.current;
@@ -44,5 +44,5 @@ export const handleTouchEnd = (
   if (!touch) return;
   const { x, y } = getTouchPos(canvas, touch);
   setTouchStartPos(null);
-  handleMouseUp({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
+  hndMouseUp({ clientX: x, clientY: y } as unknown as React.MouseEvent<HTMLCanvasElement>);
 };

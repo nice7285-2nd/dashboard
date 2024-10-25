@@ -26,8 +26,8 @@ export type Node = {
   rotation?: number;
 };
 
-// DraggingState 타입 정의 부분
-export type DraggingState = {
+// DragState 타입 정의 부분
+export type DragState = {
   node: Node;
   offsetX: number;
   offsetY: number;
@@ -42,9 +42,9 @@ export type SelectionArea = {
 }
 
 // 그리기 작업을 저장할 타입 정의
-export type DrawingAction = {
+export type DrawAction = {
   type: 'draw' | 'erase';
-  points: { x: number; y: number }[];
+  pnts: { x: number; y: number }[];
   color?: string;
   lineWidth: number;
 };
@@ -65,7 +65,7 @@ export type TemporaryLink = {
   endY: number;
 }
 
-export type EditingLink = {
+export type EditLink = {
   startNode: Node;
   endNode: Node;
   fromSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';

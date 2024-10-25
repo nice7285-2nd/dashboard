@@ -1,10 +1,10 @@
 import { toast } from 'react-toastify';
 import { createStudyRec } from '../actions';
 
-export const startRecording = async (
-  setIsRecording: (isRecording: boolean) => void,
-  setRecordingBlob: (blob: Blob | null) => void,
-  setShowSaveRecordingPopup: (show: boolean) => void,
+export const startRec = async (
+  setIsRec: (isRec: boolean) => void,
+  setRecBlob: (blob: Blob | null) => void,
+  setShowSaveRecPopup: (show: boolean) => void,
   mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>
 ) => {
   try {
@@ -50,36 +50,36 @@ export const startRecording = async (
       
       displayStream.getTracks().forEach(track => track.stop());
       audioStream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
+      setIsRec(false);
 
-      setRecordingBlob(blob);
-      setShowSaveRecordingPopup(true);
+      setRecBlob(blob);
+      setShowSaveRecPopup(true);
     };
 
     mediaRecorderRef.current.start();
-    setIsRecording(true);
+    setIsRec(true);
   } catch (error) {
     console.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다:', error);
     toast.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다. 다시 시도해 주세요.');
   }
 };
 
-export const stopRecording = (mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>) => {
+export const stopRec = (mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>) => {
   if (mediaRecorderRef.current) {
     mediaRecorderRef.current.stop();
   }
 };
 
-export const saveRecording = async (
+export const saveRec = async (
   author: string,
   email: string,
   title: string,
-  recordingBlob: Blob | null,
-  setShowSaveRecordingPopup: (show: boolean) => void,
-  setRecordingBlob: (blob: Blob | null) => void
+  RecBlob: Blob | null,
+  setShowSaveRecPopup: (show: boolean) => void,
+  setRecBlob: (blob: Blob | null) => void
 ) => {
-  setShowSaveRecordingPopup(false);
-  if (!recordingBlob) {
+  setShowSaveRecPopup(false);
+  if (!RecBlob) {
     toast.error('저장할 녹화 파일이 없습니다.');
     return;
   }
@@ -89,10 +89,10 @@ export const saveRecording = async (
 
   try {
     const formData = new FormData();
-    formData.append('file', recordingBlob, filename);
+    formData.append('file', RecBlob, filename);
     formData.append('path', filePath);
 
-    const response = await fetch('/api/save-recording', {
+    const response = await fetch('/api/save-Rec', {
       method: 'POST',
       body: formData,
     });
@@ -117,5 +117,5 @@ export const saveRecording = async (
     console.error('녹화 파일 저장 중 오류 발생:', error);
     toast.error('녹화 파일 저장에 실패했습니다. 다시 시도해 주세요.');
   }
-  setRecordingBlob(null);
+  setRecBlob(null);
 };

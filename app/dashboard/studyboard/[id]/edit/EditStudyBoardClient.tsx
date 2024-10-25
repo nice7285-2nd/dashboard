@@ -1,78 +1,74 @@
 'use client';
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } from 'react';
-import { PencilIcon, CloudArrowUpIcon, ArrowLongLeftIcon, ArrowsPointingOutIcon, CursorArrowRippleIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, SquaresPlusIcon, TrashIcon, AdjustmentsHorizontalIcon, AdjustmentsVerticalIcon, HandRaisedIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CloudArrowUpIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, TrashIcon, AdjustmentsHorizontalIcon, AdjustmentsVerticalIcon, HandRaisedIcon } from '@heroicons/react/24/outline';
 import { useSearchParams } from 'next/navigation';
 import ToolButton from '@/ui/component/ToolButton';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
-import SaveRecordingPopup from '@/ui/component/SaveRecordingPopup';
+import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NodeSelector from '@/ui/component/NodeSelector';
-import { redrawCanvas, isNodeInSelectionArea, getLinkPoint, getCurvedLinkTopPoint, getSolidLinkTopPoint, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
-import { startRecording, stopRecording, saveRecording } from './utils/recordingUtils';
-import { Tool, Node, DraggingState, SelectionArea, DrawingAction, Link, TemporaryLink, EditingLink } from './types';
+import { redrawCanvas, isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
+import { startRec, stopRec, saveRec } from './utils/recUtils';
+import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
 import { CircularProgress, Box } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { deleteSelectedNodes } from './utils/canvasUtils';
-import { startEditing, finishEditing, cancelEditing } from './utils/canvasUtils';
-import { alignNodesVertically, alignNodesHorizontally } from './utils/canvasUtils';
+import { startEdit, finishEdit, cancelEdit } from './utils/canvasUtils';
+import { alignNodesV, alignNodesH } from './utils/canvasUtils';
 import { saveCanvas } from './utils/canvasUtils';
-import { finishEditingLink } from './utils/canvasUtils';
-import { handleTouchStart, handleTouchMove, handleTouchEnd } from './utils/touchHandlers';
+import { finishEditLink } from './utils/canvasUtils';
+import { hndTouchStart, hndTouchMove, hndTouchEnd } from './utils/touchHandlers';
 
-interface EditStudyBoardClientProps {
-  params: { id: string };
-  author: string | null;
-  email: string | null;
-}
+interface EditStudyBoardClientProps {params: { id: string }; author: string | null; email: string | null;}
 
 const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, author, email }) => {
   const searchParams = useSearchParams();
   const mode = searchParams?.get('mode') || 'edit';
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const drawingCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
-  const [drawingActions, setDrawingActions] = useState<DrawingAction[]>([]);
-  const [dragging, setDragging] = useState<DraggingState | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawActions, setDrawActions] = useState<DrawAction[]>([]);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [isDraw, setIsDraw] = useState(false);
   const [tool, setTool] = useState('move');
   const [nodeColor, setNodeColor] = useState('#FFF');
   const [nodeBorderColor, setNodeBorderColor] = useState('#05f');
   const [penColor, setPenColor] = useState('#000');
   const [lineWidth, setLineWidth] = useState<string>('4');
-  const [eraserPosition, setEraserPosition] = useState({ x: 0, y: 0, visible: false });
+  const [eraserPos, setEraserPos] = useState({ x: 0, y: 0, visible: false });
   const [eraserSize, setEraserSize] = useState(100);
-  const [resizing, setResizing] = useState<{ node: Node; direction: string } | null>(null);
+  const [resize, setResize] = useState<{ node: Node; direction: string } | null>(null);
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [linking, setLinking] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(3);
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('solid');
-  const [isRecording, setIsRecording] = useState(false);
+  const [isRec, setIsRec] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
-  const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [editNode, setEditNode] = useState<Node | null>(null);
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
-  const [history, setHistory] = useState<{ nodes: Node[][], drawings: DrawingAction[][] }>({ nodes: [], drawings: [] });
+  const [history, setHistory] = useState<{ nodes: Node[][], draws: DrawAction[][] }>({ nodes: [], draws: [] });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [lastNodePosition, setLastNodePosition] = useState({ x: 100, y: 200 });
+  const [lastNodePos, setLastNodePos] = useState({ x: 100, y: 200 });
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [dragStartPosition, setDragStartPosition] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDraggingGroup, setIsDraggingGroup] = useState(false);
-  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSelect, setIsSelect] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDrag, setIsDrag] = useState(false);
+  const [isDragGroup, setIsDragGroup] = useState(false);
+  const [RecBlob, setRecBlob] = useState<Blob | null>(null);
+  const [isLoad, setIsLoad] = useState(true);
   const [showSavePopup, setShowSavePopup] = useState(false);
-  const [showSaveRecordingPopup, setShowSaveRecordingPopup] = useState(false);
+  const [showSaveRecPopup, setShowSaveRecPopup] = useState(false);
   const [showClearConfirmPopup, setShowClearConfirmPopup] = useState(false);
-  const [currentDrawingPoints, setCurrentDrawingPoints] = useState<{ x: number; y: number }[]>([]);
+  const [currDrawPnts, setcurrDrawPnts] = useState<{ x: number; y: number }[]>([]);
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [editingLink, setEditingLink] = useState<EditingLink | null>(null);
+  const [editLink, setEditLink] = useState<EditLink | null>(null);
   const [linkText, setLinkText] = useState('');
   const prevNodesRef = useRef(nodes);
-  const prevDrawingActionsRef = useRef(drawingActions);
+  const prevDrawActionsRef = useRef(drawActions);
   const isUndoRedoActionRef = useRef(false);
   const [undoCount, setUndoCount] = useState(0);
   const [redoCount, setRedoCount] = useState(0);
@@ -81,51 +77,27 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignVertical', 'alignHorizontal'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
-  const nodeColors = [
-    { value: "#FFFFFF", label: "흰색" },
-    { value: "#FFD700", label: "오렌지" },
-    { value: "#acf", label: "밝은파랑" },
-    { value: "#90EE90", label: "밝은녹색" },
+  const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
   ];
-  const nodeBorderColors = [
-    { value: "#05F", label: "밝은파랑" },
-    { value: "#FD5500", label: "빨강" },
-  ];
-  const penColors = [
-    { value: "#000000", label: "검정" },
-    { value: "#FF4500", label: "빨강" },
-    { value: "#0000FF", label: "파랑" },
-  ];
-  const lineWidths = [
-    { value: "1", label: "얇게" },
-    { value: "2", label: "보통" },
-    { value: "4", label: "굵게" },
-    { value: "8", label: "매우 굵게" },
-  ];
-  const eraserSizes = [
-    { value: "50", label: "작게" },
-    { value: "100", label: "보통" },
-    { value: "200", label: "크게" },
-  ];
-  const linkStyles = [
-    { value: "solid", label: "실선" },
-    { value: "dashed", label: "점선" },
-    { value: "curved", label: "곡선" },
-  ];
+  const nodeBorderColors = [{ value: "#05F", label: "밝은파랑" }, { value: "#FD5500", label: "빨강" }];
+  const penColors = [{ value: "#000000", label: "검정" }, { value: "#FF4500", label: "빨강" }, { value: "#0000FF", label: "파랑" }];
+  const lineWidths = [{ value: "1", label: "얇게" }, { value: "2", label: "보통" }, { value: "4", label: "굵게" }, { value: "8", label: "매우 굵게" }];
+  const eraserSizes = [{ value: "50", label: "작게" }, { value: "100", label: "보통" }, { value: "200", label: "크게" }];
+  const linkStyles = [{ value: "solid", label: "실선" }, { value: "dashed", label: "점선" }, { value: "curved", label: "곡선" }];
 
   // 전체 지우기 함수
   const clearAll = () => {
-    const canvas = drawingCanvasRef.current;
+    const canvas = drawCanvasRef.current;
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {ctx.clearRect(0, 0, canvas.width, canvas.height);}
     }
     setNodes([]);
-    setDrawingActions([]);
-    setHistory({ nodes: [], drawings: [] });
+    setDrawActions([]);
+    setHistory({ nodes: [], draws: [] });
     setHistoryIndex(-1);
     setShowClearConfirmPopup(false);
-    setLastNodePosition({ x: 100, y: 200 });
+    setLastNodePos({ x: 100, y: 200 });
   };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
@@ -135,72 +107,61 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     return true;
   };
 
-  const handleAddNode = () => {
+  const hndAddNode = () => {
     if (!canvasRef.current) return;
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
-    const { newNode, newMaxZIndex, newLastNodePosition } = addNode(
+    const { newNode, newMaxZIndex, newLastNodePos } = addNode(
       nodes,
       canvasRect.width,
       canvasRect.height,
-      lastNodePosition,
+      lastNodePos,
       maxZIndex
     );
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setMaxZIndex(newMaxZIndex);
-    setLastNodePosition(newLastNodePosition);
-    startEditing(newNode, setEditingNode, setEditText);
+    setLastNodePos(newLastNodePos);
+    startEdit(newNode, setEditNode, setEditText);
   };
 
-  const handleDeleteSelectedNodes = () => {
+  const hndDeleteSelectedNodes = () => {
     const updatedNodes = deleteSelectedNodes(nodes);
     setNodes(updatedNodes);
   };
 
-  const handleLineStyleChange = (style: string) => {
+  const hndLineStyleChange = (style: string) => {
     setLineStyle(style as 'solid' | 'dashed' | 'curved');
-    handleToolChange('link');
+    hndToolChange('link');
   };
   
-  const handleStartEditing = (node: Node) => {
-    startEditing(node, setEditingNode, setEditText);
-  };
+  const hndStartEdit = (node: Node) => {startEdit(node, setEditNode, setEditText);};
+  const hndFinishEdit = () => {finishEdit(editNode, editText, canvasRef.current, setNodes, setEditNode, setEditText);};
+  const hndCancelEdit = () => {cancelEdit(setEditNode, setEditText);};
+  const hndFinishEditLink = () => {finishEditLink(editLink, linkText, setNodes, setEditLink, setLinkText);};
 
-  const handleFinishEditing = () => {
-    finishEditing(editingNode, editText, canvasRef.current, setNodes, setEditingNode, setEditText);
-  };
-
-  const handleCancelEditing = () => {
-    cancelEditing(setEditingNode, setEditText);
-  };
-  
-  const handleFinishEditingLink = () => {
-    finishEditingLink(editingLink, linkText, setNodes, setEditingLink, setLinkText);
-  };
-
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Delete') {handleDeleteSelectedNodes();
+  const hndKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Delete') {hndDeleteSelectedNodes();
     } else if (e.key === 'Escape') {
       // ESC 키를 눌렀을 때 연결선 그리기 초기화
       setLinking(null);
       setTemporaryLink(null);
-    } else if (editingNode) {
+    } else if (editNode) {
       if (e.key === 'Enter') {
         if (e.target instanceof HTMLInputElement) {
           const inputs = document.querySelectorAll('input');
-          const currentIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
-          if (currentIndex < inputs.length - 1) {(inputs[currentIndex + 1] as HTMLInputElement).focus();
-          } else {handleFinishEditing();}
-        } else {handleFinishEditing();}
-      } else if (e.key === 'Escape') {handleCancelEditing();}
+          const currIndex = Array.from(inputs).indexOf(e.target as HTMLInputElement);
+          if (currIndex < inputs.length - 1) {(inputs[currIndex + 1] as HTMLInputElement).focus();
+          } else {hndFinishEdit();}
+        } else {hndFinishEdit();}
+      } else if (e.key === 'Escape') {hndCancelEdit();}
     } else {
       const selectedNode = nodes.find(node => node.selected);
-      if (selectedNode && e.key.length === 1) {handleStartEditing(selectedNode);}
+      if (selectedNode && e.key.length === 1) {hndStartEdit(selectedNode);}
     }
-  }, [nodes, editingNode]);
+  }, [nodes, editNode]);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const hndMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
       const clickedNode = getClickedNode(nodes, offsetX, offsetY);
@@ -211,14 +172,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           setNodes(prevNodes => prevNodes.map(node => ({...node, selected: node.id === clickedNode.id})));
         }
         // 그룹 드래그 시작
-        setIsDraggingGroup(true);
+        setIsDragGroup(true);
       } else {
         // 빈 공간 클릭 시 선택 영역 드래그 시작
         setSelectionArea({ startX: offsetX, startY: offsetY, endX: offsetX, endY: offsetY });
-        setIsSelecting(true);
+        setIsSelect(true);
       }
       
-      setDragStartPosition({ x: offsetX, y: offsetY });
+      setDragStartPos({ x: offsetX, y: offsetY });
     } else if (tool === 'link') {
       const { offsetX, offsetY } = e.nativeEvent;
       const clickedNode = getClickedNode(nodes, offsetX, offsetY);
@@ -228,33 +189,33 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       }
     }
 
-    const canvas = drawingCanvasRef.current;
+    const canvas = drawCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
     if (tool === 'draw' || tool === 'erase') {
-      setIsDrawing(true);
+      setIsDraw(true);
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.beginPath();
         ctx.moveTo(x, y);
         // 그리기 시작 점 설정
-        setCurrentDrawingPoints([{ x, y }]);
+        setcurrDrawPnts([{ x, y }]);
       }
     } else if (tool === 'move') {
       const { node, handle } = getClickedNodeAndHandle(nodes, x, y);
       if (node) {
-        setIsDragging(true);        
-        if (handle) {setResizing({ node, direction: handle });}
+        setIsDrag(true);        
+        if (handle) {setResize({ node, direction: handle });}
         else {
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
-            setDragging({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
+            setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
-            setDragging({ node, offsetX: x - node.x, offsetY: y - node.y });
+            setDrag({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
           }
         }
@@ -265,13 +226,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const hndMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
       
-      if (isDraggingGroup && dragStartPosition) {
-        setDragStartPosition({ x: offsetX, y: offsetY });
-      } else if (isSelecting && !resizing) {
+      if (isDragGroup && dragStartPos) {
+        setDragStartPos({ x: offsetX, y: offsetY });
+      } else if (isSelect && !resize) {
         // 다중 선택을 위한 드래그 (리사이징 중이 아닐 때만)
         setSelectionArea(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
       }
@@ -280,20 +241,20 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setTemporaryLink(prev => prev ? { ...prev, endX: offsetX, endY: offsetY } : null);
     }
 
-    const canvas = drawingCanvasRef.current;
+    const canvas = drawCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (isDrawing) {
+    if (isDraw) {
       const ctx = canvas.getContext('2d');
       if (ctx) { 
         if (tool === 'draw') {
           // 현재 그리기 점 추가
-          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
+          setcurrDrawPnts(prevPnts => [...prevPnts, { x, y }]);
 
-          if (currentDrawingPoints.length < 2) return;
+          if (currDrawPnts.length < 2) return;
 
           ctx.strokeStyle = penColor;
           ctx.lineWidth = Number(lineWidth);
@@ -301,14 +262,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           ctx.lineJoin = 'round';
 
           ctx.beginPath();
-          ctx.moveTo(currentDrawingPoints[0].x, currentDrawingPoints[0].y);
+          ctx.moveTo(currDrawPnts[0].x, currDrawPnts[0].y);
       
-          for (let i = 1; i < currentDrawingPoints.length; i++) {
-            const currentPoint = currentDrawingPoints[i];
-            const previousPoint = currentDrawingPoints[i - 1];
-            const midPoint = {x: (previousPoint.x + currentPoint.x) / 2, y: (previousPoint.y + currentPoint.y) / 2};
+          for (let i = 1; i < currDrawPnts.length; i++) {
+            const currPnt = currDrawPnts[i];
+            const previousPnt = currDrawPnts[i - 1];
+            const midPnt = {x: (previousPnt.x + currPnt.x) / 2, y: (previousPnt.y + currPnt.y) / 2};
       
-            ctx.quadraticCurveTo(previousPoint.x, previousPoint.y, midPoint.x, midPoint.y);
+            ctx.quadraticCurveTo(previousPnt.x, previousPnt.y, midPnt.x, midPnt.y);
           }    
           ctx.stroke();          
 
@@ -320,32 +281,32 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           ctx.lineJoin = 'round';
           ctx.stroke();
           // 현재 그리기 점 추가
-          setCurrentDrawingPoints(prevPoints => [...prevPoints, { x, y }]);
+          setcurrDrawPnts(prevPnts => [...prevPnts, { x, y }]);
         }
       }
-    } else if (dragging) {
-      if (dragging.node.id === -1) {
+    } else if (drag) {
+      if (drag.node.id === -1) {
         // 여러 노드가 선택된 경우
-        const dx = x - dragging.offsetX;
-        const dy = y - dragging.offsetY;
+        const dx = x - drag.offsetX;
+        const dy = y - drag.offsetY;
         const newNodes = nodes.map((node) => {
           if (node.selected) {return { ...node, x: node.x + dx, y: node.y + dy };}
           return node;
         });
         setNodes(newNodes);
-        setDragging({ ...dragging, offsetX: x, offsetY: y });
+        setDrag({ ...drag, offsetX: x, offsetY: y });
       } else {
         // 단일 노드 이동
         const newNodes = nodes.map((node) => {
-          if (node.id === dragging.node.id) {return { ...node, x: x - dragging.offsetX, y: y - dragging.offsetY };}
+          if (node.id === drag.node.id) {return { ...node, x: x - drag.offsetX, y: y - drag.offsetY };}
           return node;
         });
         setNodes(newNodes);
-        setLastNodePosition({ x: x - dragging.offsetX, y: y - dragging.offsetY });
+        setLastNodePos({ x: x - drag.offsetX, y: y - drag.offsetY });
       }
-    } else if (resizing) {
+    } else if (resize) {
       const newNodes = nodes.map((node) => {
-        if (node.id === resizing.node.id) {
+        if (node.id === resize.node.id) {
           let newWidth = node.width;
           let newHeight = node.height;
           let newX = node.x;
@@ -357,13 +318,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             const minWidth = Math.max(120, ctx.measureText(node.text2).width + 40);
             const minHeight = 100;
 
-            if (resizing.direction.includes('e')) newWidth = Math.max(minWidth, x - node.x);
-            if (resizing.direction.includes('w')) {
+            if (resize.direction.includes('e')) newWidth = Math.max(minWidth, x - node.x);
+            if (resize.direction.includes('w')) {
               newWidth = Math.max(minWidth, node.x + node.width - x);
               newX = Math.min(x, node.x + node.width - minWidth);
             }
-            if (resizing.direction.includes('s')) newHeight = Math.max(minHeight, y - node.y);
-            if (resizing.direction.includes('n')) {
+            if (resize.direction.includes('s')) newHeight = Math.max(minHeight, y - node.y);
+            if (resize.direction.includes('n')) {
               newHeight = Math.max(minHeight, node.y + node.height - y);
               newY = Math.min(y, node.y + node.height - minHeight);
             }
@@ -375,26 +336,26 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setNodes(newNodes);
     }
 
-    if (tool === 'erase') {setEraserPosition({ x, y, visible: true });}
-    else {setEraserPosition({ x: 0, y: 0, visible: false });}
+    if (tool === 'erase') {setEraserPos({ x, y, visible: true });}
+    else {setEraserPos({ x: 0, y: 0, visible: false });}
   };
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(false);
-    setDragging(null);
-    setResizing(null);
-    setIsDragging(false);
+  const hndMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDraw(false);
+    setDrag(null);
+    setResize(null);
+    setIsDrag(false);
 
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
       
-      if (isDraggingGroup) {
+      if (isDragGroup) {
         // 그룹 드래그 종료
-        setIsDraggingGroup(false);
-      } else if (isSelecting) {
+        setIsDragGroup(false);
+      } else if (isSelect) {
         // 다중 선택 종료
-        setIsSelecting(false);
-        if (isDragSignificant(dragStartPosition!, { x: offsetX, y: offsetY })) {
+        setIsSelect(false);
+        if (isDragSignificant(dragStartPos!, { x: offsetX, y: offsetY })) {
           const selectedNodes = nodes.filter(node => isNodeInSelectionArea(node, selectionArea!));
           if (selectedNodes.length > 0) {
             setNodes(prevNodes => prevNodes.map(node => ({...node, selected: selectedNodes.some(selectedNode => selectedNode.id === node.id)})));
@@ -406,7 +367,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       }
     }
     setSelectionArea(null);
-    setDragStartPosition(null);
+    setDragStartPos(null);
 
     if (selectionArea) {
       const selectedNodes = nodes.map((node) => ({...node, selected: isNodeInSelectionArea(node, selectionArea),}));
@@ -422,17 +383,17 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     }
 
     // 그리기 작업 저장
-    if (isDrawing && (tool === 'draw' || tool === 'erase')) {
-      setDrawingActions(prevActions => [
+    if (isDraw && (tool === 'draw' || tool === 'erase')) {
+      setDrawActions(prevActions => [
         ...prevActions,
         {
           type: tool,
-          points: currentDrawingPoints,
+          pnts: currDrawPnts,
           color: tool === 'draw' ? penColor : '#FFF',
           lineWidth: tool === 'draw' ? Number(lineWidth) : eraserSize
         }
       ]);
-      setCurrentDrawingPoints([]);
+      setcurrDrawPnts([]);
       if (tool === 'erase') {setTool('draw');}
     }
 
@@ -467,29 +428,29 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             }
                 
             // 연결 생성 후 바로 텍스트 입력 모드로 전환
-            const fromPoint = getLinkPoint(fromNode, fromSide);
-            const toPoint = getLinkPoint(clickedNode, toSide);
+            const fromPnt = getLinkPnt(fromNode, fromSide);
+            const toPnt = getLinkPnt(clickedNode, toSide);
 
             let textX, textY;
 
             if (newLink && newLink.lineStyle === 'curved') {
               const textOffset = 15; // 텍스트와 선 사이의 거리
-              const topPoint = getCurvedLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
-              textX = topPoint.x;
-              textY = topPoint.y + textOffset;  // 최상위 접선에 바로 위치
+              const topPnt = getCurvedLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
+              textX = topPnt.x;
+              textY = topPnt.y + textOffset;  // 최상위 접선에 바로 위치
             } else {
               const textOffset = 10; // 텍스트와 선 사이의 거리
-              const {x, y, textAlign, textBaseline} = getSolidLinkTopPoint(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, textOffset);
+              const {x, y, textAlign, textBaseline} = getSolidLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y, textOffset);
               textX = x || 0;
               textY = y || 0;
             }
             
-            setEditingLink({ startNode: fromNode, endNode: clickedNode, fromSide: linking.side, toSide: side, lineStyle: lineStyle, x: textX, y: textY });
+            setEditLink({ startNode: fromNode, endNode: clickedNode, fromSide: linking.side, toSide: side, lineStyle: lineStyle, x: textX, y: textY });
 
             let link = '';
             if (newLink.lineStyle === 'curved') {link = 'Describing';}
             else if (newLink.lineStyle === 'solid') {link = 'Adding';}
-            else if (newLink.lineStyle === 'dashed') {link = 'verbing';}
+            else if (newLink.lineStyle === 'dashed') {link = 'Verbing';}
 
             setLinkText(link);            
           }
@@ -500,71 +461,58 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     }
   };
 
-  const handleToolChange = (newTool: Tool) => {
+  const hndToolChange = (newTool: Tool) => {
     if (newTool !== 'move') {
       setNodes((prevNodes) => prevNodes.map((node) => ({ ...node, selected: false })));
     }
     setTool(newTool);
     if (newTool === 'addNode') {
       setPenColor('#FFFFFF');
-      handleAddNode();
+      hndAddNode();
       setTool('move');
     } else if (newTool === 'draw') {
       setPenColor('#000000');
     }
   };
 
-  const handleAlignNodesVertically = () => {
-    setNodes(alignNodesVertically(nodes));
-  };
-
-  const handleAlignNodesHorizontally = () => {
-    setNodes(alignNodesHorizontally(nodes));
-  };
+  const hndAlignNodesV = () => {setNodes(alignNodesV(nodes));};
+  const hndAlignNodesH = () => {setNodes(alignNodesH(nodes));};
   
-  const handleNodeColorChange = (color: string) => {
+  const hndNodeColorChange = (color: string) => {
     setNodeColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, backgroundColor: color } : node
     ));
   };
 
-  const handleNodeBorderColorChange = (color: string): void => {
+  const hndNodeBorderColorChange = (color: string): void => {
     setNodeBorderColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, borderColor: color } : node
     ));
   };
 
-  const handlePenColorChange = (color: string) => {
-    setPenColor(color);
-  };
-  
-  const handleLineWidthChange = (lineWidth: string) => {
-    setLineWidth(lineWidth);
-  };
-  
-  const handleEraserSizeChange = (eraserSize: string) => {
-    setEraserSize(Number(eraserSize));
-  };
+  const hndPenColorChange = (color: string) => {setPenColor(color);};
+  const hndLineWidthChange = (lineWidth: string) => {setLineWidth(lineWidth);};
+  const hndEraserSizeChange = (eraserSize: string) => {setEraserSize(Number(eraserSize));};
 
   // 히토리에 현재 상태 추가 함수 수정
   const addToHistory = () => {
     setHistory(prevHistory => {
       // 새로운 상태를 추가합니다.
       const newNodes = [...prevHistory.nodes, [...nodes]];
-      const newDrawings = [...prevHistory.drawings, [...drawingActions]];
+      const newDraws = [...prevHistory.draws, [...drawActions]];
       
       // 최근 10건만 유지합니다.
       const slicedNodes = newNodes.slice(-MAX_HISTORY_LENGTH);
-      const slicedDrawings = newDrawings.slice(-MAX_HISTORY_LENGTH);
+      const slicedDraws = newDraws.slice(-MAX_HISTORY_LENGTH);
       
       // console.log(slicedNodes);
-      // console.log(slicedDrawings);
+      // console.log(slicedDraws);
 
       return {
         nodes: slicedNodes,
-        drawings: slicedDrawings
+        draws: slicedDraws
       };
     });
   
@@ -578,7 +526,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       isUndoRedoActionRef.current = true;
       const newIndex = historyIndex - 1;
       setNodes(history.nodes[newIndex]);
-      setDrawingActions(history.drawings[newIndex]);
+      setDrawActions(history.draws[newIndex]);
       setHistoryIndex(newIndex);
       // setTimeout을 사용하여 상태 업데이트 후 플래그를 리셋
       setTimeout(() => {
@@ -592,7 +540,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       isUndoRedoActionRef.current = true;
       const newIndex = historyIndex + 1;
       setNodes(history.nodes[newIndex]);
-      setDrawingActions(history.drawings[newIndex]);
+      setDrawActions(history.draws[newIndex]);
       setHistoryIndex(newIndex);
       // setTimeout을 사용하여 상태 업데이트 후 플래그를 리셋
       setTimeout(() => {
@@ -603,18 +551,16 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   
 
   // 저장 버튼 클릭 핸들러 함수 추가
-  const handleSaveClick = () => {
-    if (nodes.length === 0 && drawingActions.length === 0) {
-      toast.warning('저장할 내용이 없습니다. 노드를 추가하거나 그림을 그려주세요.');
+  const hndSaveClick = () => {
+    if (nodes.length === 0 && drawActions.length === 0) {
+      toast.warn('저장할 내용이 없습니다. 노드를 추가하거나 그림을 그려주세요.');
       return;
     }
     setShowSavePopup(true);
   };
 
   // 저장 기능 수정
-  const handleSaveCanvas = (title: string) => {
-    saveCanvas(title, nodes, drawingActions, author, email, setShowSavePopup);
-  };
+  const hndSaveCanvas = (title: string) => {saveCanvas(title, nodes, drawActions, author, email, setShowSavePopup);};
 
   // 음성 읽기 함수 수정
   const readSelectedTexts = (selectedTexts: string[]) => {
@@ -629,23 +575,23 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
 
   // 노드 선택 이벤트를 제외한 변경사항만 감지하는 함수
-  const hasSignificantChanges = (prevNodes: Node[], currentNodes: Node[]) => {
-    if (prevNodes.length !== currentNodes.length) return true;
+  const hasSignificantChanges = (prevNodes: Node[], currNodes: Node[]) => {
+    if (prevNodes.length !== currNodes.length) return true;
     
     for (let i = 0; i < prevNodes.length; i++) {
       const prevNode = prevNodes[i];
-      const currentNode = currentNodes[i];
+      const currNode = currNodes[i];
       
       for (const key in prevNode) {
         if (key === 'selected') continue; // 'selected' 속성 변경은 무시
         if (key === 'links') {
           // links 배열의 길이나 내용이 변경되었는지 확인
-          if (!Array.isArray(prevNode.links) || !Array.isArray(currentNode.links) ||
-              prevNode.links.length !== currentNode.links.length ||
-              JSON.stringify(prevNode.links) !== JSON.stringify(currentNode.links)) {
+          if (!Array.isArray(prevNode.links) || !Array.isArray(currNode.links) ||
+              prevNode.links.length !== currNode.links.length ||
+              JSON.stringify(prevNode.links) !== JSON.stringify(currNode.links)) {
             return true;
           }
-        } else if (prevNode[key as keyof Node] !== currentNode[key as keyof Node]) {
+        } else if (prevNode[key as keyof Node] !== currNode[key as keyof Node]) {
           return true;
         }
       }
@@ -654,9 +600,9 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     return false;
   };
   
-  const handleStartRecording = () => {startRecording(setIsRecording, setRecordingBlob, setShowSaveRecordingPopup, mediaRecorderRef);};
-  const handleStopRecording = () => {stopRecording(mediaRecorderRef);};
-  const handleSaveRecording = (author: string, email: string, title: string) => {saveRecording(author, email, title, recordingBlob, setShowSaveRecordingPopup, setRecordingBlob);};
+  const hndStartRec = () => {startRec(setIsRec, setRecBlob, setShowSaveRecPopup, mediaRecorderRef);};
+  const hndStopRec = () => {stopRec(mediaRecorderRef);};
+  const hndSaveRec = (author: string, email: string, title: string) => {saveRec(author, email, title, RecBlob, setShowSaveRecPopup, setRecBlob);};
 
   useEffect(() => {
     const mode = searchParams?.get('mode') || 'edit';
@@ -665,12 +611,12 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
     const loadLesson = async () => {
       if (params.id === 'new') {
-        setIsLoading(false);
+        setIsLoad(false);
         addToHistory();
         return;
       }
 
-      setIsLoading(true);
+      setIsLoad(true);
       try {
         const response = await fetch(`/api/lessons/?id=${params.id}`);
         if (!response.ok) {throw new Error('교안을 찾을 수 없습니다');}
@@ -687,18 +633,18 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         const fileData = await fileResponse.json();
 
         setNodes(fileData.nodes);
-        setDrawingActions(fileData.drawings);
+        setDrawActions(fileData.draws);
         // maxIndex 업데이트
         const maxNodeIndex = Math.max(...fileData.nodes.map((node: Node) => node.zIndex), 0);
         setMaxZIndex(maxNodeIndex);
-        setLastNodePosition({ x: fileData.nodes[fileData.nodes.length - 1].x, y: fileData.nodes[fileData.nodes.length - 1].y });
+        setLastNodePos({ x: fileData.nodes[fileData.nodes.length - 1].x, y: fileData.nodes[fileData.nodes.length - 1].y });
         
         // 그리기 객체 복원
-        const drawingCanvas = drawingCanvasRef.current;
-        if (drawingCanvas) { 
-          const ctx = drawingCanvas.getContext('2d');
+        const drawCanvas = drawCanvasRef.current;
+        if (drawCanvas) { 
+          const ctx = drawCanvas.getContext('2d');
           if (ctx) {
-            fileData.drawings.forEach((imageData: string) => {
+            fileData.draws.forEach((imageData: string) => {
               const img = new Image();
               img.onload = () => {ctx.drawImage(img, 0, 0);};
               img.src = imageData;
@@ -709,7 +655,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         console.error('레슨 불러오기 실패:', error);
         toast.error('레슨을 불러오는 데 실패했습니다: ' + (error as Error).message);
       } finally {
-        setIsLoading(false);
+        setIsLoad(false);
       }
     };
 
@@ -720,17 +666,17 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     const resizeCanvas = () => {
       const container = containerRef.current;
       const canvas = canvasRef.current;
-      const drawingCanvas = drawingCanvasRef.current;
+      const drawCanvas = drawCanvasRef.current;
 
-      if (container && canvas && drawingCanvas) {
+      if (container && canvas && drawCanvas) {
         const { width, height } = container.getBoundingClientRect();
         canvas.width = width;
         canvas.height = height;
-        drawingCanvas.width = width;
-        drawingCanvas.height = height;
+        drawCanvas.width = width;
+        drawCanvas.height = height;
 
         const ctx = canvas.getContext('2d');
-        if (ctx) {redrawCanvas(ctx, nodes, drawingActions, selectionArea);}
+        if (ctx) {redrawCanvas(ctx, nodes, drawActions, selectionArea);}
       }
     };
 
@@ -738,7 +684,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     window.addEventListener('resize', resizeCanvas);
 
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, [nodes, drawingActions, selectionArea]);
+  }, [nodes, drawActions, selectionArea]);
 
   useEffect(() => {
     // 브라우저 환경에서만 실행되도록 합니다.
@@ -748,18 +694,18 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   }, []);
 
   useEffect(() => {
-    const handleKeyDownEvent = (e: globalThis.KeyboardEvent) => handleKeyDown(e as unknown as KeyboardEvent);
-    window.addEventListener('keydown', handleKeyDownEvent);
-    return () => {window.removeEventListener('keydown', handleKeyDownEvent);};
-  }, [handleKeyDown]);
+    const hndKeyDownEvent = (e: globalThis.KeyboardEvent) => hndKeyDown(e as unknown as KeyboardEvent);
+    window.addEventListener('keydown', hndKeyDownEvent);
+    return () => {window.removeEventListener('keydown', hndKeyDownEvent);};
+  }, [hndKeyDown]);
     
   useEffect(() => {
     const canvas = canvasRef.current;
-    const drawingCanvas = drawingCanvasRef.current;
-    if (canvas && drawingCanvas) {
+    const drawCanvas = drawCanvasRef.current;
+    if (canvas && drawCanvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        redrawCanvas(ctx, nodes, drawingActions, dragging ? null : selectionArea);      
+        redrawCanvas(ctx, nodes, drawActions, drag ? null : selectionArea);      
 
         // 임시 연결선 그리기
         if (temporaryLink) {
@@ -782,20 +728,20 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         }
       }
     }
-  }, [nodes, selectionArea, dragging, temporaryLink, lineStyle, drawingActions]);
+  }, [nodes, selectionArea, drag, temporaryLink, lineStyle, drawActions]);
 
   useEffect(() => {
     if (
       !isUndoRedoActionRef.current &&
-      !isDragging &&  // 드래그 중이 아닐 때만 히스토리에 추가
+      !isDrag &&  // 드래그 중이 아닐 때만 히스토리에 추가
       (hasSignificantChanges(prevNodesRef.current, nodes) ||
-      JSON.stringify(prevDrawingActionsRef.current) !== JSON.stringify(drawingActions))
+      JSON.stringify(prevDrawActionsRef.current) !== JSON.stringify(drawActions))
     ) {
       addToHistory();
       prevNodesRef.current = nodes;
-      prevDrawingActionsRef.current = drawingActions;
+      prevDrawActionsRef.current = drawActions;
     }
-  }, [nodes, drawingActions, isDragging]);
+  }, [nodes, drawActions, isDrag]);
 
   useEffect(() => {
     setUndoCount(historyIndex);
@@ -807,33 +753,33 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       <div ref={containerRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', margin: '2px', borderRadius: '10px', backgroundColor: 'white', boxShadow: '2px 2px 2px rgba(0,0,0,0.1)' }}>
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
         <canvas
-          ref={drawingCanvasRef}
+          ref={drawCanvasRef}
           style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={(e) => handleTouchStart(e, drawingCanvasRef, setTouchStartPos, handleMouseDown)}
-          onTouchMove={(e) => handleTouchMove(e, touchStartPos, handleMouseMove)}
-          onTouchEnd={(e) => handleTouchEnd(e, drawingCanvasRef, setTouchStartPos, handleMouseUp)}
+          onMouseDown={hndMouseDown}
+          onMouseMove={hndMouseMove}
+          onMouseUp={hndMouseUp}
+          onMouseLeave={hndMouseUp}
+          onTouchStart={(e) => hndTouchStart(e, drawCanvasRef, setTouchStartPos, hndMouseDown)}
+          onTouchMove={(e) => hndTouchMove(e, touchStartPos, hndMouseMove)}
+          onTouchEnd={(e) => hndTouchEnd(e, drawCanvasRef, setTouchStartPos, hndMouseUp)}
         />
-        {eraserPosition.visible && (
-          <div style={{ position: 'absolute', left: eraserPosition.x - eraserSize / 2, top: eraserPosition.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
+        {eraserPos.visible && (
+          <div style={{ position: 'absolute', left: eraserPos.x - eraserSize / 2, top: eraserPos.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
         )}
-        {editingNode && (
-          <div style={{ position: 'absolute', left: editingNode.x, top: editingNode.y, width: editingNode.width, height: editingNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
+        {editNode && (
+          <div style={{ position: 'absolute', left: editNode.x, top: editNode.y, width: editNode.width, height: editNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
             <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
             <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={handleFinishEditing} onKeyDown={(e) => { if (e.key === 'Enter') { handleFinishEditing(); } }} />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={hndFinishEdit} onKeyDown={(e) => { if (e.key === 'Enter') { hndFinishEdit(); } }} />
           </div>
         )}
-        {editingLink && (
-          <div style={{ position: 'absolute', left: editingLink.x, top: editingLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
+        {editLink && (
+          <div style={{ position: 'absolute', left: editLink.x, top: editLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
             <input 
               value={linkText} 
               onChange={(e) => setLinkText(e.target.value)} 
-              onBlur={handleFinishEditingLink} 
-              onKeyDown={(e) => { if (e.key === 'Enter') handleFinishEditingLink(); }} 
+              onBlur={hndFinishEditLink} 
+              onKeyDown={(e) => { if (e.key === 'Enter') hndFinishEditLink(); }} 
               style={{ padding: '5px', border: 'none', outline: 'none', backgroundColor: 'transparent', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', width: '80px' }} 
               placeholder="설명 입력" 
               autoFocus 
@@ -842,31 +788,31 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         )}
       </div>
       <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        {shouldRenderTool('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={handleSaveClick} currentTool={tool} />}
-        {shouldRenderTool('move') && <ToolButton tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => handleToolChange('move')} currentTool={tool} />}
-        {shouldRenderTool('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => handleToolChange('draw')} currentTool={tool} />}
-        {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => handleToolChange('addNode')} currentTool={tool} />}
-        {shouldRenderTool('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => handleToolChange('link')} currentTool={tool} />}
-        {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => handleToolChange('erase')} currentTool={tool} />}
-        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={handleAlignNodesVertically} currentTool={tool} />}
-        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={handleAlignNodesHorizontally} currentTool={tool} />}
-        {shouldRenderTool('record') && <ToolButton tool="record" icon={isRecording ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRecording ? handleStopRecording : handleStartRecording} currentTool={tool} />}
-        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currentTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
-        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currentTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
-        <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currentTool={isVoiceEnabled ? 'voice' : ''} />
-        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currentTool={tool} />}
-        {mode !== 'play' && (<NodeSelector title="노드 색상" value={nodeColor} onChange={handleNodeColorChange} options={nodeColors} />)}
-        {mode !== 'play' && (<NodeSelector title="노드 테두리" value={nodeBorderColor} onChange={handleNodeBorderColorChange} options={nodeBorderColors} />)}
-        {mode !== 'edit' && (<NodeSelector title="펜색상" value={penColor} onChange={handlePenColorChange} options={penColors} />)}
-        {mode !== 'edit' && (<NodeSelector title="펜굵기" value={lineWidth} onChange={handleLineWidthChange} options={lineWidths} />)}
-        {mode !== 'edit' && (<NodeSelector title="지우개 크기" value={eraserSize.toString()} onChange={handleEraserSizeChange} options={eraserSizes} />)}
-        {mode !== 'play' && (<NodeSelector title="선종류" value={lineStyle} onChange={handleLineStyleChange as (value: string) => void} options={linkStyles} />)}
+        {shouldRenderTool('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
+        {shouldRenderTool('move') && <ToolButton tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
+        {shouldRenderTool('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
+        {shouldRenderTool('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
+        {shouldRenderTool('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
+        {shouldRenderTool('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
+        {shouldRenderTool('alignVertical') && <ToolButton tool="alignVertical" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
+        {shouldRenderTool('alignHorizontal') && <ToolButton tool="alignHorizontal" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
+        {shouldRenderTool('record') && <ToolButton tool="record" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
+        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
+        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
+        <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currTool={isVoiceEnabled ? 'voice' : ''} />
+        {shouldRenderTool('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
+        {mode !== 'play' && (<NodeSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
+        {mode !== 'play' && (<NodeSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
+        {mode !== 'edit' && (<NodeSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
+        {mode !== 'edit' && (<NodeSelector title="펜굵기" value={lineWidth} onChange={hndLineWidthChange} options={lineWidths} />)}
+        {mode !== 'edit' && (<NodeSelector title="지우개 크기" value={eraserSize.toString()} onChange={hndEraserSizeChange} options={eraserSizes} />)}
+        {mode !== 'play' && (<NodeSelector title="선종류" value={lineStyle} onChange={hndLineStyleChange as (value: string) => void} options={linkStyles} />)}
       </div>
-      {showSavePopup && <SaveLessonPopup onSave={handleSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
-      {showSaveRecordingPopup && <SaveRecordingPopup author={author || ''} email={email || ''} onSave={handleSaveRecording} onCancel={() => setShowSaveRecordingPopup(false)} />}
+      {showSavePopup && <SaveLessonPopup onSave={hndSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
+      {showSaveRecPopup && <SaveRecPopup author={author || ''} email={email || ''} onSave={hndSaveRec} onCancel={() => setShowSaveRecPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />
-      {isLoading && (
+      {isLoad && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
         </div>

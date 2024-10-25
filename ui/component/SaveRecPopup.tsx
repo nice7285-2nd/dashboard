@@ -1,13 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-interface SaveRecordingPopupProps {
+interface SaveRecPopupProps {
   author: string;
   email: string;
   onSave: (author: string, email: string, title: string) => void;
   onCancel: () => void;
 }
 
-const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ author, email, onSave, onCancel }) => {
+const SaveRecPopup: React.FC<SaveRecPopupProps> = ({ author, email, onSave, onCancel }) => {
   const [title, setTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,4 +56,4 @@ const SaveRecordingPopup: React.FC<SaveRecordingPopupProps> = ({ author, email, 
   );
 };
 
-export default SaveRecordingPopup;
+export default SaveRecPopup;
