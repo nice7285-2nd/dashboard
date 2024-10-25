@@ -3,11 +3,11 @@
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } from 'react';
 import { PencilIcon, CloudArrowUpIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, TrashIcon, AdjustmentsHorizontalIcon, AdjustmentsVerticalIcon, HandRaisedIcon } from '@heroicons/react/24/outline';
 import { useSearchParams } from 'next/navigation';
-import ToolButton from '@/ui/component/ToolButton';
+import ToolIcon from '@/ui/component/ToolIcon';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
-import NodeSelector from '@/ui/component/NodeSelector';
+import NSelector from '@/ui/component/NSelector';
 import { redrawCanvas, isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
 import { startRec, stopRec, saveRec } from './utils/recUtils';
 import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
@@ -46,7 +46,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('solid');
   const [isRec, setIsRec] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isVoice, setIsVoice] = useState(false);
   const [editNode, setEditNode] = useState<Node | null>(null);
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
   const [history, setHistory] = useState<{ nodes: Node[][], draws: DrawAction[][] }>({ nodes: [], draws: [] });
@@ -75,7 +75,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
   const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
-  const hiddenToolsInEditMode = ['draw', 'erase', 'record'];
+  const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
   const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
   ];
   const nodeBorderColors = [{ value: "#05F", label: "밝은파랑" }, { value: "#FD5500", label: "빨강" }];
@@ -373,7 +373,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setNodes(selectedNodes);
 
       // 선택된 노드들의 텍트를 읽어주는 기능 추가
-      if (isVoiceEnabled) {
+      if (isVoice) {
         const selectedTexts = selectedNodes.filter((node) => node.selected).map((node) => node.text2);
         readSelectedTexts(selectedTexts);
       }
@@ -750,10 +750,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       <div ref={containerRef} className="relative flex-1 overflow-hidden m-0.5 rounded-lg bg-white shadow-sm">
-        <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }} />
+        <canvas ref={canvasRef} className="absolute top-0 left-0 z-[1]" />
         <canvas
           ref={drawCanvasRef}
-          style={{ position: 'absolute', top: 0, left: 0, zIndex: 2 }}
+          className="absolute top-0 left-0 z-[2]"
           onMouseDown={hndMouseDown}
           onMouseMove={hndMouseMove}
           onMouseUp={hndMouseUp}
@@ -763,49 +763,65 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           onTouchEnd={(e) => hndTouchEnd(e, drawCanvasRef, setTouchStartPos, hndMouseUp)}
         />
         {eraserPos.visible && (
-          <div style={{ position: 'absolute', left: eraserPos.x - eraserSize / 2, top: eraserPos.y - eraserSize / 2, width: eraserSize, height: eraserSize, border: '1px solid black', borderRadius: '50%', pointerEvents: 'none', zIndex: 3 }} />
+          <div className="absolute border border-black rounded-full pointer-events-none z-[3]"
+          style={{
+            left: `${eraserPos.x - eraserSize / 2}px`,
+            top: `${eraserPos.y - eraserSize / 2}px`,
+            width: `${eraserSize}px`,
+            height: `${eraserSize}px`
+          }} />
         )}
         {editNode && (
-          <div style={{ position: 'absolute', left: editNode.x, top: editNode.y, width: editNode.width, height: editNode.height, zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'white', border: '1px solid #05f', borderRadius: '0px', padding: '5px' }}>
-            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '14px', fontWeight: 'bold', color: '#f07500' }} placeholder="텍스트 1" autoFocus />
-            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', marginBottom: '5px', textAlign: 'center', fontSize: '24px', fontWeight: 'bold' }} placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} style={{ border: 'none', outline: 'none', backgroundColor: 'transparent', width: '90%', textAlign: 'center', fontSize: '14px', fontWeight: 'bold' }} placeholder="텍스트 3" onBlur={hndFinishEdit} onKeyDown={(e) => { if (e.key === 'Enter') { hndFinishEdit(); } }} />
+          <div className="absolute flex flex-col items-center justify-center p-[5px] bg-white border border-[#05f] rounded-none z-[4]"
+          style={{
+            left: editNode.x,
+            top: editNode.y,
+            width: editNode.width,
+            height: editNode.height
+          }}>
+            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[14px] font-bold text-[#f07500]" placeholder="텍스트 1" autoFocus />
+            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[24px] font-bold" placeholder="텍스트 2" />
+            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} className="border-none outline-none bg-transparent w-[90%] text-center text-[14px] font-bold" placeholder="텍스트 3" onBlur={hndFinishEdit} onKeyDown={(e) => { if (e.key === 'Enter') { hndFinishEdit(); } }} />
           </div>
         )}
         {editLink && (
-          <div style={{ position: 'absolute', left: editLink.x, top: editLink.y, transform: 'translate(-50%, -50%)', zIndex: 1000 }}>
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000]"
+          style={{ 
+            left: editLink.x, 
+            top: editLink.y 
+          }}>
             <input 
               value={linkText} 
               onChange={(e) => setLinkText(e.target.value)} 
               onBlur={hndFinishEditLink} 
               onKeyDown={(e) => { if (e.key === 'Enter') hndFinishEditLink(); }} 
-              style={{ padding: '5px', border: 'none', outline: 'none', backgroundColor: 'transparent', textAlign: 'center', fontSize: '12px', fontWeight: 'bold', width: '80px' }} 
+              className="p-[5px] border-none outline-none bg-transparent text-center text-[12px] font-bold w-[80px]" 
               placeholder="설명 입력" 
               autoFocus 
             />
           </div>
         )}
       </div>
-      <div style={{ paddingTop: '20px', paddingBottom: '20px', borderRadius: '10px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', zIndex: 10, gap: '10px' }}>
-        {isRender('save') && <ToolButton tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
-        {isRender('move') && <ToolButton tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
-        {isRender('draw') && <ToolButton tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
-        {isRender('addNode') && <ToolButton tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
-        {isRender('link') && <ToolButton tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
-        {isRender('erase') && <ToolButton tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
-        {isRender('alignV') && <ToolButton tool="alignV" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
-        {isRender('alignH') && <ToolButton tool="alignH" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
-        {isRender('record') && <ToolButton tool="record" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
-        <ToolButton tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
-        <ToolButton tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
-        <ToolButton tool="voice" icon={isVoiceEnabled ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoiceEnabled(!isVoiceEnabled)} currTool={isVoiceEnabled ? 'voice' : ''} />
-        {isRender('clear') && <ToolButton tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
-        {mode !== 'play' && (<NodeSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
-        {mode !== 'play' && (<NodeSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
-        {mode !== 'edit' && (<NodeSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
-        {mode !== 'edit' && (<NodeSelector title="펜굵기" value={lineWidth} onChange={hndLineWidthChange} options={lineWidths} />)}
-        {mode !== 'edit' && (<NodeSelector title="지우개 크기" value={eraserSize.toString()} onChange={hndEraserSizeChange} options={eraserSizes} />)}
-        {mode !== 'play' && (<NodeSelector title="선종류" value={lineStyle} onChange={hndLineStyleChange as (value: string) => void} options={linkStyles} />)}
+      <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
+        {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
+        {isRender('move') && <ToolIcon tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
+        {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
+        {isRender('addNode') && <ToolIcon tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
+        {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
+        {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
+        {isRender('alignV') && <ToolIcon tool="alignV" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
+        {isRender('alignH') && <ToolIcon tool="alignH" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
+        {isRender('rec') && <ToolIcon tool="rec" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
+        <ToolIcon tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
+        <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
+        <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
+        {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
+        {mode !== 'play' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
+        {mode !== 'play' && (<NSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
+        {mode !== 'edit' && (<NSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
+        {mode !== 'edit' && (<NSelector title="펜굵기" value={lineWidth} onChange={hndLineWidthChange} options={lineWidths} />)}
+        {mode !== 'edit' && (<NSelector title="지우개 크기" value={eraserSize.toString()} onChange={hndEraserSizeChange} options={eraserSizes} />)}
+        {mode !== 'play' && (<NSelector title="선종류" value={lineStyle} onChange={hndLineStyleChange as (value: string) => void} options={linkStyles} />)}
       </div>
       {showSavePopup && <SaveLessonPopup onSave={hndSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
       {showSaveRecPopup && <SaveRecPopup author={author || ''} email={email || ''} onSave={hndSaveRec} onCancel={() => setShowSaveRecPopup(false)} />}

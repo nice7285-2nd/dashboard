@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 
-interface ToolButtonProps {
+interface ToolIconProps {
   tool: string;
   icon: string | React.ReactElement;
   onClick: () => void;
@@ -10,7 +10,7 @@ interface ToolButtonProps {
   disabled?: boolean;
 }
 
-const ToolButton: React.FC<ToolButtonProps> = ({
+const ToolIcon: React.FC<ToolIconProps> = ({
   tool,
   icon,
   onClick,
@@ -48,4 +48,4 @@ const ToolButton: React.FC<ToolButtonProps> = ({
   </button>
 );
 
-export default ToolButton;
+export default ToolIcon;

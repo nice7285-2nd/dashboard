@@ -5,14 +5,14 @@ interface ColorOption {
   label: string;
 }
 
-interface NodeSelectorProps {
+interface NSelectorProps {
   title: string;
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
 }
 
-const NodeSelector: React.FC<NodeSelectorProps> = ({ title, value, onChange, options }) => {
+const NSelector: React.FC<NSelectorProps> = ({ title, value, onChange, options }) => {
   return (
     <div className="ml-5 flex items-center">
       <label className='text-xs mr-1'>{title}</label>
@@ -31,4 +31,4 @@ const NodeSelector: React.FC<NodeSelectorProps> = ({ title, value, onChange, opt
   );
 };
 
-export default NodeSelector;
+export default NSelector;
