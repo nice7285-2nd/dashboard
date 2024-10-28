@@ -8,7 +8,7 @@ import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NSelector from '@/ui/component/NSelector';
-import { redrawCanvas, isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant } from './utils/canvasUtils';
+import { redrawCanvas, isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from './utils/canvasUtils';
 import { startRec, stopRec, saveRec } from './utils/recUtils';
 import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
 import { CircularProgress, Box } from '@mui/material';
@@ -273,12 +273,16 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           ctx.stroke();          
 
         } else if (tool === 'erase') {
+          ctx.globalCompositeOperation = 'destination-out';
           ctx.lineTo(x, y);
-          ctx.strokeStyle = 'rgba(255,255,255,1)';
           ctx.lineWidth = eraserSize;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
+          
+          // 다시 기본 모드로 복귀
+          ctx.globalCompositeOperation = 'source-over';
+                    
           // 현재 그리기 점 추가
           setcurrDrawPnts(prevPnts => [...prevPnts, { x, y }]);
         }
@@ -664,18 +668,22 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   useEffect(() => {
     const resizeCanvas = () => {
       const container = containerRef.current;
-      const canvas = canvasRef.current;
+      const nodeCanvas = canvasRef.current;
       const drawCanvas = drawCanvasRef.current;
 
-      if (container && canvas && drawCanvas) {
+      if (container && nodeCanvas && drawCanvas) {
         const { width, height } = container.getBoundingClientRect();
-        canvas.width = width;
-        canvas.height = height;
+        nodeCanvas.width = width;
+        nodeCanvas.height = height;
         drawCanvas.width = width;
         drawCanvas.height = height;
 
-        const ctx = canvas.getContext('2d');
-        if (ctx) {redrawCanvas(ctx, nodes, drawActions, selectionArea);}
+        const nodeCtx = nodeCanvas.getContext('2d');
+        const drawCtx = drawCanvas.getContext('2d');
+        if (nodeCtx && drawCtx) {
+          redrawNodesAndLinks(nodeCtx, nodes, selectionArea);
+          redrawDrawActions(drawCtx, drawActions);
+        }
       }
     };
 
@@ -699,12 +707,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   }, [hndKeyDown]);
     
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const nodeCanvas = canvasRef.current;
     const drawCanvas = drawCanvasRef.current;
-    if (canvas && drawCanvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        redrawCanvas(ctx, nodes, drawActions, drag ? null : selectionArea);      
+    if (nodeCanvas && drawCanvas) {
+      const nodeCtx = nodeCanvas.getContext('2d');
+      const drawCtx = drawCanvas.getContext('2d');
+      if (nodeCtx && drawCtx) {
+        redrawNodesAndLinks(nodeCtx, nodes, drag ? null : selectionArea);      
+        redrawDrawActions(drawCtx, drawActions);
 
         // 임시 연결선 그리기
         if (temporaryLink) {
@@ -723,7 +733,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             ];
           }
     
-          drawLinks(ctx, nodesWithTemporaryLink);
+          drawLinks(nodeCtx, nodesWithTemporaryLink);
         }
       }
     }

@@ -290,14 +290,14 @@ export const drawDraws = (
           ctx.stroke();          
 
         } else if (action.type === 'erase') {
+          // destination-out 사용하여 비트맵 완전히 지우기
+          ctx.globalCompositeOperation = 'destination-out';
           ctx.beginPath();
-          ctx.moveTo(action.pnts[0].x, action.pnts[0].y);
-          ctx.lineTo(pnt.x, pnt.y);
-          ctx.strokeStyle = '#FFF';
-          ctx.lineWidth = action.lineWidth;
-          ctx.lineCap = 'square';
-          ctx.lineJoin = 'miter';
-          ctx.stroke();
+          ctx.arc(pnt.x, pnt.y, action.lineWidth / 2, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 지우기 작업 후 다시 기본 모드로 복귀
+          ctx.globalCompositeOperation = 'source-over';          
         }
       });
     });
@@ -329,6 +329,32 @@ export const redrawCanvas = (
   if (selectionArea) {
     drawSelectionArea(ctx, selectionArea);
   }
+};
+
+// 분리된 그리기 함수들
+export const redrawNodesAndLinks = (ctx: CanvasRenderingContext2D, nodes: Node[], selectionArea: SelectionArea | null) => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // 노드 그리기
+  nodes.forEach(node => {
+    drawNode(ctx, node);
+  });
+
+  // 연결선 먼저 그리기 (z-index가 가장 낮도록)
+  drawLinks(ctx, nodes);
+
+  // 선택 영역 그리기
+  if (selectionArea) {
+    drawSelectionArea(ctx, selectionArea);
+  }
+};
+
+export const redrawDrawActions = (ctx: CanvasRenderingContext2D, actions: DrawAction[]) => {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // 그리기 그리기
+  // 지우개 영역 교안 복구를 위해서 맨위에 와야함
+  drawDraws(ctx, actions);
 };
 
 export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => {
