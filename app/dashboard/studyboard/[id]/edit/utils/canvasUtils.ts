@@ -305,38 +305,14 @@ export const drawDraws = (
   }
 };
 
-export const redrawCanvas = (
-  ctx: CanvasRenderingContext2D,
-  nodes: Node[],
-  draws: DrawAction[],
-  selectionArea: SelectionArea | null
-) => {
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-  // 그리기 그리기
-  // 지우개 영역 교안 복구를 위해서 맨위에 와야함
-  drawDraws(ctx, draws);
-
-  // 노드 그리기
-  nodes.forEach(node => {
-    drawNode(ctx, node);
-  });
-
-  // 연결선 먼저 그리기 (z-index가 가장 낮도록)
-  drawLinks(ctx, nodes);
-
-  // 선택 영역 그리기
-  if (selectionArea) {
-    drawSelectionArea(ctx, selectionArea);
-  }
-};
-
 // 분리된 그리기 함수들
 export const redrawNodesAndLinks = (ctx: CanvasRenderingContext2D, nodes: Node[], selectionArea: SelectionArea | null) => {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
   // 노드 그리기
-  nodes.forEach(node => {
+  [...nodes]
+  .sort((a, b) => a.zIndex - b.zIndex)
+  .forEach(node => {
     drawNode(ctx, node);
   });
 
@@ -429,15 +405,16 @@ export const addNode = (
   canvasWidth: number,
   canvasHeight: number,
   lastNodePos: { x: number; y: number },
-  maxZIndex: number
-): { newNode: Node; newMaxZIndex: number; newLastNodePos: { x: number; y: number } } => {
-  const nodeWidth = 180;
-  const nodeHeight = 100;
-  const gridSize = 20;
-  const MIN_GAP = 100; // 노드 간 최소 간격
+  maxZIndex: number,
+  nodeShape: string
+): { newNode: Node | null; newMaxZIndex: number; newLastNodePos: { x: number; y: number } } => {
+  const nodeWidth = nodeShape === 'single' ? 180 : 360;
+  const nodeHeight = nodeShape === 'single' ? 100 : 200;
+  const gridSize = 1;
+  const MIN_GAP = 20; // 노드 간 최소 간격
 
   const newId = Date.now();
-  const newZIndex = maxZIndex + 1;
+  const newZIndex = nodeShape === 'single' ? maxZIndex + 1 : 0;
 
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
@@ -481,12 +458,10 @@ export const addNode = (
   // 캔버스 경계 체크 및 조정
   if (newX + nodeWidth > canvasWidth) {
     newX = findAlignedPos(existXPoss, 0, nodeWidth);
-    newY = snapToGrid(Math.max(...existYPoss) + nodeHeight + MIN_GAP);
   }
 
   if (newY + nodeHeight > canvasHeight) {
-    newY = snapToGrid(0);
-    newX = snapToGrid(Math.max(...existXPoss) + nodeWidth + MIN_GAP);
+    newY = snapToGrid(1);
   }
 
   // 겹침 방지
@@ -497,15 +472,26 @@ export const addNode = (
     );
   };
 
+  let repeat = false;
   while (isOverlapp(newX, newY)) {
     newX = findAlignedPos(existXPoss, newX + nodeWidth + MIN_GAP, nodeWidth);
     if (newX + nodeWidth > canvasWidth) {
       newX = findAlignedPos(existXPoss, 0, nodeWidth);
       newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
       if (newY + nodeHeight > canvasHeight) {
-        newY = snapToGrid(0);
+        if (!repeat) {
+          newY = snapToGrid(1);
+          repeat = true;
+        } else {
+          newX = -1;
+          break;
+        }
       }
     }
+  }
+
+  if (newX === -1) {
+    return { newNode: null, newMaxZIndex: newZIndex, newLastNodePos: { x: newX, y: newY } };
   }
 
   const newNode: Node = {
@@ -520,7 +506,7 @@ export const addNode = (
     selected: false,
     links: [],
     zIndex: newZIndex,
-    backgroundColor: '#FFF',
+    backgroundColor: nodeShape === 'single' ? '#FFF' : '#90EE90',
     borderColor: '#05f'
   };
 

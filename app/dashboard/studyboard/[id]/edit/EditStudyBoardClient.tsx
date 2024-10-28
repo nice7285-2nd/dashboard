@@ -8,7 +8,7 @@ import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NSelector from '@/ui/component/NSelector';
-import { redrawCanvas, isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from './utils/canvasUtils';
+import { isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from './utils/canvasUtils';
 import { startRec, stopRec, saveRec } from './utils/recUtils';
 import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
 import { CircularProgress, Box } from '@mui/material';
@@ -33,6 +33,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [drag, setDrag] = useState<DragState | null>(null);
   const [isDraw, setIsDraw] = useState(false);
   const [tool, setTool] = useState('move');
+  const [nodeShape, setNodeShape] = useState('single');
   const [nodeColor, setNodeColor] = useState('#FFF');
   const [nodeBorderColor, setNodeBorderColor] = useState('#05f');
   const [penColor, setPenColor] = useState('#000');
@@ -76,6 +77,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
+  const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
   const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
   ];
   const nodeBorderColors = [{ value: "#05F", label: "밝은파랑" }, { value: "#FD5500", label: "빨강" }];
@@ -115,13 +117,20 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       canvasRect.width,
       canvasRect.height,
       lastNodePos,
-      maxZIndex
+      maxZIndex,
+      nodeShape
     );
+
+    if (!newNode) {
+      toast.error('노드를 추가할 공간이 없습니다.');
+      return;
+    }
 
     setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
     setMaxZIndex(newMaxZIndex);
     setLastNodePos(newLastNodePos);
-    startEdit(newNode, setEditNode, setEditText);
+
+    if (nodeShape === 'single') {startEdit(newNode, setEditNode, setEditText);}
   };
 
   const hndDeleteSelectedNodes = () => {
@@ -137,7 +146,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hndStartEdit = (node: Node) => {startEdit(node, setEditNode, setEditText);};
   const hndFinishEdit = () => {finishEdit(editNode, editText, canvasRef.current, setNodes, setEditNode, setEditText);};
   const hndCancelEdit = () => {cancelEdit(setEditNode, setEditText);};
-  const hndFinishEditLink = () => {finishEditLink(editLink, linkText, setNodes, setEditLink, setLinkText);};
+  const hndFinishEditLink = () => {
+    finishEditLink(editLink, linkText, setNodes, setEditLink, setLinkText);
+    setTool('move');
+  };
 
   const hndKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Delete') {hndDeleteSelectedNodes();
@@ -481,6 +493,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hndAlignNodesV = () => {setNodes(alignNodesV(nodes));};
   const hndAlignNodesH = () => {setNodes(alignNodesH(nodes));};
   
+  const hndNodeShapeChange = (shape: string) => {
+    setNodeShape(shape);
+    setNodes((prevNodes) => prevNodes.map((node) => 
+      node.selected ? { ...node, shape: shape } : node
+    ));
+  };
+
   const hndNodeColorChange = (color: string) => {
     setNodeColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
@@ -826,6 +845,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
         <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
         {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
+        {mode !== 'play' && (<NSelector title="노드 형태" value={nodeShape} onChange={hndNodeShapeChange} options={nodeShapes} />)}
         {mode !== 'play' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
         {mode !== 'play' && (<NSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
         {mode !== 'edit' && (<NSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
