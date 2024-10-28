@@ -1,11 +1,43 @@
 import { toast } from 'react-toastify';
 import { createStudyRec } from '../actions';
 
+export const formatRecordingTime = (startTime: number): string => {
+  const elapsedTime = Date.now() - startTime;
+  const hours = Math.floor(elapsedTime / (1000 * 60 * 60)) % 24;
+  const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+export const startRecTimer = (
+  startTimeRef: React.MutableRefObject<number>,
+  timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+  setRecordingTime: (time: string) => void
+) => {
+  startTimeRef.current = Date.now();
+  timerRef.current = setInterval(() => {
+    setRecordingTime(formatRecordingTime(startTimeRef.current));
+  }, 1000);
+};
+
+export const stopRecTimer = (
+  timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+  setRecordingTime: (time: string) => void
+) => {
+  if (timerRef.current) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
+  setRecordingTime('00:00');
+};
+
 export const startRec = async (
   setIsRec: (isRec: boolean) => void,
   setRecBlob: (blob: Blob | null) => void,
   setShowSaveRecPopup: (show: boolean) => void,
-  mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>
+  mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>,
+  startTimeRef: React.MutableRefObject<number>,
+  timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+  setRecordingTime: (time: string) => void
 ) => {
   try {
     const displayStream = await navigator.mediaDevices.getDisplayMedia({ 
@@ -58,15 +90,21 @@ export const startRec = async (
 
     mediaRecorderRef.current.start();
     setIsRec(true);
+    startRecTimer(startTimeRef, timerRef, setRecordingTime);
   } catch (error) {
     console.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다:', error);
     toast.error('화면 및 오디오 녹화를 시작하는 데 실패했습니다. 다시 시도해 주세요.');
   }
 };
 
-export const stopRec = (mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>) => {
+export const stopRec = (
+  mediaRecorderRef: React.MutableRefObject<MediaRecorder | null>,
+  timerRef: React.MutableRefObject<NodeJS.Timeout | null>,
+  setRecordingTime: (time: string) => void
+) => {
   if (mediaRecorderRef.current) {
     mediaRecorderRef.current.stop();
+    stopRecTimer(timerRef, setRecordingTime);
   }
 };
 
@@ -92,7 +130,7 @@ export const saveRec = async (
     formData.append('file', RecBlob, filename);
     formData.append('path', filePath);
 
-    const response = await fetch('/api/save-Rec', {
+    const response = await fetch('/api/save-rec', {
       method: 'POST',
       body: formData,
     });

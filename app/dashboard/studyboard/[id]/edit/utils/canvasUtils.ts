@@ -360,7 +360,13 @@ export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
   const top = Math.min(startY, endY);
   const bottom = Math.max(startY, endY);
 
-  return node.x < right && node.x + node.width > left && node.y < bottom && node.y + node.height > top;
+  // 노드가 선택 영역 안에 완전히 포함되어 있는지 확인
+  return (
+    node.x >= left && 
+    node.x + node.width <= right && 
+    node.y >= top && 
+    node.y + node.height <= bottom
+  );
 };
 
 export const getCurvedLinkTopPnt = (startX: number, startY: number, endX: number, endY: number) => {

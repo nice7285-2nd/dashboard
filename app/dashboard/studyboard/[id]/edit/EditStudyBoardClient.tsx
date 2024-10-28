@@ -9,7 +9,7 @@ import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NSelector from '@/ui/component/NSelector';
 import { isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from './utils/canvasUtils';
-import { startRec, stopRec, saveRec } from './utils/recUtils';
+import { startRec, stopRec, saveRec, startRecTimer, stopRecTimer } from './utils/recUtils';
 import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
 import { CircularProgress, Box } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
@@ -85,6 +85,11 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const lineWidths = [{ value: "1", label: "얇게" }, { value: "2", label: "보통" }, { value: "4", label: "굵게" }, { value: "8", label: "매우 굵게" }];
   const eraserSizes = [{ value: "50", label: "작게" }, { value: "100", label: "보통" }, { value: "200", label: "크게" }];
   const linkStyles = [{ value: "solid", label: "실선" }, { value: "dashed", label: "점선" }, { value: "curved", label: "곡선" }];
+
+  // 상태 추가
+  const [recordingTime, setRecordingTime] = useState<string>('00:00');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   // 전체 지우기 함수
   const clearAll = () => {
@@ -622,9 +627,35 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     return false;
   };
   
-  const hndStartRec = () => {startRec(setIsRec, setRecBlob, setShowSaveRecPopup, mediaRecorderRef);};
-  const hndStopRec = () => {stopRec(mediaRecorderRef);};
   const hndSaveRec = (author: string, email: string, title: string) => {saveRec(author, email, title, RecBlob, setShowSaveRecPopup, setRecBlob);};
+  const hndStartRec = () => {
+    startRec(
+      setIsRec, 
+      setRecBlob, 
+      setShowSaveRecPopup, 
+      mediaRecorderRef,
+      startTimeRef,
+      timerRef,
+      setRecordingTime
+    );
+  };
+
+  const hndStopRec = () => {
+    stopRec(
+      mediaRecorderRef,
+      timerRef,
+      setRecordingTime
+    );
+  };
+
+  // 컴포넌트 정리 시 타이머 정리 추가
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const mode = searchParams?.get('mode') || 'edit';
@@ -840,7 +871,17 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
         {isRender('alignV') && <ToolIcon tool="alignV" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
         {isRender('alignH') && <ToolIcon tool="alignH" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
-        {isRender('rec') && <ToolIcon tool="rec" icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} />}
+        {isRender('rec') && (
+          <div className="flex flex-col items-center">
+            <ToolIcon 
+              tool="rec" 
+              icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} 
+              onClick={isRec ? hndStopRec : hndStartRec} 
+              currTool={tool}
+              label={recordingTime}
+            />
+          </div>
+        )}
         <ToolIcon tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
         <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
         <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
