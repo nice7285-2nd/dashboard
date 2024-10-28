@@ -332,7 +332,7 @@ export const redrawCanvas = (
 };
 
 export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => {
-  const padd = 20;  // 좌우 패딩 합계
+  const padding = 20;  // 좌우 패딩 합계
 
   ctx.font = 'bold 14px Arial';
   const text1Width = ctx.measureText(node.text1 || '').width;
@@ -344,7 +344,7 @@ export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => 
   const text3Width = ctx.measureText(node.text3 || '').width;
 
   const textWidth = Math.max(text1Width, text2Width, text3Width);
-  const width = Math.max(textWidth + padd, 180);  // 패딩 포함, 최소 너비 180px
+  const width = Math.max(textWidth + padding, 180);  // 패딩 포함, 최소 너비 180px
   const height = 100;  // 최소 높이 100px
 
   return { width, height };
@@ -408,7 +408,7 @@ export const addNode = (
   const nodeWidth = 180;
   const nodeHeight = 100;
   const gridSize = 20;
-  const MIN_GAP = 20; // 노드 간 최소 간격
+  const MIN_GAP = 100; // 노드 간 최소 간격
 
   const newId = Date.now();
   const newZIndex = maxZIndex + 1;
@@ -428,7 +428,7 @@ export const addNode = (
     if (samePos !== undefined) return samePos;
 
     // 같은 위치가 없으면 최소 간격을 고려하여 새 위치 찾기
-    for (let i = 0; i < sortedPoss.length; i++) {
+    for (let i = 0; i < sortedPoss.length - 1; i++) {
       const currentPos = sortedPoss[i];
       const nextPos = sortedPoss[i + 1] || canvasWidth;
       
