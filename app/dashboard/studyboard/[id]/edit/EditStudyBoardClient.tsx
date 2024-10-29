@@ -135,7 +135,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       return;
     }
 
-    setNodes((prevNodes) => [...prevNodes.map((node) => ({ ...node, selected: false })), newNode]);
+    setNodes((prevNodes) => [
+      ...prevNodes.map((node) => ({ ...node, selected: false })), 
+      { ...newNode, nodeShape: nodeShape }  // nodeShape 속성 추가
+    ]);
     setMaxZIndex(newMaxZIndex);
     setLastNodePos(newLastNodePos);
 
@@ -233,7 +236,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
-            setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
+            setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false, nodeShape: nodeShape },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
             setDrag({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
@@ -807,7 +810,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           let nodesWithTemporaryLink = nodes;
       
           if (temporaryLink) {
-            const tempNode: Node = {id: -1, x: temporaryLink.endX, y: temporaryLink.endY, width: 1, height: 1, text1: '', text2: '', text3: '', backgroundColor: '', borderColor: '', links: [], zIndex: 0, selected: false, rotation: 0};
+            const tempNode: Node = {id: -1, x: temporaryLink.endX, y: temporaryLink.endY, width: 1, height: 1, text1: '', text2: '', text3: '', backgroundColor: '', borderColor: '', links: [], zIndex: 0, selected: false, rotation: 0, nodeShape: ''};
             
             const tempLink: Link = {id: '-1', fromSide: temporaryLink.startSide, toSide: 'left', lineStyle: lineStyle};
             
@@ -849,8 +852,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         ref={containerRef} 
         className="relative flex-1 overflow-auto m-0.5 rounded-lg bg-white shadow-sm"
         style={{ 
-          cursor: tool === 'move' ? 'grab' : 'default',
-          WebkitOverflowScrolling: 'touch'
+          // cursor: tool === 'move' ? 'grab' : 'default',
+          // WebkitOverflowScrolling: 'touch'
         }}
       >
         <div className="relative" style={{ 

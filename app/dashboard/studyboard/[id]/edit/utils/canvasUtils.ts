@@ -425,8 +425,12 @@ export const addNode = (
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
   // 기존 노드들의 x, y 좌표 수집
-  const existXPoss = nodes.map(node => node.x);
-  const existYPoss = nodes.map(node => node.y);
+  const existXPoss = nodes
+    .filter(node => node.nodeShape === 'single')
+    .map(node => node.x);
+  const existYPoss = nodes
+    .filter(node => node.nodeShape === 'single')
+    .map(node => node.y);
 
   // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
   const findAlignedPos = (positions: number[], value: number, size: number) => {
@@ -494,6 +498,7 @@ export const addNode = (
         }
       }
     }
+    console.log(newX, newY);
   }
 
   if (newX === -1) {
@@ -513,7 +518,8 @@ export const addNode = (
     links: [],
     zIndex: newZIndex,
     backgroundColor: nodeShape === 'single' ? '#FFF' : '#90EE90',
-    borderColor: '#05f'
+    borderColor: '#05f',
+    nodeShape: nodeShape
   };
 
   return { newNode, newMaxZIndex: newZIndex, newLastNodePos: { x: newX, y: newY } };

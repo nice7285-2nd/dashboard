@@ -24,6 +24,7 @@ export type Node = {
   backgroundColor: string;
   borderColor: string;
   rotation?: number;
+  nodeShape: string;  // nodeShape 속성 추가
 };
 
 // DragState 타입 정의 부분
