@@ -91,7 +91,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // 교안의 기본 크기 상��� 추가
+  // 교안의 기본 크기 상 추가
   const LESSON_WIDTH = 1920;  // 교안 기본 너비
   const LESSON_HEIGHT = 1080; // 교안 기본 높이
 
@@ -603,8 +603,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     const maxY = Math.max(...nodes.map(node => node.y + node.height));
 
     return {
-      width: maxX + 100,  // 노드 영역 + 100px
-      height: maxY + 100
+      width: maxX + 200,  // 노드 영역 + 100px
+      height: maxY + 200
     };
   };
 
@@ -846,20 +846,45 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setRedoCount(history.nodes.length - historyIndex - 1);
   }, [historyIndex]);
 
+  // 컨테이너와 교안 크기를 계산하는 함수 추가
+  const calculateSize = (nodes: Node[], container: HTMLDivElement | null) => {
+    // 노드 기반 교안 크기 계산
+    const maxX = Math.max(...nodes.map(node => node.x + node.width), 0);
+    const maxY = Math.max(...nodes.map(node => node.y + node.height), 0);
+    const lessonWidth = maxX + 100;
+    const lessonHeight = maxY + 100;
+
+    // 컨테이너 크기 계산 (margin 40px 고려)
+    const containerWidth = container ? container.clientWidth - 41 : 800;
+    const containerHeight = container ? container.clientHeight - 41 : 600;
+
+    // 최종 크기는 교안 크기와 컨테이너 크기 중 큰 값
+    return {
+      width: Math.max(lessonWidth, containerWidth),
+      height: Math.max(lessonHeight, containerHeight)
+    };
+  };
+
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
       <div 
         ref={containerRef} 
-        className="relative flex-1 overflow-auto m-0.5 rounded-lg bg-white shadow-sm"
+        className="relative flex-1 overflow-auto m-0.5 rounded-lg shadow-sm"
         style={{ 
-          // cursor: tool === 'move' ? 'grab' : 'default',
-          // WebkitOverflowScrolling: 'touch'
+          cursor: tool === 'move' ? 'grab' : 'default',
+          WebkitOverflowScrolling: 'touch',
+          background: '#f0f0f0'
         }}
       >
-        <div className="relative" style={{ 
-          width: `max(100%, ${calculateLessonSize(nodes).width}px)`,
-          height: `max(100%, ${calculateLessonSize(nodes).height}px)`,
-        }}>
+        <div 
+          className="relative bg-white border-2 border-blue-200" 
+          style={{ 
+            width: `${calculateSize(nodes, containerRef.current).width}px`,
+            height: `${calculateSize(nodes, containerRef.current).height}px`,
+            margin: '20px',
+            boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)'
+          }}
+        >
           <canvas ref={canvasRef} className="absolute top-0 left-0 z-[1]" />
           <canvas
             ref={drawCanvasRef}

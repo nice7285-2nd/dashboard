@@ -354,7 +354,10 @@ export const calculateNodeSize = (ctx: CanvasRenderingContext2D, node: Node) => 
 
 export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
   if (!area) return false;
+  
   const { startX, startY, endX, endY } = area;
+  
+  // 선택 영역의 좌상단과 우하단 좌표 계산
   const left = Math.min(startX, endX);
   const right = Math.max(startX, endX);
   const top = Math.min(startY, endY);
@@ -362,9 +365,9 @@ export const isNodeInSelectionArea = (node: Node, area: SelectionArea) => {
 
   // 노드가 선택 영역 안에 완전히 포함되어 있는지 확인
   return (
-    node.x >= left && 
-    node.x + node.width <= right && 
-    node.y >= top && 
+    node.x >= left &&
+    node.x + node.width <= right &&
+    node.y >= top &&
     node.y + node.height <= bottom
   );
 };
