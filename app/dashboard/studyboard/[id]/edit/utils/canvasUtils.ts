@@ -690,39 +690,52 @@ export const alignNodesH = (nodes: Node[]): Node[] => {
 };
 
 export const saveCanvas = async (
-  title: string,
-  nodes: Node[],
-  drawActions: DrawAction[],
-  author: string | null,
-  email: string | null,
-  setShowSavePopup: React.Dispatch<React.SetStateAction<boolean>>
-): Promise<void> => {
+  title: string, 
+  nodes: Node[], 
+  drawActions: DrawAction[], 
+  author: string | null, 
+  email: string | null, 
+  setShowSavePopup: (show: boolean) => void,
+  width: number,
+  height: number
+) => {
   setShowSavePopup(false);
-  const filename = `${new Date().toLocaleString('ko-KR', { 
-    timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
-  }).replace(/[^\d]/g, '')}.json`;
-  const filedir = `lessons`;
-  const filePath = `/${filedir}/${filename}`;
-  const data = { filedir, filename, title, nodes, draws: drawActions };
+  
+  if (!author || !email) {
+    toast.error('사용자 정보가 없습니다.');
+    return;
+  }
 
   try {
-    // 파일 저장
+    const lessonData = {
+      nodes,
+      draws: drawActions,
+      width,   // 교안 너비 추가
+      height   // 교안 높이 추가
+    };
+
+    const filename = `${new Date().toLocaleString('ko-KR', { 
+      timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
+    }).replace(/[^\d]/g, '')}.json`;
+    const filedir = `lessons`;
+    const filePath = `/${filedir}/${filename}`;
+    
+    const formData = new FormData();
+    formData.append('file', new Blob([JSON.stringify(lessonData)], { type: 'application/json' }), filename);
+    formData.append('path', filedir);
+
     const response = await fetch('/api/save-lesson', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
+      body: formData,
     });
 
     if (response.ok) {
-      // 데이터베이스에 저장
-      const formData = new FormData();
-      formData.append('author', author || '');
-      formData.append('email', email || '');
-      formData.append('title', title);
-      formData.append('path', filePath);
-      const result = await createLesson(formData);
+      const dbFormData = new FormData();
+      dbFormData.append('author', author);
+      dbFormData.append('email', email);
+      dbFormData.append('title', title);
+      dbFormData.append('path', filePath);
+      const result = await createLesson(dbFormData);
 
       if (result.message === 'Created Lesson.') {
         toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
@@ -730,7 +743,7 @@ export const saveCanvas = async (
         throw new Error(result.message);
       }
     } else {
-      throw new Error('교안 파일 저장에 실패했습니다.');
+      throw new Error('교안 저장에 실패했습니다.');
     }
   } catch (error) {
     console.error('교안 저장 중 오류 발생:', error);

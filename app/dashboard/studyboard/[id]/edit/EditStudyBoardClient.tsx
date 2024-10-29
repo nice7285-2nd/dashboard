@@ -91,6 +91,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // 교안의 기본 크기 상��� 추가
+  const LESSON_WIDTH = 1920;  // 교안 기본 너비
+  const LESSON_HEIGHT = 1080; // 교안 기본 높이
+
   // 전체 지우기 함수
   const clearAll = () => {
     const canvas = drawCanvasRef.current;
@@ -370,7 +374,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const { offsetX, offsetY } = e.nativeEvent;
       
       if (isDragGroup) {
-        // 그룹 드래그 종료
+        // 룹 드래그 종료
         setIsDragGroup(false);
       } else if (isSelect) {
         // 다중 선택 종료
@@ -586,8 +590,26 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setShowSavePopup(true);
   };
 
-  // 저장 기능 수정
-  const hndSaveCanvas = (title: string) => {saveCanvas(title, nodes, drawActions, author, email, setShowSavePopup);};
+  // 교안 크기 계산 함수 추가
+  const calculateLessonSize = (nodes: Node[]) => {
+    if (nodes.length === 0) {
+      return { width: 800, height: 600 }; // 기본 최소 크기
+    }
+
+    const maxX = Math.max(...nodes.map(node => node.x + node.width));
+    const maxY = Math.max(...nodes.map(node => node.y + node.height));
+
+    return {
+      width: maxX + 100,  // 노드 영역 + 100px
+      height: maxY + 100
+    };
+  };
+
+  // 저장 함수 수정
+  const hndSaveCanvas = (title: string) => {
+    const { width, height } = calculateLessonSize(nodes);
+    saveCanvas(title, nodes, drawActions, author, email, setShowSavePopup, width, height);
+  };
 
   // 음성 읽기 함수 수정
   const readSelectedTexts = (selectedTexts: string[]) => {
@@ -687,6 +709,20 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
         setNodes(fileData.nodes);
         setDrawActions(fileData.draws);
+        
+        // 저장된 교안 크기가 있으면 사용, 없으면 계산
+        const canvasSize = fileData.width && fileData.height 
+          ? { width: fileData.width, height: fileData.height }
+          : calculateLessonSize(fileData.nodes);
+          
+        // 캔버스 크기 설정
+        if (canvasRef.current && drawCanvasRef.current) {
+          canvasRef.current.width = canvasSize.width;
+          canvasRef.current.height = canvasSize.height;
+          drawCanvasRef.current.width = canvasSize.width;
+          drawCanvasRef.current.height = canvasSize.height;
+        }
+
         // maxIndex 업데이트
         const maxNodeIndex = Math.max(...fileData.nodes.map((node: Node) => node.zIndex), 0);
         setMaxZIndex(maxNodeIndex);
@@ -722,7 +758,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const drawCanvas = drawCanvasRef.current;
 
       if (container && nodeCanvas && drawCanvas) {
-        const { width, height } = container.getBoundingClientRect();
+        // 교안 크기 계산
+        const { width, height } = calculateLessonSize(nodes);
+        
+        // 캔버스 크기를 교안 크기로 설정
         nodeCanvas.width = width;
         nodeCanvas.height = height;
         drawCanvas.width = width;
@@ -738,9 +777,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     };
 
     resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => window.removeEventListener('resize', resizeCanvas);
   }, [nodes, drawActions, selectionArea]);
 
   useEffect(() => {
@@ -809,58 +845,70 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
-      <div ref={containerRef} className="relative flex-1 overflow-hidden m-0.5 rounded-lg bg-white shadow-sm">
-        <canvas ref={canvasRef} className="absolute top-0 left-0 z-[1]" />
-        <canvas
-          ref={drawCanvasRef}
-          className="absolute top-0 left-0 z-[2]"
-          onMouseDown={hndMouseDown}
-          onMouseMove={hndMouseMove}
-          onMouseUp={hndMouseUp}
-          onMouseLeave={hndMouseUp}
-          onTouchStart={(e) => hndTouchStart(e, drawCanvasRef, setTouchStartPos, hndMouseDown)}
-          onTouchMove={(e) => hndTouchMove(e, touchStartPos, hndMouseMove)}
-          onTouchEnd={(e) => hndTouchEnd(e, drawCanvasRef, setTouchStartPos, hndMouseUp)}
-        />
-        {eraserPos.visible && (
-          <div className="absolute border border-black rounded-full pointer-events-none z-[3]"
-          style={{
-            left: `${eraserPos.x - eraserSize / 2}px`,
-            top: `${eraserPos.y - eraserSize / 2}px`,
-            width: `${eraserSize}px`,
-            height: `${eraserSize}px`
-          }} />
-        )}
-        {editNode && (
-          <div className="absolute flex flex-col items-center justify-center p-[5px] bg-white border border-[#05f] rounded-none z-[4]"
-          style={{
-            left: editNode.x,
-            top: editNode.y,
-            width: editNode.width,
-            height: editNode.height
-          }}>
-            <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[14px] font-bold text-[#f07500]" placeholder="텍스트 1" autoFocus />
-            <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[24px] font-bold" placeholder="텍스트 2" />
-            <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} className="border-none outline-none bg-transparent w-[90%] text-center text-[14px] font-bold" placeholder="텍스트 3" onBlur={hndFinishEdit} onKeyDown={(e) => { if (e.key === 'Enter') { hndFinishEdit(); } }} />
-          </div>
-        )}
-        {editLink && (
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000]"
-          style={{ 
-            left: editLink.x, 
-            top: editLink.y 
-          }}>
-            <input 
-              value={linkText} 
-              onChange={(e) => setLinkText(e.target.value)} 
-              onBlur={hndFinishEditLink} 
-              onKeyDown={(e) => { if (e.key === 'Enter') hndFinishEditLink(); }} 
-              className="p-[5px] border-none outline-none bg-transparent text-center text-[12px] font-bold w-[80px]" 
-              placeholder="설명 입력" 
-              autoFocus 
-            />
-          </div>
-        )}
+      <div 
+        ref={containerRef} 
+        className="relative flex-1 overflow-auto m-0.5 rounded-lg bg-white shadow-sm"
+        style={{ 
+          cursor: tool === 'move' ? 'grab' : 'default',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
+        <div className="relative" style={{ 
+          width: `max(100%, ${calculateLessonSize(nodes).width}px)`,
+          height: `max(100%, ${calculateLessonSize(nodes).height}px)`,
+        }}>
+          <canvas ref={canvasRef} className="absolute top-0 left-0 z-[1]" />
+          <canvas
+            ref={drawCanvasRef}
+            className="absolute top-0 left-0 z-[2]"
+            onMouseDown={hndMouseDown}
+            onMouseMove={hndMouseMove}
+            onMouseUp={hndMouseUp}
+            onMouseLeave={hndMouseUp}
+            onTouchStart={(e) => hndTouchStart(e, drawCanvasRef, setTouchStartPos, hndMouseDown)}
+            onTouchMove={(e) => hndTouchMove(e, touchStartPos, hndMouseMove)}
+            onTouchEnd={(e) => hndTouchEnd(e, drawCanvasRef, setTouchStartPos, hndMouseUp)}
+          />
+          {eraserPos.visible && (
+            <div className="absolute border border-black rounded-full pointer-events-none z-[3]"
+            style={{
+              left: `${eraserPos.x - eraserSize / 2}px`,
+              top: `${eraserPos.y - eraserSize / 2}px`,
+              width: `${eraserSize}px`,
+              height: `${eraserSize}px`
+            }} />
+          )}
+          {editNode && (
+            <div className="absolute flex flex-col items-center justify-center p-[5px] bg-white border border-[#05f] rounded-none z-[4]"
+            style={{
+              left: editNode.x,
+              top: editNode.y,
+              width: editNode.width,
+              height: editNode.height
+            }}>
+              <input value={editText.text1} onChange={(e) => setEditText({ ...editText, text1: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[14px] font-bold text-[#f07500]" placeholder="텍스트 1" autoFocus />
+              <input value={editText.text2} onChange={(e) => setEditText({ ...editText, text2: e.target.value })} className="border-none outline-none bg-transparent w-[90%] mb-[5px] text-center text-[24px] font-bold" placeholder="텍스트 2" />
+              <input value={editText.text3} onChange={(e) => setEditText({ ...editText, text3: e.target.value })} className="border-none outline-none bg-transparent w-[90%] text-center text-[14px] font-bold" placeholder="텍스트 3" onBlur={hndFinishEdit} onKeyDown={(e) => { if (e.key === 'Enter') { hndFinishEdit(); } }} />
+            </div>
+          )}
+          {editLink && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1000]"
+            style={{ 
+              left: editLink.x, 
+              top: editLink.y 
+            }}>
+              <input 
+                value={linkText} 
+                onChange={(e) => setLinkText(e.target.value)} 
+                onBlur={hndFinishEditLink} 
+                onKeyDown={(e) => { if (e.key === 'Enter') hndFinishEditLink(); }} 
+                className="p-[5px] border-none outline-none bg-transparent text-center text-[12px] font-bold w-[80px]" 
+                placeholder="설명 입력" 
+                autoFocus 
+              />
+            </div>
+          )}
+        </div>
       </div>
       <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
         {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}

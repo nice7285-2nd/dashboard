@@ -3,17 +3,20 @@ import fs from 'fs';
 import path from 'path';
 
 export async function POST(request: Request) {
-  const data = await request.json();
-  const { filedir, filename } = data;
+  const formData = await request.formData();
+  const file = formData.get('file') as File;
+  const filedir = formData.get('path') as string;
+  const filename = file.name;
   const lessonsDir = path.join(process.cwd(), 'public', filedir);
   const filePath = path.join(lessonsDir, filename);
 
-  try { 
+  try {
     if (!fs.existsSync(lessonsDir)) {
       fs.mkdirSync(lessonsDir, { recursive: true });
     }
 
-    fs.writeFileSync(filePath, JSON.stringify(data));
+    const buffer = Buffer.from(await file.arrayBuffer());
+    fs.writeFileSync(filePath, buffer);
     return NextResponse.json({ message: '교안 파일이 성공적으로 저장되었습니다.', filename });
   } catch (error) {
     console.error('파일 저장 중 오류 발생:', error);
