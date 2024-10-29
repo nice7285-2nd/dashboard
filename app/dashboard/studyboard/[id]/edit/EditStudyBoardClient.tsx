@@ -872,6 +872,11 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             onTouchMove={(e) => hndTouchMove(e, touchStartPos, hndMouseMove)}
             onTouchEnd={(e) => hndTouchEnd(e, drawCanvasRef, setTouchStartPos, hndMouseUp)}
           />
+          {isLoad && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[10]">
+              <CircularProgress />
+            </div>
+          )}
           {eraserPos.visible && (
             <div className="absolute border border-black rounded-full pointer-events-none z-[3]"
             style={{
@@ -949,11 +954,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       {showSaveRecPopup && <SaveRecPopup author={author || ''} email={email || ''} onSave={hndSaveRec} onCancel={() => setShowSaveRecPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />
-      {isLoad && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <CircularProgress />
-        </div>
-      )}
     </div>
   );
 };
