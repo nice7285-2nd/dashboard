@@ -244,17 +244,22 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
 
 export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: SelectionArea) => {
   const { startX, startY, endX, endY } = area;
-  const width = endX - startX;
-  const height = endY - startY;
+  
+  // 시작점과 끝점을 비교하여 올바른 좌표 계산
+  const left = Math.min(startX, endX);
+  const top = Math.min(startY, endY);
+  const width = Math.abs(endX - startX);
+  const height = Math.abs(endY - startY);
 
-  ctx.strokeStyle = 'rgba(0, 123, 255, 1)';
+  // 반투명한 파란색 배경
+  ctx.fillStyle = 'rgba(66, 153, 225, 0.2)';  // 밝은 파란색, 투명도 0.2
+  ctx.fillRect(left, top, width, height);
+
+  // 실선 테두리
+  ctx.strokeStyle = 'rgb(66, 153, 225)';  // 테두리는 불투명
   ctx.lineWidth = 1;
-  ctx.setLineDash([5, 5]);
-  ctx.strokeRect(startX, startY, width, height);
-  ctx.setLineDash([]);
-
-  // ctx.fillStyle = 'rgba(0, 123, 255, 0.1)';
-  // ctx.fillRect(startX, startY, width, height);
+  ctx.setLineDash([]);  // 실선으로 설정
+  ctx.strokeRect(left, top, width, height);
 };
 
 

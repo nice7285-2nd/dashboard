@@ -593,24 +593,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setShowSavePopup(true);
   };
 
-  // 교안 크기 계산 함수 추가
-  const calculateLessonSize = (nodes: Node[]) => {
-    if (nodes.length === 0) {
-      return { width: 800, height: 600 }; // 기본 최소 크기
-    }
-
-    const maxX = Math.max(...nodes.map(node => node.x + node.width));
-    const maxY = Math.max(...nodes.map(node => node.y + node.height));
-
-    return {
-      width: maxX + 200,  // 노드 영역 + 100px
-      height: maxY + 200
-    };
-  };
-
   // 저장 함수 수정
   const hndSaveCanvas = (title: string) => {
-    const { width, height } = calculateLessonSize(nodes);
+    // const { width, height } = calculateLessonSize(nodes);
+    const { width, height } = calculateSize(nodes, containerRef.current);
     saveCanvas(title, nodes, drawActions, author, email, setShowSavePopup, width, height);
   };
 
@@ -716,7 +702,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         // 저장된 교안 크기가 있으면 사용, 없으면 계산
         const canvasSize = fileData.width && fileData.height 
           ? { width: fileData.width, height: fileData.height }
-          : calculateLessonSize(fileData.nodes);
+          : calculateSize(fileData.nodes, containerRef.current);
           
         // 캔버스 크기 설정
         if (canvasRef.current && drawCanvasRef.current) {
@@ -762,7 +748,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
       if (container && nodeCanvas && drawCanvas) {
         // 교안 크기 계산
-        const { width, height } = calculateLessonSize(nodes);
+        const { width, height } = calculateSize(nodes, container);
         
         // 캔버스 크기를 교안 크기로 설정
         nodeCanvas.width = width;
@@ -851,12 +837,12 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     // 노드 기반 교안 크기 계산
     const maxX = Math.max(...nodes.map(node => node.x + node.width), 0);
     const maxY = Math.max(...nodes.map(node => node.y + node.height), 0);
-    const lessonWidth = maxX + 100;
-    const lessonHeight = maxY + 100;
+    const lessonWidth = maxX + 200;
+    const lessonHeight = maxY + 200;
 
     // 컨테이너 크기 계산 (margin 40px 고려)
-    const containerWidth = container ? container.clientWidth - 41 : 800;
-    const containerHeight = container ? container.clientHeight - 41 : 600;
+    const containerWidth = container ? container.clientWidth - 1 : 800;
+    const containerHeight = container ? container.clientHeight - 1 : 600;
 
     // 최종 크기는 교안 크기와 컨테이너 크기 중 큰 값
     return {
@@ -869,7 +855,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     <div className="flex flex-col h-full w-full overflow-hidden">
       <div 
         ref={containerRef} 
-        className="relative flex-1 overflow-auto m-0.5 rounded-lg shadow-sm"
+        className="relative flex-1 overflow-auto m-0.5 shadow-sm"
         style={{ 
           cursor: tool === 'move' ? 'grab' : 'default',
           WebkitOverflowScrolling: 'touch',
@@ -877,11 +863,11 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         }}
       >
         <div 
-          className="relative bg-white border-2 border-blue-200" 
+          className="relative bg-white outline outline-2 outline-blue-200" 
           style={{ 
             width: `${calculateSize(nodes, containerRef.current).width}px`,
             height: `${calculateSize(nodes, containerRef.current).height}px`,
-            margin: '20px',
+            margin: '0px',
             boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)'
           }}
         >
