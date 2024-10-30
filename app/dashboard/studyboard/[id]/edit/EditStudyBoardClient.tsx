@@ -52,7 +52,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [editText, setEditText] = useState({ text1: '', text2: '', text3: '' });
   const [history, setHistory] = useState<{ nodes: Node[][], draws: DrawAction[][] }>({ nodes: [], draws: [] });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [lastNodePos, setLastNodePos] = useState({ x: 100, y: 200 });
+  const [lastNode, setLastNode] = useState<Node | null>(null);
   const originalSpeakRef = useRef<typeof window.speechSynthesis.speak | null>(null);
   const [isSelect, setIsSelect] = useState(false);
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
@@ -107,7 +107,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setHistory({ nodes: [], draws: [] });
     setHistoryIndex(-1);
     setShowClearConfirmPopup(false);
-    setLastNodePos({ x: 100, y: 200 });
+    setLastNode(null);
   };
 
   // 툴 버튼을 렌더링할지 결정하는 함수
@@ -121,11 +121,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     if (!canvasRef.current) return;
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
-    const { newNode, newMaxZIndex, newLastNodePos } = addNode(
+    const { newNode, newMaxZIndex } = addNode(
       nodes,
       canvasRect.width,
       canvasRect.height,
-      lastNodePos,
       maxZIndex,
       nodeShape
     );
@@ -140,7 +139,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       { ...newNode, nodeShape: nodeShape }  // nodeShape 속성 추가
     ]);
     setMaxZIndex(newMaxZIndex);
-    setLastNodePos(newLastNodePos);
+    setLastNode(newNode);
 
     if (nodeShape === 'single') {startEdit(newNode, setEditNode, setEditText);}
   };
@@ -325,11 +324,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       } else {
         // 단일 노드 이동
         const newNodes = nodes.map((node) => {
-          if (node.id === drag.node.id) {return { ...node, x: x - drag.offsetX, y: y - drag.offsetY };}
+          if (node.id === drag.node.id) {
+            return { ...node, x: x - drag.offsetX, y: y - drag.offsetY };
+          }
           return node;
         });
         setNodes(newNodes);
-        setLastNodePos({ x: x - drag.offsetX, y: y - drag.offsetY });
+        setLastNode(newNodes[newNodes.length - 1]);
       }
     } else if (resize) {
       const newNodes = nodes.map((node) => {
@@ -715,7 +716,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         // maxIndex 업데이트
         const maxNodeIndex = Math.max(...fileData.nodes.map((node: Node) => node.zIndex), 0);
         setMaxZIndex(maxNodeIndex);
-        setLastNodePos({ x: fileData.nodes[fileData.nodes.length - 1].x, y: fileData.nodes[fileData.nodes.length - 1].y });
+        setLastNode(fileData.nodes[fileData.nodes.length - 1]);
         
         // 그리기 객체 복원
         const drawCanvas = drawCanvasRef.current;
@@ -931,18 +932,18 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       </div>
       <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
         {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
-        {isRender('move') && <ToolIcon tool="move" icon={<HandRaisedIcon className="h-6 w-6" />} onClick={() => hndToolChange('move')} currTool={tool} />}
+        {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} />}
         {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
-        {isRender('addNode') && <ToolIcon tool="addNode" icon={<RectangleGroupIcon className="h-6 w-6" />} onClick={() => hndToolChange('addNode')} currTool={tool} />}
+        {isRender('addNode') && <ToolIcon tool="addNode" icon="/icon-addnode.svg" onClick={() => hndToolChange('addNode')} currTool={tool} />}
         {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
         {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
-        {isRender('alignV') && <ToolIcon tool="alignV" icon={<AdjustmentsVerticalIcon className="h-6 w-6" />} onClick={hndAlignNodesV} currTool={tool} />}
-        {isRender('alignH') && <ToolIcon tool="alignH" icon={<AdjustmentsHorizontalIcon className="h-6 w-6" />} onClick={hndAlignNodesH} currTool={tool} />}
+        {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} />}
+        {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} />}
         {isRender('rec') && (
           <div className="flex flex-col items-center">
             <ToolIcon 
               tool="rec" 
-              icon={isRec ? "/icon-stop-rec.svg" : "/icon-start-rec.svg"} 
+              icon={isRec ? "/icon-rec-stop.svg" : "/icon-rec-start.svg"} 
               onClick={isRec ? hndStopRec : hndStartRec} 
               currTool={tool}
               label={recordingTime}

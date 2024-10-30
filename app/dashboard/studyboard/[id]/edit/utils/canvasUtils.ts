@@ -418,10 +418,9 @@ export const addNode = (
   nodes: Node[],
   canvasWidth: number,
   canvasHeight: number,
-  lastNodePos: { x: number; y: number },
   maxZIndex: number,
   nodeShape: string
-): { newNode: Node | null; newMaxZIndex: number; newLastNodePos: { x: number; y: number } } => {
+): { newNode: Node | null; newMaxZIndex: number } => {
   const nodeWidth = nodeShape === 'single' ? 180 : 360;
   const nodeHeight = nodeShape === 'single' ? 100 : 200;
   const gridSize = 1;
@@ -434,10 +433,10 @@ export const addNode = (
 
   // 기존 노드들의 x, y 좌표 수집
   const existXPoss = nodes
-    .filter(node => node.nodeShape === 'single')
+    .filter(node => node.nodeShape === 'single' || node.nodeShape === 'group')
     .map(node => node.x);
   const existYPoss = nodes
-    .filter(node => node.nodeShape === 'single')
+    .filter(node => node.nodeShape === 'single' || node.nodeShape === 'group')
     .map(node => node.y);
 
   // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
@@ -453,7 +452,7 @@ export const addNode = (
       const currentPos = sortedPoss[i];
       const nextPos = sortedPoss[i + 1] || canvasWidth;
       
-      if (value > currentPos + size + MIN_GAP && value < nextPos - MIN_GAP) {
+      if (value > currentPos && value < nextPos) {
         return nextPos;
       }
       
@@ -465,17 +464,19 @@ export const addNode = (
     // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
     return snapToGrid(Math.max(...sortedPoss, 0) + size + MIN_GAP);
   };
+  const lastNode = nodes[nodes.length - 1];
 
-  let newX = snapToGrid(lastNodePos.x + nodeWidth + MIN_GAP);
-  let newY = snapToGrid(lastNodePos.y);
+  let newX = snapToGrid(lastNode.x + lastNode.width + MIN_GAP);
+  let newY = snapToGrid(lastNode.y);
 
   // 가장 가까운 정렬된 x, y 위치 찾기
-  newX = findAlignedPos(existXPoss, newX, nodeWidth);
-  newY = findAlignedPos(existYPoss, newY, nodeHeight);
+  newX = findAlignedPos(existXPoss, newX, lastNode.width);
+  newY = findAlignedPos(existYPoss, newY, lastNode.height);
 
   // 캔버스 경계 체크 및 조정
   if (newX + nodeWidth > canvasWidth) {
-    newX = findAlignedPos(existXPoss, 0, nodeWidth);
+    newX = findAlignedPos(existXPoss, 0, lastNode.width);
+    newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
   }
 
   if (newY + nodeHeight > canvasHeight) {
@@ -506,11 +507,10 @@ export const addNode = (
         }
       }
     }
-    console.log(newX, newY);
   }
 
   if (newX === -1) {
-    return { newNode: null, newMaxZIndex: newZIndex, newLastNodePos: { x: newX, y: newY } };
+    return { newNode: null, newMaxZIndex: newZIndex };
   }
 
   const newNode: Node = {
@@ -530,7 +530,7 @@ export const addNode = (
     nodeShape: nodeShape
   };
 
-  return { newNode, newMaxZIndex: newZIndex, newLastNodePos: { x: newX, y: newY } };
+  return { newNode, newMaxZIndex: newZIndex };
 };
 
 export const getClickedNodeAndHandle = (nodes: Node[], x: number, y: number) => {
