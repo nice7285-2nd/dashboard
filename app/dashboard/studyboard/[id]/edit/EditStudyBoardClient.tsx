@@ -75,7 +75,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
-  const hiddenToolsInPlayMode = ['save', 'move', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
+  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
   const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
@@ -90,10 +90,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [recordingTime, setRecordingTime] = useState<string>('00:00');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
-
-  // 교안의 기본 크기 상 추가
-  const LESSON_WIDTH = 1920;  // 교안 기본 너비
-  const LESSON_HEIGHT = 1080; // 교안 기본 높이
 
   // 전체 지우기 함수
   const clearAll = () => {
@@ -827,7 +823,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       prevDrawActionsRef.current = drawActions;
     }
   }, [nodes, drawActions, isDrag]);
-
+ 
   useEffect(() => {
     setUndoCount(historyIndex);
     setRedoCount(history.nodes.length - historyIndex - 1);
