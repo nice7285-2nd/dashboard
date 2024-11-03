@@ -7,18 +7,21 @@ import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; }
+interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; }
 
 interface VideoListProps {
   userRole: string | undefined;
   email: string | undefined;
 }
 
-const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video: Video; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined; userEmail: string | undefined }) => {
+const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video: Video & { createdAt?: string }; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined; userEmail: string | undefined }) => {
   const [isHovering, setIsHovering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isManager = userRole === 'admin';
   const isOwner = userEmail === video.email;
+  const isNew = video.createdAt && (
+    new Date().getTime() - new Date(video.createdAt).getTime() < 24 * 60 * 60 * 1000
+  );
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -37,25 +40,36 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
       onMouseLeave={handleMouseLeave}
       style={{ position: 'relative' }}
     >
-      <video 
-        ref={videoRef} 
-        src={video.videoUrl} 
-        style={{ 
-          width: '100%', 
-          aspectRatio: '16 / 9', 
-          objectFit: 'cover', 
-          marginBottom: '10px', 
-          transition: 'transform 0.3s ease', 
-          transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
-          boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
-          borderRadius: '10px' 
-        }} 
-        muted 
-        loop 
-        playsInline 
-      />
+      <div style={{ position: 'relative' }}>
+        <video 
+          ref={videoRef} 
+          src={video.videoUrl} 
+          style={{ 
+            width: '100%', 
+            aspectRatio: '16 / 9', 
+            objectFit: 'cover', 
+            marginBottom: '10px', 
+            transition: 'transform 0.3s ease', 
+            transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
+            boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
+            borderRadius: '10px' 
+          }} 
+          muted 
+          loop 
+          playsInline 
+        />
+        {isNew && (
+          <span className="absolute top-3 left-3 bg-red-500 text-white text-[10px] px-2 py-1 rounded">
+            NEW
+          </span>
+        )}
+      </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-        <h3 style={{ fontSize: '16px', fontFamily: 'Noto Sans KR, sans-serif', fontWeight: 400, margin: 0, flex: 1 }}>{video.title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 style={{ fontSize: '16px', fontFamily: 'Noto Sans KR, sans-serif', fontWeight: 400, margin: 0 }}>
+            {video.title}
+          </h3>
+        </div>
         {(isOwner) && (
           <button 
             onClick={(e) => {
@@ -106,6 +120,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           path: video.path || '#',
           views: video.views || 0,
           videoUrl: video.website_url || video.path || '#',
+          createdAt: video.created_at || null,
         }));
 
         setVideos(modifiedData);
