@@ -59,7 +59,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
           playsInline 
         />
         {isNew && (
-          <span className="absolute top-3 left-3 bg-red-500 text-white text-[10px] px-2 py-1 rounded">
+          <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
             NEW
           </span>
         )}
