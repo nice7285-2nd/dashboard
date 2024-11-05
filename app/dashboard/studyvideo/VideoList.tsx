@@ -33,6 +33,26 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
     videoRef.current?.pause();
   };
 
+  const getTimeAgo = (createdAt: string) => {
+    const now = new Date().getTime();
+    const created = new Date(createdAt).getTime();
+    const diff = now - created;
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30);
+
+    if (months > 0) {
+      return `${months}개월 전`;
+    } else if (days > 0) {
+      return `${days}일 전`;
+    } else if (hours > 0) {
+      return `${hours}시간 전`;
+    } else {
+      return '방금 전';
+    }
+  };
+
   return (
     <div 
       onClick={() => openVideo(video)} 
@@ -82,8 +102,12 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
           </button>
         )}
       </div>
-      <p style={{ fontSize: '14px', color: '#606060', marginBottom: '3px' }}>{video.author}</p>
-      <p style={{ fontSize: '14px', color: '#606060' }}>조회수 {video.views.toLocaleString()}회</p>
+      <p className="text-xs text-gray-600 mb-[3px]">{video.author}</p>
+      <div className="flex items-center gap-2 text-xs text-gray-600">
+        <span>조회수 {video.views.toLocaleString()}회</span>
+        <span>•</span>
+        <span>{video.createdAt && getTimeAgo(video.createdAt)}</span>
+      </div>
     </div>
   );
 };
