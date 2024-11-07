@@ -104,18 +104,18 @@ export default async function Page() {
             />
           </div>
 
+          {/* UUID와 Auth Key를 숨기기 위해 주석 처리 또는 제거 */}
+          {/*
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium text-gray-700">UUID</h2>
+              <p className="text-sm">{user.id}</p>
+            </div>
 
-          {/* UUID*/}
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium text-gray-700">UUID</h2>
-            <p className="text-sm">{user.id}</p>
-          </div>
-
-          {/* Auth Key */}
-          <div className="space-y-1">
-            <h2 className="text-sm font-medium text-gray-700">Auth Key</h2>
-            <p className="text-sm">{user.auth_key}</p>
-          </div>
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium text-gray-700">Auth Key</h2>
+              <p className="text-sm">{user.auth_key}</p>
+            </div>
+          */}
         </div>
       </div>
       <DeleteAccount deleteEmail={user.email} />
