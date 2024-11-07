@@ -21,11 +21,13 @@ export async function fetchFilteredUsers(
         users.email,
         users.role,
         users.created_at,
-        users.login_at
+        users.login_at,
+        users.profile_image_url
       FROM users
       WHERE
-        users.name ILIKE ${`%${query}%`}
-      ORDER BY users.login_at DESC
+        users.name ILIKE ${`%${query}%`} OR
+        users.email ILIKE ${`%${query}%`}
+      ORDER BY users.created_at DESC
       LIMIT ${USERS_PER_PAGE} OFFSET ${offset}
     `;
     return users.rows;

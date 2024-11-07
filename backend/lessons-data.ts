@@ -13,20 +13,19 @@ export async function fetchFilteredLessons(
   const offset = (currentPage - 1) * LESSONS_PER_PAGE;
 
   try {
-    const lessons = await sql<LessonsTable>`
-      SELECT
-        lessons.id,
-        lessons.author,
-        lessons.email,
-        lessons.title,
-        lessons.created_at,
-        lessons.path
-      FROM lessons
+    const lessons = await sql`
+      SELECT 
+        l.*,
+        u.profile_image_url
+      FROM lessons l
+      LEFT JOIN users u ON l.email = u.email
       WHERE
-        lessons.title ILIKE ${`%${query}%`}
-      ORDER BY lessons.created_at DESC
+        l.title ILIKE ${`%${query}%`} OR
+        l.author ILIKE ${`%${query}%`}
+      ORDER BY l.created_at DESC
       LIMIT ${LESSONS_PER_PAGE} OFFSET ${offset}
     `;
+    
     return lessons.rows;
   } catch (error) {
     console.error('Database Error:', error);

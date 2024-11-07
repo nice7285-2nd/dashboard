@@ -3,6 +3,7 @@ import {
   DeleteUser,
 } from '@/ui/users/buttons';
 import { fetchFilteredUsers } from '@/backend/users-data';
+import Image from 'next/image';
 
 function formatDate(date: Date) {
   const year = date.getFullYear().toString().slice(-2);
@@ -42,26 +43,37 @@ export default async function UsersTable({
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div>
                     <div className="flex items-center mb-2">
-                      <p>{user.name}</p>
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mr-3">
+                        <Image
+                          src={user.profile_image_url || '/default-profile.svg'}
+                          alt={user.name}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <p>{user.name}</p>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-gray-500">{user.role}</p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(user.created_at)}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(user.login_at)}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                    <p className="text-sm text-gray-500">{user.role}</p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(user.created_at)}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(user.login_at)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between w-full pt-4">
-                  <div className="flex justify-end gap-2">
-                    {isManager && (
-                      <>
-                        <EditUser user={user} />
-                        <DeleteUser email={user.email} />
-                      </>
-                    )}
+                    <div className="flex items-center justify-between w-full pt-4">
+                      <div className="flex justify-end gap-2">
+                        {isManager && (
+                          <>
+                            <EditUser user={user} />
+                            <DeleteUser email={user.email} />
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -98,6 +110,15 @@ export default async function UsersTable({
                 >
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                        <Image
+                          src={user.profile_image_url || '/default-profile.svg'}
+                          alt={user.name}
+                          width={32}
+                          height={32}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <p>{user.name}</p>
                     </div>
                   </td>

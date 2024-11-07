@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Image from 'next/image';
 
-interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; }
+interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; profileImageUrl?: string; }
 
 interface VideoListProps {
   userRole: string | undefined;
@@ -60,53 +61,68 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
       onMouseLeave={handleMouseLeave}
       style={{ position: 'relative' }}
     >
-      <div style={{ position: 'relative' }}>
-        <video 
-          ref={videoRef} 
-          src={video.videoUrl} 
-          style={{ 
-            width: '100%', 
-            aspectRatio: '16 / 9', 
-            objectFit: 'cover', 
-            marginBottom: '10px', 
-            transition: 'transform 0.3s ease', 
-            transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
-            boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
-            borderRadius: '10px' 
-          }} 
-          muted 
-          loop 
-          playsInline 
-        />
-        {isNew && (
-          <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
-            NEW
-          </span>
-        )}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-        <div className="flex items-center gap-2">
-          <h3 style={{ fontSize: '16px', fontFamily: 'Noto Sans KR, sans-serif', fontWeight: 400, margin: 0 }}>
-            {video.title}
-          </h3>
+      <div className="flex-1">
+        <div style={{ position: 'relative' }}>
+          <video 
+            ref={videoRef} 
+            src={video.videoUrl} 
+            style={{ 
+              width: '100%', 
+              aspectRatio: '16 / 9', 
+              objectFit: 'cover', 
+              marginBottom: '10px', 
+              transition: 'transform 0.3s ease', 
+              transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
+              boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
+              borderRadius: '10px' 
+            }} 
+            muted 
+            loop 
+            playsInline 
+          />
+          {isNew && (
+            <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
+              NEW
+            </span>
+          )}
         </div>
-        {(isOwner) && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(video.id);
-            }}
-            className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700"
-          >
-            삭제
-          </button>
-        )}
-      </div>
-      <p className="text-xs text-gray-600 mb-[3px]">{video.author}</p>
-      <div className="flex items-center gap-2 text-xs text-gray-600">
-        <span>조회수 {video.views.toLocaleString()}회</span>
-        <span>•</span>
-        <span>{video.createdAt && getTimeAgo(video.createdAt)}</span>
+        <div className="flex justify-between items-start">
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+              <Image 
+                src={video.profileImageUrl || '/default-profile.svg'} 
+                alt={video.author}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <h3 className="text-base font-normal mb-1">
+                {video.title}
+              </h3>
+              <div className="text-xs text-gray-600">
+                <div>{video.author}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span>조회수 {video.views.toLocaleString()}회</span>
+                  <span>•</span>
+                  <span>{video.createdAt && getTimeAgo(video.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {(isOwner) && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(video.id);
+              }}
+              className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700"
+            >
+              삭제
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -145,6 +161,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           views: video.views || 0,
           videoUrl: video.website_url || video.path || '#',
           createdAt: video.created_at || null,
+          profileImageUrl: video.profile_image_url || null,
         }));
 
         setVideos(modifiedData);

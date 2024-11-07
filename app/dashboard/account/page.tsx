@@ -2,6 +2,18 @@ import { fetchLoggedInUser } from '@/backend/account-actions';
 import { Metadata } from 'next';
 import { auth } from '@/auth';
 import DeleteAccount from '@/ui/account/delete-account'
+import ProfileImageUploader from '@/ui/component/ProfileImageUploader';
+
+interface User {
+  profile_image_url?: string;
+  name: string;
+  email: string;
+  role: string;
+  created_at: Date;
+  login_at: Date;
+  id: string;
+  auth_key: string;
+} 
 
 function formatDate(date: Date): string {
   const yy = date.getFullYear().toString().slice(-2);
@@ -22,13 +34,17 @@ export default async function Page() {
 
   const session = await auth();
   const email = session?.user?.email || '';
-  const user = await fetchLoggedInUser(email);
+  const user = await fetchLoggedInUser(email) as User;
 
   return (
     <main>
       <div className="p-4 rounded-md shadow bg-gray-50 md:p-6">
-        <div className="flex items-center mb-6 space-x-4">
-          <h1 className="text-xl font-semibold">Your Account</h1>
+        <h1 className="text-xl font-semibold mb-6">Your Account</h1>
+        <div className="flex flex-col items-start space-y-4 mb-6">
+          <ProfileImageUploader 
+            currentImageUrl={user.profile_image_url} 
+            email={user.email}
+          />
         </div>
 
         <div className="grid gap-6 mb-6 md:grid-cols-2">

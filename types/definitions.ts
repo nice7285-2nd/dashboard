@@ -33,6 +33,7 @@ export type UsersTable = {
   role: string;
   created_at: Date;
   login_at: Date;
+  profile_image_url: string;
 };  
 
 

@@ -5,6 +5,7 @@ import {
 } from '@/ui/lessons/buttons';
 import { fetchFilteredLessons } from '@/backend/lessons-data';
 import { auth } from '@/auth';
+import Image from 'next/image';
 
 function formatDate(date: Date) {
   const year = date.getFullYear().toString().slice(-2);
@@ -41,6 +42,15 @@ export default async function LessonsTable({
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div>
                     <div className="flex items-center mb-2">
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 mr-2">
+                        <Image
+                          src={lesson.profile_image_url || '/default-profile.svg'}
+                          alt={lesson.author}
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <p>{lesson.author}</p>
                       <p>{lesson.title}</p>
                       <p>{formatDate(lesson.created_at)}</p>
@@ -81,7 +91,18 @@ export default async function LessonsTable({
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {lesson.author}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                        <Image
+                          src={lesson.profile_image_url || '/default-profile.svg'}
+                          alt={lesson.author}
+                          width={24}
+                          height={24}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <span>{lesson.author}</span>
+                    </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     {lesson.title}
