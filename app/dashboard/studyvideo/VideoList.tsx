@@ -25,6 +25,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
   );
   const [duration, setDuration] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('0:00');
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -72,6 +73,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
           const minutes = Math.floor(realDuration / 60);
           const seconds = Math.floor(realDuration % 60);
           setDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+          setIsLoading(false);
         }
       }, 100);
     };
@@ -102,6 +104,14 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
       setCurrentTime(formatTime(videoRef.current.currentTime));
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="200px" bgcolor="#f5f5f5">
+        <CircularProgress size={40} thickness={4} />
+      </Box>
+    );
+  }
 
   return (
     <div 
@@ -295,7 +305,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   };
 
   const handleDelete = async (id: string) => {
-    showConfirm('이 비디오를 삭제하시��습니까?', async () => {
+    showConfirm('이 비디오를 삭제하시습니까?', async () => {
       try {
         const response = await fetch(`/api/deleteStudyRec?id=${id}`, {
           method: 'DELETE',
@@ -314,14 +324,6 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       }
     });
   };
-
-  if (isLoading) {
-    return (
-      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="100vh" bgcolor="#f5f5f5">
-        <CircularProgress size={60} thickness={4} />
-      </Box>
-    );
-  }
 
   if (error) {
     return <div>에러: {error}</div>;
