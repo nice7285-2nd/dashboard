@@ -347,7 +347,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           }}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 340px)', gap: '20px' }}>
         {filteredVideos.map((video) => (
           <VideoItem 
             key={video.id} 
