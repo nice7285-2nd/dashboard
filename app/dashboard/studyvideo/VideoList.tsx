@@ -122,24 +122,20 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
     >
       <div className="flex-1">
         <div style={{ position: 'relative' }}>
-          <video 
-            ref={videoRef} 
-            src={video.videoUrl} 
-            style={{ 
-              width: '100%', 
-              aspectRatio: '16 / 9', 
-              objectFit: 'cover', 
-              marginBottom: '10px', 
-              transition: 'transform 0.3s ease', 
-              // transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
-              // boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
-              borderRadius: '10px' 
-            }} 
-            muted 
-            loop 
-            playsInline 
-            onTimeUpdate={handleTimeUpdate}
-          />
+          <div className="video-container">
+            <video
+              ref={videoRef}
+              src={video.videoUrl}
+              onTimeUpdate={handleTimeUpdate}
+              controls={false}
+              muted
+              playsInline
+              webkit-playsinline="true"  // iOS 지원
+              x-webkit-airplay="allow"   // AirPlay 허용
+              preload="metadata"         // 메타데이터 미리 로드
+              className="video-player"
+            />
+          </div>
           {isNew && (
             <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
               NEW
