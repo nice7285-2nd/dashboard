@@ -1,31 +1,49 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { writeFile, mkdir, unlink } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export async function POST(request: Request) {
-  const formData = await request.formData();
-  const file = formData.get('file') as File;
-  const filePath = formData.get('path') as string;
-
-  if (!file) {
-    return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
-  }
-
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  const studyRecDir = path.join(process.cwd(), 'public', 'studyRec');
-  if (!fs.existsSync(studyRecDir)) {
-    fs.mkdirSync(studyRecDir, { recursive: true });
-  }
-
-  const fullPath = path.join(process.cwd(), 'public', filePath);
-
   try {
-    fs.writeFileSync(fullPath, buffer);
-    return NextResponse.json({ message: '녹화 파일이 성공적으로 저장되었습니다.' });
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const outputPath = formData.get('outputPath') as string;
+    
+    // 임시 디렉토리 경로 설정
+    const tempDir = join(process.cwd(), 'public/temp');
+    const outputDir = join(process.cwd(), 'public/studyRec');
+    
+    // 디렉토리가 없으면 생성
+    if (!existsSync(tempDir)) {
+      await mkdir(tempDir, { recursive: true });
+    }
+    if (!existsSync(outputDir)) {
+      await mkdir(outputDir, { recursive: true });
+    }
+
+    // 임시 WebM 파일 저장
+    const tempWebmPath = join(tempDir, `${Date.now()}.webm`);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(tempWebmPath, buffer);
+
+    // MP4로 변환
+    const outputFilePath = join(process.cwd(), 'public', outputPath);
+    
+    await execAsync(`ffmpeg -i ${tempWebmPath} -c:v libx264 -c:a aac -strict experimental ${outputFilePath}`);
+
+    // 임시 파일 삭제
+    await unlink(tempWebmPath);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('파일 저장 중 오류 발생:', error);
-    return NextResponse.json({ message: '녹화 파일 저장에 실패했습니다.' }, { status: 500 });
+    console.error('Error saving recording:', error);
+    return NextResponse.json(
+      { error: 'Failed to save recording' },
+      { status: 500 }
+    );
   }
 }

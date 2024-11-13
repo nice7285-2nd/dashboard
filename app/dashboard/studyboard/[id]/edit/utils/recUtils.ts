@@ -122,13 +122,15 @@ export const saveRec = async (
     return;
   }
 
-  const filename = `${Date.now()}.webm`;
-  const filePath = `/studyRec/${filename}`;
+  const webmFilename = `${Date.now()}.webm`;
+  const mp4Filename = `${Date.now()}.mp4`;
+  const filePath = `/studyRec/${mp4Filename}`;
 
   try {
     const formData = new FormData();
-    formData.append('file', RecBlob, filename);
-    formData.append('path', filePath);
+    formData.append('file', RecBlob, webmFilename);
+    formData.append('outputPath', filePath);
+    formData.append('convertToMp4', 'true');
 
     const response = await fetch('/api/save-rec', {
       method: 'POST',
