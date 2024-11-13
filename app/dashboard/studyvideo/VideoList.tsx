@@ -23,6 +23,8 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
   const isNew = video.createdAt && (
     new Date().getTime() - new Date(video.createdAt).getTime() < 24 * 60 * 60 * 1000
   );
+  const [duration, setDuration] = useState<string>('');
+  const [currentTime, setCurrentTime] = useState<string>('0:00');
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -54,6 +56,53 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
     }
   };
 
+  useEffect(() => {
+    console.log('Video URL:', video.videoUrl);
+  }, [video.videoUrl]);
+
+  useEffect(() => {
+    const videoElement = document.createElement('video');
+    
+    const handleCanPlay = () => {
+      videoElement.currentTime = Number.MAX_SAFE_INTEGER;
+      
+      setTimeout(() => {
+        const realDuration = videoElement.currentTime;
+        if (realDuration && !isNaN(realDuration)) {
+          const minutes = Math.floor(realDuration / 60);
+          const seconds = Math.floor(realDuration % 60);
+          setDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        }
+      }, 100);
+    };
+
+    videoElement.addEventListener('canplay', handleCanPlay);
+
+    const absoluteUrl = video.videoUrl.startsWith('/')
+      ? `${window.location.origin}${video.videoUrl}`
+      : video.videoUrl;
+
+    videoElement.src = absoluteUrl;
+    videoElement.load();
+
+    return () => {
+      videoElement.removeEventListener('canplay', handleCanPlay);
+      videoElement.remove();
+    };
+  }, [video.videoUrl]);
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current && isHovering) {
+      setCurrentTime(formatTime(videoRef.current.currentTime));
+    }
+  };
+
   return (
     <div 
       onClick={() => openVideo(video)} 
@@ -72,19 +121,23 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
               objectFit: 'cover', 
               marginBottom: '10px', 
               transition: 'transform 0.3s ease', 
-              transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
-              boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
+              // transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
+              // boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
               borderRadius: '10px' 
             }} 
             muted 
             loop 
             playsInline 
+            onTimeUpdate={handleTimeUpdate}
           />
           {isNew && (
             <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
               NEW
             </span>
           )}
+          <span className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white text-xs px-1.5 py-0.5 rounded">
+            {isHovering ? currentTime : duration}
+          </span>
         </div>
         <div className="flex justify-between items-start">
           <div className="flex gap-3">
@@ -242,7 +295,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   };
 
   const handleDelete = async (id: string) => {
-    showConfirm('이 비디오를 삭제하시겠습니까?', async () => {
+    showConfirm('이 비디오를 삭제하시��습니까?', async () => {
       try {
         const response = await fetch(`/api/deleteStudyRec?id=${id}`, {
           method: 'DELETE',
@@ -292,7 +345,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           }}
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
         {filteredVideos.map((video) => (
           <VideoItem 
             key={video.id} 
