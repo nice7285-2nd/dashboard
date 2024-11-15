@@ -123,8 +123,9 @@ export const saveRec = async (
   }
 
   const webmFilename = `${Date.now()}.webm`;
-  const mp4Filename = `${Date.now()}.mp4`;
-  const filePath = `/studyRec/${mp4Filename}`;
+  const filePath = `/studyRec/${webmFilename}`;
+
+  const toastId = toast.loading('녹화 파일 저장 중...');
 
   try {
     const formData = new FormData();
@@ -132,30 +133,52 @@ export const saveRec = async (
     formData.append('outputPath', filePath);
     formData.append('convertToMp4', 'true');
 
+    console.log('업로드 시작:', webmFilename);
+
     const response = await fetch('/api/save-rec', {
       method: 'POST',
       body: formData,
     });
 
-    if (response.ok) {
-      const dbFormData = new FormData();
-      dbFormData.append('author', author);
-      dbFormData.append('email', email);
-      dbFormData.append('title', title);
-      dbFormData.append('path', filePath);
-      const result = await createStudyRec(dbFormData);
+    console.log('서버 응답:', response.status);
 
-      if (result.message === 'Created StudyRec.') {
-        toast.success(`녹화 파일 "${title}"이(가) 성공적으로 저장되었습니다.`);
-      } else {
-        throw new Error(result.message);
-      }
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '서버 응답 오류');
+    }
+
+    const responseData = await response.json();
+    console.log('서버 응답 데이터:', responseData);
+
+    const dbFormData = new FormData();
+    dbFormData.append('author', author);
+    dbFormData.append('email', email);
+    dbFormData.append('title', title);
+    dbFormData.append('path', filePath);
+    
+    console.log('DB 저장 시작');
+    const result = await createStudyRec(dbFormData);
+    console.log('DB 저장 결과:', result);
+
+    if (result.message === 'Created StudyRec.') {
+      toast.update(toastId, {
+        render: `녹화 파일 "${title}"이(가) 성공적으로 저장되었습니다.`,
+        type: 'success',
+        isLoading: false,
+        autoClose: 1000
+      });
     } else {
-      throw new Error('녹화 파일 저장에 실패했습니다.');
+      throw new Error(result.message);
     }
   } catch (error) {
     console.error('녹화 파일 저장 중 오류 발생:', error);
-    toast.error('녹화 파일 저장에 실패했습니다. 다시 시도해 주세요.');
+    toast.update(toastId, {
+      render: '녹화 파일 저장에 실패했습니다. 다시 시도해 주세요.',
+      type: 'error',
+      isLoading: false,
+      autoClose: 3000
+    });
+  } finally {
+    setRecBlob(null);
   }
-  setRecBlob(null);
 };

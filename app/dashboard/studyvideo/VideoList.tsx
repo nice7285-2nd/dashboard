@@ -26,6 +26,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
   const [duration, setDuration] = useState<string>('');
   const [currentTime, setCurrentTime] = useState<string>('0:00');
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -80,11 +81,16 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
 
     videoElement.addEventListener('canplay', handleCanPlay);
 
+    const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`;
+
+    console.log('S3 URL:', s3Url);
+
     const absoluteUrl = video.videoUrl.startsWith('/')
       ? `${window.location.origin}${video.videoUrl}`
       : video.videoUrl;
 
-    videoElement.src = absoluteUrl;
+    // videoElement.src = absoluteUrl;
+    videoElement.src = s3Url;
     videoElement.load();
 
     return () => {
@@ -124,7 +130,8 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
         <div style={{ position: 'relative' }}>
           <video 
             ref={videoRef} 
-            src={video.videoUrl} 
+            src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
+            preload="metadata"
             style={{ 
               width: '100%', 
               aspectRatio: '16 / 9', 
@@ -180,9 +187,10 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
                 e.stopPropagation();
                 onDelete(video.id);
               }}
-              className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700"
+              disabled={isDeleting}
+              className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700 disabled:opacity-50"
             >
-              삭제
+              {isDeleting ? '삭제 중...' : '삭제'}
             </button>
           )}
         </div>
@@ -201,6 +209,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   const router = useRouter();
   const [confirmMessage, setConfirmMessage] = useState<string | null>(null);
   const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -305,22 +314,45 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   };
 
   const handleDelete = async (id: string) => {
-    showConfirm('이 비디오를 삭제하시습니까?', async () => {
+    showConfirm('이 비디오를 삭제하시겠습니까?', async () => {
       try {
-        const response = await fetch(`/api/deleteStudyRec?id=${id}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error('삭제 요청이 실패했습니다.');
+        // 삭제할 비디오의 정보 찾기
+        const videoToDelete = videos.find(v => v.id === id);
+        if (!videoToDelete) {
+          throw new Error('비디오를 찾을 수 없습니다.');
         }
 
-        setVideos(prevVideos => prevVideos.filter(video => video.id !== id));
+        // videoUrl에서 S3 키 추출 (앞의 '/' 제거)
+        const s3Key = videoToDelete.videoUrl.startsWith('/') 
+          ? videoToDelete.videoUrl.slice(1) 
+          : videoToDelete.videoUrl;
+
+        const response = await fetch(
+          `/api/deleteStudyRec?id=${id}&videoUrl=${encodeURIComponent(s3Key)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '삭제 요청이 실패했습니다.');
+        }
+
+        // UI 업데이트
+        setVideos(prev => prev.filter(v => v.id !== id));
+        setFilteredVideos(prev => prev.filter(v => v.id !== id));
+        
         showToast('비디오가 성공적으로 삭제되었습니다.', 'success');
-        router.refresh();
       } catch (error) {
         console.error('삭제 중 오류 발생:', error);
-        showToast('비디오 삭제 중 오류가 발생했습니다.', 'error');
+        showToast(
+          error instanceof Error ? error.message : '비디오 삭제 중 오류가 발생했습니다.', 
+          'error'
+        );
       }
     });
   };
@@ -363,7 +395,21 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       {selectedVideo && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ position: 'relative', width: '80%', maxWidth: '1600px', aspectRatio: '16 / 9', backgroundColor: 'black' }}>
-            <iframe width="100%" height="100%" src={`${selectedVideo.videoUrl}?autoplay=1`} title={selectedVideo.title} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ position: 'absolute', top: 0, left: 0 }}></iframe>
+            {isLoading && (
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                <CircularProgress />
+              </div>
+            )}
+            <video
+              onLoadStart={() => setIsLoading(true)}
+              onCanPlay={() => setIsLoading(false)}
+              width="100%"
+              height="100%"
+              src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+              controls
+              autoPlay
+              style={{ position: 'absolute', top: 0, left: 0 }}
+            />
             <button onClick={closeVideo} style={{ position: 'absolute', top: '-40px', right: '0', background: 'transparent', border: 'none', padding: '10px', cursor: 'pointer', fontSize: '24px', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '40px', height: '40px', borderRadius: '50%' }}>
               &#10005;
             </button>

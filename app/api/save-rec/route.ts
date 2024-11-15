@@ -1,48 +1,79 @@
-import { NextResponse } from 'next/server';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { NextRequest, NextResponse } from 'next/server';
+import { S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 
-const execAsync = promisify(exec);
+export async function POST(request: NextRequest) {
+  console.log('API 요청 시작');
 
-export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as Blob;
     const outputPath = formData.get('outputPath') as string;
-    
-    // 임시 디렉토리 경로 설정
-    const tempDir = join(process.cwd(), 'public/temp');
-    const outputDir = join(process.cwd(), 'public/studyRec');
-    
-    // 디렉토리가 없으면 생성
-    if (!existsSync(tempDir)) {
-      await mkdir(tempDir, { recursive: true });
-    }
-    if (!existsSync(outputDir)) {
-      await mkdir(outputDir, { recursive: true });
+
+    if (!file) {
+      throw new Error('파일이 없습니다.');
     }
 
-    // 임시 WebM 파일 저장
-    const tempWebmPath = join(tempDir, `${Date.now()}.webm`);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(tempWebmPath, buffer);
-
-    // MP4로 변환
-    const outputFilePath = join(process.cwd(), 'public', outputPath);
+    // 파일을 ArrayBuffer로 변환
+    const arrayBuffer = await file.arrayBuffer();
     
-    await execAsync(`ffmpeg -i ${tempWebmPath} -c:v libx264 -c:a aac -strict experimental ${outputFilePath}`);
+    // WebM을 MP4로 변환하고 코덱 설정
+    const options = {
+      video: {
+        codec: 'h264',
+        width: 1280,  // 원하는 해상도
+        height: 720,
+        bitrate: 2500000,  // 2.5 Mbps
+      },
+      audio: {
+        codec: 'aac',
+        sampleRate: 44100,
+        bitrate: 128000,  // 128 kbps
+      }
+    };
 
-    // 임시 파일 삭제
-    await unlink(tempWebmPath);
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error saving recording:', error);
+    const upload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: outputPath.startsWith('/') ? outputPath.slice(1) : outputPath,
+        Body: file,
+        ContentType: 'video/mp4',
+        ContentEncoding: 'h264',  // 비디오 코덱 명시
+        Metadata: {
+          'video-codec': 'h264',
+          'audio-codec': 'aac'
+        }
+      },
+      queueSize: 1,
+      partSize: 5 * 1024 * 1024,
+    });
+
+    console.log('S3 업로드 시작');
+    await upload.done();
+    console.log('S3 업로드 완료');
+
     return NextResponse.json(
-      { error: 'Failed to save recording' },
+      { success: true, message: '파일이 성공적으로 업로드되었습니다.' },
+      { status: 200 }
+    );
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Upload failed',
+        details: error instanceof Error ? error.message : '알 수 없는 오류'
+      },
       { status: 500 }
     );
   }

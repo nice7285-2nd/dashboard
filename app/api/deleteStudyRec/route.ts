@@ -1,28 +1,52 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
-import fs from 'fs';
-import path from 'path';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION as string,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  },
+});
 
 export async function DELETE(request: Request) {
   try {
-    // URL에서 id 파라미터를 추출합니다
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const videoUrl = searchParams.get('videoUrl');
 
-    if (!id) {
-      return NextResponse.json({ error: 'ID가 제공되지 않았습니다.' }, { status: 400 });
+    if (!id || !videoUrl) {
+      return NextResponse.json(
+        { error: '필수 파라미터가 누락되었습니다.' }, 
+        { status: 400 }
+      );
     }
 
-    // 데이터베이스에서 레코드 삭제
-    const result = await sql`DELETE FROM studyreclist WHERE id = ${id}`;
-
-    if (result.rowCount === 0) {
-      return NextResponse.json({ message: '삭제할 레코드를 찾을 수 없습니다.' }, { status: 404 });
+    // S3에서 파일 삭제
+    try {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME as string,
+        Key: videoUrl,
+      });
+      await s3Client.send(deleteCommand);
+      console.log('S3 파일 삭제 성공:', videoUrl);
+    } catch (s3Error) {
+      console.error('S3 삭제 에러:', s3Error);
+      // S3 삭제 실패해도 DB에서는 삭제 진행
     }
 
-    return NextResponse.json({ message: '레코드가 성공적으로 삭제되었습니다.' }, { status: 200 });
+    await sql`DELETE FROM studyreclist WHERE id = ${id}`;
+
+    return NextResponse.json({ 
+      message: '비디오가 성공적으로 삭제되었습니다.',
+      id: id 
+    });
   } catch (error) {
-    console.error('삭제 중 오류 발생:', error);
-    return NextResponse.json({ error: '서버 오류가 발생했습니다.' }, { status: 500 });
+    console.error('삭제 중 에러 발생:', error);
+    return NextResponse.json(
+      { error: '삭제 중 오류가 발생했습니다.' }, 
+      { status: 500 }
+    );
   }
 }
