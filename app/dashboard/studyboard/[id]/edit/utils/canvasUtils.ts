@@ -424,7 +424,7 @@ export const addNode = (
   const nodeWidth = nodeShape === 'single' ? 180 : 360;
   const nodeHeight = nodeShape === 'single' ? 100 : 200;
   const gridSize = 1;
-  const MIN_GAP = 20; // 노드 간 최소 간격
+  const MIN_GAP = 40; // 노드 간 최소 간격
 
   const newId = Date.now();
   const newZIndex = nodeShape === 'single' ? maxZIndex + 1 : 0;
@@ -432,12 +432,8 @@ export const addNode = (
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
   // 기존 노드들의 x, y 좌표 수집
-  const existXPoss = nodes
-    .filter(node => node.nodeShape === 'single' || node.nodeShape === 'group')
-    .map(node => node.x);
-  const existYPoss = nodes
-    .filter(node => node.nodeShape === 'single' || node.nodeShape === 'group')
-    .map(node => node.y);
+  const existXPoss = nodes.filter(node => node.nodeShape === 'single' || node.nodeShape === 'group').map(node => node.x);
+  const existYPoss = nodes.filter(node => node.nodeShape === 'single' || node.nodeShape === 'group').map(node => node.y);
 
   // 가장 가까운 정렬된 위치 찾기 (최소 간격 고려)
   const findAlignedPos = (positions: number[], value: number, size: number) => {
@@ -464,59 +460,11 @@ export const addNode = (
     // 적절한 위치를 찾지 못한 경우, 마지막 노드 뒤에 배치
     return snapToGrid(Math.max(...sortedPoss, 0) + size + MIN_GAP);
   };
-  const lastNode = nodes[nodes.length - 1];
 
-  let newX = snapToGrid(lastNode.x + lastNode.width + MIN_GAP);
-  let newY = snapToGrid(lastNode.y);
-
-  // 가장 가까운 정렬된 x, y 위치 찾기
-  newX = findAlignedPos(existXPoss, newX, lastNode.width);
-  newY = findAlignedPos(existYPoss, newY, lastNode.height);
-
-  // 캔버스 경계 체크 및 조정
-  if (newX + nodeWidth > canvasWidth) {
-    newX = findAlignedPos(existXPoss, 0, lastNode.width);
-    newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
-  }
-
-  if (newY + nodeHeight > canvasHeight) {
-    newY = snapToGrid(1);
-  }
-
-  // 겹침 방지
-  const isOverlapp = (x: number, y: number) => {
-    return nodes.some(node => 
-      x < node.x + node.width + MIN_GAP && x + nodeWidth + MIN_GAP > node.x && 
-      y < node.y + node.height + MIN_GAP && y + nodeHeight + MIN_GAP > node.y
-    );
-  };
-
-  let repeat = false;
-  while (isOverlapp(newX, newY)) {
-    newX = findAlignedPos(existXPoss, newX + nodeWidth + MIN_GAP, nodeWidth);
-    if (newX + nodeWidth > canvasWidth) {
-      newX = findAlignedPos(existXPoss, 0, nodeWidth);
-      newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
-      if (newY + nodeHeight > canvasHeight) {
-        if (!repeat) {
-          newY = snapToGrid(1);
-          repeat = true;
-        } else {
-          newX = -1;
-          break;
-        }
-      }
-    }
-  }
-
-  if (newX === -1) {
-    return { newNode: null, newMaxZIndex: newZIndex };
-  }
-
-  const newNode: Node = {
+  let newNode: Node = {
     id: newId,
-    x: newX,
-    y: newY,
+    x: 0,
+    y: 0,
     text1: '',
     text2: '',
     text3: '',
@@ -529,6 +477,58 @@ export const addNode = (
     borderColor: '#05f',
     nodeShape: nodeShape
   };
+
+  const lastNode: Node | null = nodes.length > 0 ? nodes[nodes.length - 1] : newNode;
+
+  let newX = snapToGrid(lastNode.x + lastNode.width + MIN_GAP);
+  let newY = snapToGrid(lastNode.y);
+
+  // 가장 가까운 정렬된 x, y 위치 찾기
+  newX = findAlignedPos(existXPoss, newX, lastNode.width);
+  newY = findAlignedPos(existYPoss, newY, lastNode.height);
+
+  // 캔버스 경계 체크 및 조정
+  if (newX + nodeWidth + 200 > canvasWidth) {
+    newX = findAlignedPos(existXPoss, 0, lastNode.width);
+    newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
+  }
+
+  // if (newY + nodeHeight > canvasHeight) {
+  //   newY = snapToGrid(1);
+  // }
+
+  // 겹침 방지
+  const isOverlapp = (x: number, y: number) => {
+    return nodes.some(node => 
+      x < node.x + node.width + MIN_GAP && x + nodeWidth + MIN_GAP > node.x && 
+      y < node.y + node.height + MIN_GAP && y + nodeHeight + MIN_GAP > node.y
+    );
+  };
+
+  let repeat = false;
+  while (isOverlapp(newX, newY)) {
+    newX = findAlignedPos(existXPoss, newX + nodeWidth + MIN_GAP, nodeWidth);
+    if (newX + nodeWidth + 200 > canvasWidth) {
+      newX = findAlignedPos(existXPoss, 0, nodeWidth);
+      newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
+      // if (newY + nodeHeight > canvasHeight) {
+      //   if (!repeat) {
+      //     newY = snapToGrid(1);
+      //     repeat = true;
+      //   } else {
+      //     newX = -1;
+      //     break;
+      //   }
+      // }
+    }
+  }
+
+  if (newX === -1) {
+    return { newNode: null, newMaxZIndex: newZIndex };
+  }
+
+  newNode.x = newX;
+  newNode.y = newY;
 
   return { newNode, newMaxZIndex: newZIndex };
 };
