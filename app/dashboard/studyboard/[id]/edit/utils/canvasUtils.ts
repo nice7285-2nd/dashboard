@@ -720,12 +720,17 @@ export const saveCanvas = async (
     return;
   }
 
+  // 저장 중임을 알리는 toast
+  const toastId = toast.loading('교안을 저장하는 중입니다...', {
+    position: "bottom-right",
+  });
+
   try {
     const lessonData = {
       nodes,
       draws: drawActions,
-      width,   // 교안 너비 추가
-      height   // 교안 높이 추가
+      width,
+      height
     };
 
     const filename = `${new Date().toLocaleString('ko-KR', { 
@@ -752,7 +757,13 @@ export const saveCanvas = async (
       const result = await createLesson(dbFormData);
 
       if (result.message === 'Created Lesson.') {
-        toast.success(`교안 "${title}"이(가) 성공적으로 저장되었습니다.`);
+        // 성공 시 toast 업데이트
+        toast.update(toastId, {
+          render: `교안 "${title}"이(가) 성공적으로 저장되었습니다.`,
+          type: "success",
+          isLoading: false,
+          autoClose: 1000,
+        });
       } else {
         throw new Error(result.message);
       }
@@ -761,7 +772,13 @@ export const saveCanvas = async (
     }
   } catch (error) {
     console.error('교안 저장 중 오류 발생:', error);
-    toast.error('교안 저장에 실패했습니다. 다시 시도해 주세요.');
+    // 실패 시 toast 업데이트
+    toast.update(toastId, {
+      render: '교안 저장에 실패했습니다. 다시 시도해 주세요.',
+      type: "error",
+      isLoading: false,
+      autoClose: 1000,
+    });
   }
 };
 

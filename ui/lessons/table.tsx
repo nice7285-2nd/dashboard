@@ -42,12 +42,12 @@ export default async function LessonsTable({
                 <div className="flex items-center justify-between pb-4 border-b">
                   <div>
                     <div className="flex items-center mb-2">
-                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 mr-2">
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mr-2">
                         <Image
                           src={lesson.profile_image_url || '/default-profile.svg'}
                           alt={lesson.author}
-                          width={24}
-                          height={24}
+                          width={40}
+                          height={40}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -92,12 +92,12 @@ export default async function LessonsTable({
                 >
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                         <Image
                           src={lesson.profile_image_url || '/default-profile.svg'}
                           alt={lesson.author}
-                          width={24}
-                          height={24}
+                          width={32}
+                          height={32}
                           className="w-full h-full object-cover"
                         />
                       </div>

@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import path from 'path';
-import fs from 'fs/promises';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const CreateLessonSchema = z.object({
   id: z.string().optional(),
@@ -105,37 +104,47 @@ export async function updateLesson(
   redirect('/dashboard/studyboard');
 }
 
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
 export async function deleteLesson(id: string) {
   try {
-    // 먼저 레슨 정보를 가져옵니다.
     const result = await sql`
       SELECT path FROM lessons WHERE id = ${id}
     `;
 
     if (result.rows.length === 0) {
-      return { message: 'Lesson not found.' };
+      return { message: '레슨을 찾을 수 없습니다.' };
     }
 
-    const lessonPath = result.rows[0].path;
+    const lessonPath = result.rows[0].path
+      .replace(/^\//, '')
+      .replace(/\\/g, '/');
 
-    // 파일이 존재하면 삭제합니다.
     if (lessonPath) {
-      const fullPath = path.join(process.cwd(), 'public', lessonPath);
       try {
-        await fs.unlink(fullPath);
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME!,
+            Key: lessonPath,
+          })
+        );
+        console.log('S3 파일 삭제 성공:', lessonPath);
       } catch (error) {
-        console.error('File deletion error:', error);
-        // 파일 삭제 실패를 로그로 남기지만, 프로세스는 계속 진행합니다.
+        console.error('S3 파일 삭제 오류:', error);
       }
     }
 
-    // 데이터베이스에서 레슨을 삭제합니다.
     await sql`DELETE FROM lessons WHERE id = ${id}`;
-
     revalidatePath('/dashboard/studyboard');
-    return { message: 'Lesson and associated file deleted successfully.' };
+    return { message: '레슨과 관련 파일이 성공적으로 삭제되었습니다.' };
   } catch (error) {
-    console.error('Lesson deletion error:', error);
-    return { message: 'Database Error: Failed to Delete Lesson.' };
+    console.error('레슨 삭제 오류:', error);
+    return { message: '데이터베이스 오류: 레슨 삭제에 실패했습니다.' };
   }
 }

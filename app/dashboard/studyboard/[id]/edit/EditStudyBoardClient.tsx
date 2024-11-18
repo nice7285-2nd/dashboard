@@ -680,16 +680,22 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setIsLoad(true);
       try {
         const response = await fetch(`/api/lessons/?id=${params.id}`);
-        if (!response.ok) {throw new Error('교안을 찾을 수 없습니다');}
+        if (!response.ok) {
+          throw new Error('교안을 찾을 수 없습니다');
+        }
 
         const lessonData = await response.json();
         
-        // lessonData.path에서 파일 경로 읽기
-        const filePath = `${lessonData.rows[0].path}`;
+        // S3 URL 생성
+        const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${lessonData.rows[0].path}`;
         
-        // 파일 내용 읽기
-        const fileResponse = await fetch(filePath);
-        if (!fileResponse.ok) {throw new Error('파일을 찾을 수 없습니다');}
+        console.log('s3Url', s3Url);
+
+        // S3에서 파일 내용 읽기
+        const fileResponse = await fetch(s3Url);
+        if (!fileResponse.ok) {
+          throw new Error('파일을 찾을 수 없습니다');
+        }
 
         const fileData = await fileResponse.json();
 

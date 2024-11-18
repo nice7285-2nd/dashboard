@@ -5,6 +5,7 @@ import { PencilIcon, PlusIcon, TrashIcon, ChartBarIcon, PlayIcon } from '@heroic
 import Link from 'next/link';
 import { deleteLesson } from '@/backend/lessons-actions';
 import { useRouter } from 'next/navigation';
+import { toast, ToastContainer } from 'react-toastify';
 
 export function CreateLesson() {
   return (
@@ -75,7 +76,33 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
   const closePopup = () => setIsPopupOpen(false);
 
   const deleteLessonWithId = async () => {
-    await deleteLesson(id);
+    const toastId = toast.loading('교안을 삭제하는 중입니다...', {
+      position: "bottom-right",
+    });
+
+    try {
+      const result = await deleteLesson(id);
+      
+      if (result.message.includes('성공')) {
+        toast.update(toastId, {
+          render: '교안이 성공적으로 삭제되었습니다.',
+          type: 'success',
+          isLoading: false,
+          autoClose: 1000,
+        });
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (error) {
+      toast.update(toastId, {
+        render: '교안 삭제에 실패했습니다.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 1000,
+      });
+      console.error('교안 삭제 실패:', error);
+    }
+    
     closePopup();
   };
 
@@ -89,7 +116,7 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
           ? 'border bg-gray-200 text-gray-600 cursor-not-allowed'
           : 'border rounded-md hover:bg-gray-100'
       }`}
->
+      >
         <span className="sr-only">삭제</span>
         <TrashIcon className="w-5" />
       </button>
@@ -99,6 +126,7 @@ export function DeleteLesson({ id, disabled }: { id: string, disabled: boolean }
           onCancel={closePopup}
         />
       )}
+      <ToastContainer position="bottom-right" autoClose={1000} />
     </>
   );
 }

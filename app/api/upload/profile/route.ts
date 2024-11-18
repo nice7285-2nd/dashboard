@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { sql } from '@vercel/postgres';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'profile');
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 export async function POST(request: Request) {
   try {
@@ -36,28 +42,26 @@ export async function POST(request: Request) {
       );
     }
 
-    // 업로드 디렉토리 생성
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true });
-    } catch (error) {
-      console.error('Failed to create upload directory:', error);
-    }
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    
     // 파일 이름 생성
     const fileType = file.type.split('/')[1];
     const fileName = `${email}-${Date.now()}.${fileType}`;
-    
-    // 실제 파일이 저장될 전체 경로
-    const filePath = join(UPLOAD_DIR, fileName);
-    
-    // 파일 저장
-    await writeFile(filePath, buffer);
-    
-    // DB에 저장될 URL 경로 (public 폴더 기준 상대 경로)
-    const imageUrl = `/uploads/profile/${fileName}`;  // public 폴더는 자동으로 루트 경로로 처리됨
+    const filePath = `profiles/${fileName}`;
+
+    // 파일을 Buffer로 변환
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // S3에 업로드
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME!,
+        Key: filePath,
+        Body: buffer,
+        ContentType: file.type,
+      })
+    );
+
+    // S3 URL 생성
+    const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filePath}`;
 
     // DB 업데이트
     await sql`
