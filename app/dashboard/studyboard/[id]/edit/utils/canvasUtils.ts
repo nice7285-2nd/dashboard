@@ -488,7 +488,7 @@ export const addNode = (
   newY = findAlignedPos(existYPoss, newY, lastNode.height);
 
   // 캔버스 경계 체크 및 조정
-  if (newX + nodeWidth + 200 > canvasWidth) {
+  if (newX + nodeWidth > canvasWidth) {
     newX = findAlignedPos(existXPoss, 0, lastNode.width);
     newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
   }
@@ -506,9 +506,9 @@ export const addNode = (
   };
 
   let repeat = false;
-  while (isOverlapp(newX, newY)) {
-    newX = findAlignedPos(existXPoss, newX + nodeWidth + MIN_GAP, nodeWidth);
-    if (newX + nodeWidth + 200 > canvasWidth) {
+  while (isOverlapp(newX, newY) && !repeat) {
+    newX = newX + nodeWidth + MIN_GAP;
+    if (newX + nodeWidth > canvasWidth) {
       newX = findAlignedPos(existXPoss, 0, nodeWidth);
       newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
       // if (newY + nodeHeight > canvasHeight) {

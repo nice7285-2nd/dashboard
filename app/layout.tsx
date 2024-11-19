@@ -6,10 +6,11 @@ import { SessionProvider } from "next-auth/react"
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Dashboard',
-    default: 'Fishbone Workbooks',
+    // template: '%s | Dashboard',
+    template: 'Fishbone | %s',
+    default: 'Fishbone',
   },
-  description: 'Fishbone Workbooks',
+  description: 'Fishbone',
   metadataBase: new URL('https://levelup-dashboard.vercel.app/'),
 };
 
