@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { toast } from 'react-toastify';
 
 interface ProfileImageUploaderProps {
   currentImageUrl?: string;
@@ -21,12 +22,12 @@ export default function ProfileImageUploader({ currentImageUrl, email }: Profile
 
   const handleUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드 가능합니다.');
+      toast.error('이미지 파일만 업로드 가능합니다.');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
+      toast.error('파일 크기는 5MB 이하여야 합니다.');
       return;
     }
 
@@ -47,9 +48,10 @@ export default function ProfileImageUploader({ currentImageUrl, email }: Profile
 
       const data = await response.json();
       setPreview(data.url);
+      toast.success('이미지가 성공적으로 업로드되었습니다.');
     } catch (error) {
       console.error('업로드 에러:', error);
-      alert('이미지 업로드에 실패했습니다.');
+      toast.error('이미지 업로드에 실패했습니다.');
     } finally {
       setIsUploading(false);
     }
