@@ -1,3 +1,5 @@
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { fetchLoggedInUser } from '@/backend/account-actions';
 import { Metadata } from 'next';
 import { auth } from '@/auth';
@@ -37,7 +39,7 @@ export default async function Page() {
   const user = await fetchLoggedInUser(email) as User;
 
   return (
-    <main>
+    <div className="w-full">
       <div className="p-4 rounded-md shadow bg-gray-50 md:p-6">
         <h1 className="text-xl font-semibold mb-6">Your Account</h1>
         <div className="flex flex-col items-start space-y-4 mb-6">
@@ -118,7 +120,8 @@ export default async function Page() {
           */}
         </div>
       </div>
+      <ToastContainer position="bottom-right" autoClose={1000} />
       <DeleteAccount deleteEmail={user.email} />
-    </main>
+    </div>
   );
 }
