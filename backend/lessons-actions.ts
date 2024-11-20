@@ -125,9 +125,7 @@ export async function deleteLesson(id: string) {
             Key: lessonPath,
           })
         );
-        console.log('S3 파일 삭제 성공:', lessonPath);
       } catch (error) {
-        console.error('S3 파일 삭제 오류:', error);
       }
     }
 

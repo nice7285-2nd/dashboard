@@ -30,9 +30,7 @@ export async function DELETE(request: Request) {
         Key: videoUrl,
       });
       await s3Client.send(deleteCommand);
-      console.log('S3 파일 삭제 성공:', videoUrl);
     } catch (s3Error) {
-      console.error('S3 삭제 에러:', s3Error);
       // S3 삭제 실패해도 DB에서는 삭제 진행
     }
 

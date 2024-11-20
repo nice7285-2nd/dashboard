@@ -26,7 +26,7 @@ export async function fetchFilteredUsers(
       WHERE
         name ILIKE $1 OR
         email ILIKE $1
-      ORDER BY created_at DESC
+      ORDER BY login_at DESC
       LIMIT $2 OFFSET $3`,
       [`%${query}%`, USERS_PER_PAGE, offset]
     );
