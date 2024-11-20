@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { pool } from '@/backend/db';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -64,11 +64,7 @@ export async function POST(request: Request) {
     const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filePath}`;
 
     // DB 업데이트
-    await sql`
-      UPDATE users 
-      SET profile_image_url = ${imageUrl}
-      WHERE email = ${email}
-    `;
+    await pool.query('UPDATE users SET profile_image_url = $1 WHERE email = $2', [imageUrl, email]);
 
     return NextResponse.json({ 
       success: true, 

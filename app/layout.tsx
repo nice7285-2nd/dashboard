@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: 'Fishbone',
   },
   description: 'Fishbone',
-  metadataBase: new URL('https://levelup-dashboard.vercel.app/'),
+  metadataBase: new URL('https://www.fishbone.com/'),
 };
 
 export default function RootLayout({
