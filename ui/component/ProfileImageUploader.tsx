@@ -40,6 +40,9 @@ export default function ProfileImageUploader({ currentImageUrl, email }: Profile
       const response = await fetch('/api/upload/profile', {
         method: 'POST',
         body: formData,
+        headers: {
+          'next-action': '1',
+        }
       });
 
       if (!response.ok) {

@@ -1,4 +1,4 @@
-import Pagination from '@/ui/projects/pagination';
+import Pagination from '@/ui/component/pagination';
 import Search from '@/ui/search';
 import UsersTable from '@/ui/users/table';
 import { LessonTableSkeleton } from '@/ui/skeletons';

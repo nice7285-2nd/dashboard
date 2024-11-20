@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { pool } from '@/backend/db';
 
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await sql`UPDATE studyreclist SET views = views + 1 WHERE id = ${id}`;
+    await pool.query(
+      'UPDATE studyreclist SET views = views + 1 WHERE id = $1',
+      [id]
+    );
     return NextResponse.json({ message: '조회수가 업데이트되었습니다' });
   } catch (error) {
     console.error('조회수 업데이트 중 오류 발생:', error);

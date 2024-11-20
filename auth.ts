@@ -5,7 +5,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { getUser } from '@/backend/account-actions';
 import { User } from 'next-auth';
-import { sql } from '@vercel/postgres';
+import { pool } from '@/backend/db';
 
 declare module 'next-auth' {
   interface User {
@@ -56,11 +56,12 @@ export const { auth, signIn, signOut } = NextAuth({
     async signIn({ user }) {
       if (user.id) {
         try {
-          await sql`
-            UPDATE users
-            SET login_at = ${new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"})}
-            WHERE id = ${user.id}
-          `;
+          await pool.query(
+            `UPDATE users
+             SET login_at = $1
+             WHERE id = $2`,
+            [new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}), user.id]
+          );
         } catch (error) {
           console.error('로그인 시간 업데이트 실패:', error);
           // 로그인 자체는 실패하지 않도록 합니다.

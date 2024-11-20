@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { pool } from '@/backend/db';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 const s3Client = new S3Client({
@@ -36,7 +36,8 @@ export async function DELETE(request: Request) {
       // S3 삭제 실패해도 DB에서는 삭제 진행
     }
 
-    await sql`DELETE FROM studyreclist WHERE id = ${id}`;
+    // Vercel Postgres의 sql`` 대신 pool.query 사용
+    await pool.query('DELETE FROM studyreclist WHERE id = $1', [id]);
 
     return NextResponse.json({ 
       message: '비디오가 성공적으로 삭제되었습니다.',

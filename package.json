@@ -44,6 +44,7 @@
     "mammoth": "^1.8.0",
     "next": "14.0.4",
     "next-auth": "^5.0.0-beta.21",
+    "pg": "^8.13.1",
     "pptx": "^0.0.0",
     "pptx2html": "^0.3.4",
     "pptxgenjs": "^3.12.0",
@@ -64,7 +65,8 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/formidable": "^3.4.5",
-    "@types/node": "^20",
+    "@types/node": "^20.17.6",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^9.0.8",
@@ -77,7 +79,9 @@
     "postcss": "^8",
     "prettier": "^3.1.1",
     "prettier-plugin-tailwindcss": "^0.5.9",
+    "prisma": "^5.22.0",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
   }
 }

@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod';
-import { sql } from '@vercel/postgres';
+import { pool } from '@/backend/db';
 import { revalidatePath } from 'next/cache';
 
 const FormSchema = z.object({
@@ -27,10 +27,11 @@ export async function createLesson(formData: FormData) {
   });
 
   try {
-    await sql`
-      INSERT INTO lessons (title, path, author, email, created_at)
-      VALUES (${title}, ${path}, ${author}, ${email}, CURRENT_TIMESTAMP(3))
-    `;
+    await pool.query(
+      `INSERT INTO lessons (title, path, author, email, created_at)
+       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP(3))`,
+      [title, path, author, email]
+    );
   } catch (error) {
     return {
       message: 'Database Error: Failed to Create Lesson.',
@@ -50,10 +51,11 @@ export async function createStudyRec(formData: FormData) {
   });
 
   try {
-    await sql`
-      INSERT INTO studyRecList (title, path, author, email)
-      VALUES (${title}, ${path}, ${author}, ${email})
-    `;
+    await pool.query(
+      `INSERT INTO studyRecList (title, path, author, email)
+       VALUES ($1, $2, $3, $4)`,
+      [title, path, author, email]
+    );
   } catch (error) {
     return {
       message: 'Database Error: Failed to Create StudyRec.',

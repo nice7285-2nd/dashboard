@@ -59,10 +59,6 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
   };
 
   useEffect(() => {
-    console.log('Video URL:', video.videoUrl);
-  }, [video.videoUrl]);
-
-  useEffect(() => {
     const videoElement = document.createElement('video');
     
     const handleCanPlay = () => {
@@ -82,8 +78,6 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
     videoElement.addEventListener('canplay', handleCanPlay);
 
     const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`;
-
-    console.log('S3 URL:', s3Url);
 
     const absoluteUrl = video.videoUrl.startsWith('/')
       ? `${window.location.origin}${video.videoUrl}`

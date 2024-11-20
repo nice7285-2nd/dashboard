@@ -6,15 +6,17 @@ import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-
-import { sql } from '@vercel/postgres';
+import { pool } from './db';
 import type { User } from '@/types/definitions';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getUser(email: string): Promise<User | undefined> {
   try {
-    const user = await sql<User>`SELECT * FROM users WHERE email=${email}`;
-    return user.rows[0];
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
@@ -31,21 +33,13 @@ export async function signUp(
   prevState: string | undefined,
   formData: FormData
 ) {
-  // 각 필드 유효성 검사
   const emailValidation = EmailSchema.safeParse(formData.get('email'));
   const passwordValidation = PasswordSchema.safeParse(formData.get('password'));
   const nameValidation = NameSchema.safeParse(formData.get('name'));
 
-  // 유효성 검사 실패 시 에러 메시지 반환
-  if (!emailValidation.success) {
-    return emailValidation.error.message;
-  }
-  if (!passwordValidation.success) {
-    return passwordValidation.error.message;
-  }
-  if (!nameValidation.success) {
-    return nameValidation.error.message;
-  }
+  if (!emailValidation.success) return emailValidation.error.message;
+  if (!passwordValidation.success) return passwordValidation.error.message;
+  if (!nameValidation.success) return nameValidation.error.message;
 
   const email = emailValidation.data;
   const password = passwordValidation.data;
@@ -54,18 +48,20 @@ export async function signUp(
 
   try {
     // 이메일 중복 검사
-    const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
-    if (existingUser.rowCount > 0) {
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    if (existingUser?.rows?.length > 0) {
       return 'Email already exists.';
     }
 
     // 비밀번호 해싱 및 사용자 추가
     const hashedPassword = await bcrypt.hash(password, 10);
-    await sql`
-      INSERT INTO users (name, email, role, password, auth_key)
-      VALUES (${name}, ${email}, 'manager', ${hashedPassword}, ${authKey})
-    `;
-    // return 'User successfully created.';
+    await pool.query(
+      'INSERT INTO users (name, email, role, password, auth_key) VALUES ($1, $2, $3, $4, $5)',
+      [name, email, 'manager', hashedPassword, authKey]
+    );
   } catch (error) {
     console.error('Database error:', error);
     return 'Failed to create user.';
@@ -97,10 +93,7 @@ export async function authenticate(
 export async function deleteUser(email: string) {
   console.info('deleteUser:', email);
   try {
-    // 데이터베이스에서 사용자 삭제
-    await sql`DELETE FROM users WHERE email = ${email}`;
-    // 필요한 경우 캐시 무효화 및 추가 작업 수행
-
+    await pool.query('DELETE FROM users WHERE email = $1', [email]);
     return { message: 'Deleted User.' };
   } catch (error) {
     console.error('Database error:', error);
@@ -112,8 +105,11 @@ export async function fetchLoggedInUser(email: string) {
   noStore();
 
   try {
-    const user = await sql`SELECT * FROM users WHERE email = ${email}`;
-    return user.rows[0] as User;
+    const result = await pool.query<User>(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0];
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
@@ -122,13 +118,10 @@ export async function fetchLoggedInUser(email: string) {
 
 import { signOut } from '@/auth';
 
-/**
- * 로그아웃을 수행하는 함수
- */
 export async function performLogout() {
-  'use server'; // Next.js 서버 사이드 코드 표시
+  'use server';
   try {
-    await signOut(); // 로그아웃 실행
+    await signOut();
     console.log('Successfully logged out');
   } catch (error) {
     console.error('Logout failed:', error);
