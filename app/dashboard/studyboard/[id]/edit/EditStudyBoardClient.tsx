@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, KeyboardEvent, useCallback, use } from 'react';
-import { PencilIcon, CloudArrowUpIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, TrashIcon, AdjustmentsHorizontalIcon, AdjustmentsVerticalIcon, HandRaisedIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CloudArrowUpIcon, RectangleGroupIcon, ArrowLongRightIcon, ArrowUturnLeftIcon, ArrowUturnRightIcon, TrashIcon, AdjustmentsHorizontalIcon, AdjustmentsVerticalIcon, HandRaisedIcon, ArrowUpIcon, ArrowDownIcon, Bars3BottomLeftIcon } from '@heroicons/react/24/outline';
 import { useSearchParams } from 'next/navigation';
 import ToolIcon from '@/ui/component/ToolIcon';
 import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
@@ -44,7 +44,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [selectionArea, setSelectionArea] = useState<SelectionArea | null>(null);
   const [linking, setLinking] = useState<{ id: number; side: 'top' | 'right' | 'bottom' | 'left' } | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(3);
-  const [lineStyle, setLineStyle] = useState<'solid' | 'dashed' | 'curved'>('solid');
+  const [lineStyle, setLineStyle] = useState<'Adding' | 'targeting' | 'verbing' | 'equal' | 'Describing' | 'Engaging'>('Adding');
   const [isRec, setIsRec] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [isVoice, setIsVoice] = useState(false);
@@ -78,13 +78,12 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
-  const nodeColors = [{ value: "#FFFFFF", label: "흰색" }, { value: "#FFD700", label: "오렌지" }, { value: "#acf", label: "밝은파랑" }, { value: "#90EE90", label: "밝은녹색" },
-  ];
-  const nodeBorderColors = [{ value: "#05F", label: "밝은파랑" }, { value: "#FD5500", label: "빨강" }];
+  const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
+  const nodeBorderColors = [{ value: "#0055FFFF", label: "밝은파랑" }, { value: "#FD5500FF", label: "빨강" }, { value: "#FFFFFF00", label: "투명" }];
   const penColors = [{ value: "#000000", label: "검정" }, { value: "#FF4500", label: "빨강" }, { value: "#0000FF", label: "파랑" }];
   const lineWidths = [{ value: "1", label: "얇게" }, { value: "2", label: "보통" }, { value: "4", label: "굵게" }, { value: "8", label: "매우 굵게" }];
   const eraserSizes = [{ value: "50", label: "작게" }, { value: "100", label: "보통" }, { value: "200", label: "크게" }];
-  const linkStyles = [{ value: "solid", label: "실선" }, { value: "dashed", label: "점선" }, { value: "curved", label: "곡선" }];
+  const linkStyles = [{ value: "Adding", label: "Adding" }, { value: "targeting", label: "targeting" }, { value: "verbing", label: "verbing" }, { value: "equal", label: "equal" }, { value: "Describing", label: "Describing" }, { value: "Engaging", label: "Engaging" }];
 
   // 상태 추가
   const [recordingTime, setRecordingTime] = useState<string>('00:00');
@@ -146,7 +145,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   };
 
   const hndLineStyleChange = (style: string) => {
-    setLineStyle(style as 'solid' | 'dashed' | 'curved');
+    setLineStyle(style as 'Adding' | 'targeting' | 'verbing' | 'Describing' | 'Engaging');
     hndToolChange('link');
   };
   
@@ -155,7 +154,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hndCancelEdit = () => {cancelEdit(setEditNode, setEditText);};
   const hndFinishEditLink = () => {
     finishEditLink(editLink, linkText, setNodes, setEditLink, setLinkText);
-    setTool('move');
+    // setTool('move');
   };
 
   const hndKeyDown = useCallback((e: KeyboardEvent) => {
@@ -231,7 +230,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
             // 여러 노드가 선택된 경우
-            setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false, nodeShape: nodeShape },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
+            setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', textAlign: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false, nodeShape: nodeShape },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
             setDrag({ node, offsetX: x - node.x, offsetY: y - node.y });
             setNodes(nodes.map((n) => ({ ...n, selected: n.id === node.id })));
@@ -446,7 +445,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             let fromSide = newLink.fromSide;
             let toSide = newLink.toSide;
     
-            if (newLink.lineStyle === 'curved') {
+            if (newLink.lineStyle === 'Describing') {
               fromSide = 'topRight';
               toSide = 'topLeft';
             }
@@ -457,7 +456,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
             let textX, textY;
 
-            if (newLink && newLink.lineStyle === 'curved') {
+            if (newLink && (newLink.lineStyle === 'Describing' || newLink.lineStyle === 'Engaging')) {
               const textOffset = 15; // 텍스트와 선 사이의 거리
               const topPnt = getCurvedLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
               textX = topPnt.x;
@@ -471,12 +470,12 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             
             setEditLink({ startNode: fromNode, endNode: clickedNode, fromSide: linking.side, toSide: side, lineStyle: lineStyle, x: textX, y: textY });
 
-            let link = '';
-            if (newLink.lineStyle === 'curved') {link = 'Describing';}
-            else if (newLink.lineStyle === 'solid') {link = 'Adding';}
-            else if (newLink.lineStyle === 'dashed') {link = 'Verbing';}
+            // let link = newLink.lineStyle;
+            // if (newLink.lineStyle === 'curved') {link = 'Describing';}
+            // else if (newLink.lineStyle === 'solid') {link = 'Adding';}
+            // else if (newLink.lineStyle === 'dashed') {link = 'verbing';}
 
-            setLinkText(link);            
+            setLinkText(newLink.lineStyle);            
           }
           setLinking(null);
           setTemporaryLink(null);
@@ -799,7 +798,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           let nodesWithTemporaryLink = nodes;
       
           if (temporaryLink) {
-            const tempNode: Node = {id: -1, x: temporaryLink.endX, y: temporaryLink.endY, width: 1, height: 1, text1: '', text2: '', text3: '', backgroundColor: '', borderColor: '', links: [], zIndex: 0, selected: false, rotation: 0, nodeShape: ''};
+            const tempNode: Node = {id: -1, x: temporaryLink.endX, y: temporaryLink.endY, width: 1, height: 1, text1: '', text2: '', text3: '', textAlign: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false, rotation: 0, nodeShape: ''};
             
             const tempLink: Link = {id: '-1', fromSide: temporaryLink.startSide, toSide: 'left', lineStyle: lineStyle};
             
@@ -852,6 +851,39 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       width: Math.max(lessonWidth, containerWidth),
       height: Math.max(lessonHeight, containerHeight)
     };
+  };
+
+  // z-index 조절 함수 추가
+  const adjustZIndex = (direction: 'up' | 'down') => {
+    setNodes(prevNodes => {
+      const selectedNodes = prevNodes.filter(node => node.selected);
+      if (selectedNodes.length === 0) return prevNodes;
+
+      return prevNodes.map(node => {
+        if (node.selected) {
+          const newZIndex = direction === 'up' ? 
+            node.zIndex + 1 : 
+            Math.max(0, node.zIndex - 1);
+          return { ...node, zIndex: newZIndex };
+        }
+        return node;
+      });
+    });
+  };
+
+  // 텍스트 정렬 함수 추가
+  const alignNodeText = () => {
+    setNodes(prevNodes => 
+      prevNodes.map(node => {
+        if (node.selected) {
+          return {
+            ...node,
+            textAlign: node.textAlign === 'left' ? 'center' : 'left' // 토글 방식
+          };
+        }
+        return node;
+      })
+    );
   };
 
   return (
@@ -933,14 +965,32 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         </div>
       </div>
       <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
-        {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
-        {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} />}
-        {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
-        {isRender('addNode') && <ToolIcon tool="addNode" icon="/icon-addnode.svg" onClick={() => hndToolChange('addNode')} currTool={tool} />}
-        {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
-        {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
-        {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} />}
-        {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} />}
+        {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} label="저장" />}
+        {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} label="이동" />}
+        {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} label="그리기" />}
+        {isRender('addNode') && <ToolIcon tool="addNode" icon="/icon-addnode.svg" onClick={() => hndToolChange('addNode')} currTool={tool} label="노드추가" />}
+        {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} label="연결" />}
+        {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} label="지우기" />}
+        {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} label="세로정렬" />}
+        {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} label="가로정렬" />}
+        {isRender('move') && (
+          <>
+            <ToolIcon 
+              tool="zIndexUp" 
+              icon={<ArrowUpIcon className="h-5 w-5" />} 
+              onClick={() => adjustZIndex('up')} 
+              currTool={tool} 
+              label="앞으로"
+            />
+            <ToolIcon 
+              tool="zIndexDown" 
+              icon={<ArrowDownIcon className="h-5 w-5" />} 
+              onClick={() => adjustZIndex('down')} 
+              currTool={tool} 
+              label="뒤로"
+            />
+          </>
+        )}        
         {isRender('rec') && (
           <div className="flex flex-col items-center">
             <ToolIcon 
@@ -952,10 +1002,19 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             />
           </div>
         )}
+        {isRender('move') && (
+          <ToolIcon 
+            tool="alignText" 
+            icon={<Bars3BottomLeftIcon className="h-5 w-5" />} 
+            onClick={alignNodeText} 
+            currTool={tool} 
+            label="왼쪽정렬"
+          />
+        )}
         <ToolIcon tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
         <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
-        <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
-        {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
+        <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} label="음성" />
+        {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} label="전체삭제" />}
         {mode !== 'play' && (<NSelector title="노드 형태" value={nodeShape} onChange={hndNodeShapeChange} options={nodeShapes} />)}
         {mode !== 'play' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
         {mode !== 'play' && (<NSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}

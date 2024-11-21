@@ -165,7 +165,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
               <h3 className="text-base font-normal mb-1">
                 {video.title}
               </h3>
-              <div className="text-xs text-gray-600">
+              <div className="text-sm text-gray-600">
                 <div>{video.author}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span>조회수 {video.views.toLocaleString()}회</span>

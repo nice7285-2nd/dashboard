@@ -28,39 +28,40 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   ctx.translate(node.x + node.width / 2, node.y + node.height / 2);
   ctx.rotate(((node.rotation || 0) * Math.PI) / 180);
 
-  const minWidth = Math.max(node.width, 180);  // 최소 너비를 180으로 설정
-  const minHeight = Math.max(node.height, 100);  // 최소 높이를 100으로 설정
+  const minWidth = Math.max(node.width, 180);
+  const minHeight = Math.max(node.height, 100);
 
   ctx.fillStyle = node.backgroundColor || '#ffffff';
   drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
   ctx.fill();
 
   ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
-  ctx.lineWidth = node.borderColor === '#fd5500' ? 4 : 1;
+  ctx.lineWidth = node.borderColor === '#FD5500FF' ? 4 : 1;
   ctx.stroke();
 
-  // 텍스트 그리기
-  ctx.textAlign = 'center';
+  // 텍스트 정렬 설정
+  ctx.textAlign = (node.textAlign as CanvasTextAlign) || 'center';
   ctx.textBaseline = 'middle';
   
-  const padd = 10;  // 왼쪽 패딩
-  // const leftX = -minWidth / 2 + padd;  // 왼쪽 정렬 시작 위치
-  const leftX = 0;  // 왼쪽 정렬 시작 위치
+  // 텍스트 x 좌표 계산
+  const textX = node.textAlign === 'left' ? 
+    -minWidth / 2 + 15 :  // 왼쪽 정렬일 때 (15px 패딩)
+    0;                    // 중앙 정렬일 때
 
   // 위쪽 텍스트
   ctx.font = 'bold 14px Arial';
   ctx.fillStyle = '#f07500';
-  ctx.fillText(node.text1 || '', leftX, -minHeight / 2 + 18);
+  ctx.fillText(node.text1 || '', textX, -minHeight / 2 + 18);
 
-  // 가운데 텍스트 (더 크게)
+  // 가운데 텍스트
   ctx.font = 'bold 24px Arial';
-  ctx.fillStyle = 'black'; // 약간 더 진한 색상
-  ctx.fillText(node.text2 || '', leftX, 0);
+  ctx.fillStyle = 'black';
+  ctx.fillText(node.text2 || '', textX, 0);
 
   // 아래쪽 텍스트
   ctx.font = 'bold 14px Arial';
   ctx.fillStyle = 'black';
-  ctx.fillText(node.text3 || '', leftX, minHeight / 2 - 18);
+  ctx.fillText(node.text3 || '', textX, minHeight / 2 - 18);
 
   if (node.selected) {
     drawResizeHandles(ctx, node, minWidth, minHeight);
@@ -129,7 +130,7 @@ export const drawLinks = (
         let fromSide = link.fromSide;
         let toSide = link.toSide;
 
-        if (link.lineStyle === 'curved') {
+        if (link.lineStyle === 'Describing') {
           fromSide = 'topRight';
           toSide = 'topLeft';
         }
@@ -141,13 +142,13 @@ export const drawLinks = (
         ctx.beginPath();
         ctx.moveTo(fromPnt.x, fromPnt.y);
         
-        if (link.lineStyle === 'dashed') {
+        if (link.lineStyle === 'verbing') {
           ctx.setLineDash([7, 6]);
           ctx.lineWidth = 7;
           ctx.lineTo(toPnt.x, toPnt.y);
           ctx.strokeStyle = '#333';
           ctx.stroke();
-        } else if (link.lineStyle === 'curved') {
+        } else if (link.lineStyle === 'Describing' || link.lineStyle === 'Engaging') {
           ctx.strokeStyle = '#05f';
           ctx.lineWidth = 6;
           const angle = drawCurvedLine(ctx, fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
@@ -164,7 +165,7 @@ export const drawLinks = (
           ctx.stroke();
           ctx.fillStyle = '#acf';
           ctx.fill();          
-        } else {
+        } else if (link.lineStyle === 'Adding') {
           ctx.setLineDash([]);
           ctx.lineWidth = 1;
           ctx.lineTo(toPnt.x, toPnt.y);
@@ -181,13 +182,58 @@ export const drawLinks = (
           ctx.closePath();
           ctx.fillStyle = '#333';
           ctx.fill();
+        } else if (link.lineStyle === 'equal') {
+          ctx.setLineDash([]);
+          ctx.lineWidth = 2;
+          
+          // 각도 계산
+          const angle = Math.atan2(toPnt.y - fromPnt.y, toPnt.x - fromPnt.x);
+          const gap = 4; // 평행선 사이의 간격
+
+          ctx.strokeStyle = '#acf';
+
+          // 첫 번째 선
+          ctx.beginPath();
+          ctx.moveTo(fromPnt.x + gap * Math.sin(angle), fromPnt.y - gap * Math.cos(angle));
+          ctx.lineTo(toPnt.x + gap * Math.sin(angle), toPnt.y - gap * Math.cos(angle));
+          ctx.stroke();
+          
+          // 두 번째 선
+          ctx.beginPath();
+          ctx.moveTo(fromPnt.x - gap * Math.sin(angle), fromPnt.y + gap * Math.cos(angle));
+          ctx.lineTo(toPnt.x - gap * Math.sin(angle), toPnt.y + gap * Math.cos(angle));
+          ctx.stroke();
+        } else if (link.lineStyle === 'targeting') {
+          ctx.setLineDash([]);
+          ctx.lineWidth = 7;
+          
+          // 화살표 크기
+          const headlen = 20;
+          const angle = Math.atan2(toPnt.y - fromPnt.y, toPnt.x - fromPnt.x);
+          
+          // 라인의 끝점을 화살표 크기만큼 조정 (약간 더 연장)
+          const endX = toPnt.x - (headlen - 7) * Math.cos(angle);
+          const endY = toPnt.y - (headlen - 7) * Math.sin(angle);
+          
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = '#FF4500';
+          ctx.stroke();
+
+          // 화살표 그리기
+          ctx.beginPath();
+          ctx.moveTo(toPnt.x, toPnt.y);
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle - Math.PI / 6), toPnt.y - headlen * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fillStyle = '#FF4500';
+          ctx.fill();
         }
 
         // 연결선 텍스트 그리기
         if (link.text) {
           let textX, textY;
           
-          if (link.lineStyle === 'curved') {
+          if (link.lineStyle === 'Describing' || link.lineStyle === 'Engaging') {
             const textOffset = 15; // 텍스트와 선 사이의 거리
             const topPnt = getCurvedLinkTopPnt(fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
             textX = topPnt.x;
@@ -221,6 +267,8 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
   ctx.lineCap = 'square';
   ctx.lineJoin = 'miter';
 
+  const headlen = 22;
+  
   const midX1 = startX + (endX - startX) * 1 / 12;
   const midY1 = (startY + endY) / 2;
   const midX2 = startX + (endX - startX) * 11 / 12;
@@ -230,14 +278,18 @@ function drawCurvedLine(ctx: CanvasRenderingContext2D, startX: number, startY: n
   const controlX2 = midX2;
   const controlY2 = midY2 - 90;
 
-  ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, endX, endY);
-  ctx.stroke();
+  // 곡선의 마지막 접선 방향 계산
+  const t = 1; // 곡선의 끝점에서의 t 값
+  const angle = Math.atan2(
+    (controlY2 - endY) * 3 * (1-t)^2 + (endY - controlY2) * 3 * t^2,
+    (controlX2 - endX) * 3 * (1-t)^2 + (endX - controlX2) * 3 * t^2
+  );
 
-// 베지어 곡선의 끝점에서의 접선 각도 계산
-  const t = 1; // 곡선의 점
-  const dx = 3 * (1 - t) * (1 - t) * (controlX1 - startX) + 6 * (1 - t) * t * (controlX2 - controlX1) + 3 * t * t * (endX - controlX2);
-  const dy = 3 * (1 - t) * (1 - t) * (controlY1 - startY) + 6 * (1 - t) * t * (controlY2 - controlY1) + 3 * t * t * (endY - controlY2);
-  const angle = Math.atan2(dy, dx);
+  const adjustedEndX = endX - (headlen - 6) * Math.cos(angle);
+  const adjustedEndY = endY - (headlen - 6) * Math.sin(angle);
+
+  ctx.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, adjustedEndX, adjustedEndY);
+  ctx.stroke();
 
   return angle;
 }
@@ -427,7 +479,8 @@ export const addNode = (
   const MIN_GAP = 40; // 노드 간 최소 간격
 
   const newId = Date.now();
-  const newZIndex = nodeShape === 'single' ? maxZIndex + 1 : 0;
+  const newZIndex = maxZIndex + 1;
+  // const newZIndex = nodeShape === 'single' ? maxZIndex + 1 : 0;
 
   const snapToGrid = (value: number) => Math.round(value / gridSize) * gridSize;
 
@@ -468,6 +521,7 @@ export const addNode = (
     text1: '',
     text2: '',
     text3: '',
+    textAlign: '',
     width: nodeWidth,
     height: nodeHeight,
     selected: false,

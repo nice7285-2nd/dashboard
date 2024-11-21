@@ -18,6 +18,7 @@ export type Node = {
   text1: string;
   text2: string;
   text3: string;
+  textAlign: string;
   selected: boolean;
   links: Link[]; // connections => links로 변경
   zIndex: number;
@@ -55,7 +56,7 @@ export type Link = {
   id: string;
   fromSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft";  
   toSide: "top" | "right" | "bottom" | "left" | "topRight" | "topLeft" | "bottomRight" | "bottomLeft";
-  lineStyle: 'solid' | 'dashed' | 'curved';
+  lineStyle: 'Adding' | 'targeting' | 'verbing' | 'equal' | 'Describing' | 'Engaging';
   text?: string;
 }
 
@@ -71,7 +72,7 @@ export type EditLink = {
   endNode: Node;
   fromSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';
   toSide: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'topLeft' | 'bottomRight' | 'bottomLeft';
-  lineStyle: 'solid' | 'dashed' | 'curved';
+  lineStyle: 'Adding' | 'targeting' | 'verbing' | 'equal' | 'Describing' | 'Engaging';
   x: number;
   y: number;
 };
