@@ -965,14 +965,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         </div>
       </div>
       <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
-        {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} label="저장" />}
-        {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} label="이동" />}
-        {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} label="그리기" />}
-        {isRender('addNode') && <ToolIcon tool="addNode" icon="/icon-addnode.svg" onClick={() => hndToolChange('addNode')} currTool={tool} label="노드추가" />}
-        {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} label="연결" />}
-        {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} label="지우기" />}
-        {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} label="세로정렬" />}
-        {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} label="가로정렬" />}
+        {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
+        {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} />}
+        {isRender('draw') && <ToolIcon tool="draw" icon={<PencilIcon className="h-6 w-6" />} onClick={() => hndToolChange('draw')} currTool={tool} />}
+        {isRender('addNode') && <ToolIcon tool="addNode" icon="/icon-addnode.svg" onClick={() => hndToolChange('addNode')} currTool={tool} />}
+        {isRender('link') && <ToolIcon tool="link" icon={<ArrowLongRightIcon className="h-6 w-6" />} onClick={() => hndToolChange('link')} currTool={tool} />}
+        {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
+        {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} />}
+        {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} />}
         {isRender('move') && (
           <>
             <ToolIcon 
@@ -980,14 +980,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
               icon={<ArrowUpIcon className="h-5 w-5" />} 
               onClick={() => adjustZIndex('up')} 
               currTool={tool} 
-              label="앞으로"
+              // label="앞으로"
             />
             <ToolIcon 
               tool="zIndexDown" 
               icon={<ArrowDownIcon className="h-5 w-5" />} 
               onClick={() => adjustZIndex('down')} 
               currTool={tool} 
-              label="뒤로"
+              // label="뒤로"
             />
           </>
         )}        
@@ -1008,13 +1008,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
             icon={<Bars3BottomLeftIcon className="h-5 w-5" />} 
             onClick={alignNodeText} 
             currTool={tool} 
-            label="왼쪽정렬"
+            // label="왼쪽정렬"
           />
         )}
         <ToolIcon tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
         <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
-        <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} label="음성" />
-        {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} label="전체삭제" />}
+        <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
+        {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
         <div className="w-full" />
         {mode !== 'play' && (<NSelector title="노드 형태" value={nodeShape} onChange={hndNodeShapeChange} options={nodeShapes} />)}
         {mode !== 'play' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
