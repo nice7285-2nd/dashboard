@@ -75,7 +75,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
-  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown'];
+  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown', 'alignText'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
   const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
