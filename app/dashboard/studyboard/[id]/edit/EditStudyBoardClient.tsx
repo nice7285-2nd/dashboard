@@ -154,7 +154,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hndCancelEdit = () => {cancelEdit(setEditNode, setEditText);};
   const hndFinishEditLink = () => {
     finishEditLink(editLink, linkText, setNodes, setEditLink, setLinkText);
-    // setTool('move');
+    setTool('move');
   };
 
   const hndKeyDown = useCallback((e: KeyboardEvent) => {
@@ -982,13 +982,13 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
         {isRender('clear') && <ToolIcon tool="clear" icon={<TrashIcon className="h-6 w-6" />} onClick={() => setShowClearConfirmPopup(true)} currTool={tool} />}
         <div className="w-full" />
-        {mode !== 'play' && (<NSelector title="노드 형태" value={nodeShape} onChange={hndNodeShapeChange} options={nodeShapes} />)}
-        {mode !== 'play' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
-        {mode !== 'play' && (<NSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
-        {mode !== 'edit' && (<NSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
-        {mode !== 'edit' && (<NSelector title="펜굵기" value={lineWidth} onChange={hndLineWidthChange} options={lineWidths} />)}
-        {mode !== 'edit' && (<NSelector title="지우개 크기" value={eraserSize.toString()} onChange={hndEraserSizeChange} options={eraserSizes} />)}
-        {mode !== 'play' && (<NSelector title="선종류" value={lineStyle} onChange={hndLineStyleChange as (value: string) => void} options={linkStyles} />)}
+        {mode === 'edit' && (<NSelector title="노드 형태" value={nodeShape} onChange={hndNodeShapeChange} options={nodeShapes} />)}
+        {mode === 'edit' && (<NSelector title="노드 색상" value={nodeColor} onChange={hndNodeColorChange} options={nodeColors} />)}
+        {mode === 'edit' && (<NSelector title="노드 테두리" value={nodeBorderColor} onChange={hndNodeBorderColorChange} options={nodeBorderColors} />)}
+        {mode === 'edit' && (<NSelector title="선종류" value={lineStyle} onChange={hndLineStyleChange as (value: string) => void} options={linkStyles} />)}
+        {mode === 'play' && (<NSelector title="펜색상" value={penColor} onChange={hndPenColorChange} options={penColors} />)}
+        {mode === 'play' && (<NSelector title="펜굵기" value={lineWidth} onChange={hndLineWidthChange} options={lineWidths} />)}
+        {mode === 'play' && (<NSelector title="지우개 크기" value={eraserSize.toString()} onChange={hndEraserSizeChange} options={eraserSizes} />)}
       </div>
       {showSavePopup && <SaveLessonPopup onSave={hndSaveCanvas} onCancel={() => setShowSavePopup(false)} />}
       {showSaveRecPopup && <SaveRecPopup author={author || ''} email={email || ''} onSave={hndSaveRec} onCancel={() => setShowSaveRecPopup(false)} />}
