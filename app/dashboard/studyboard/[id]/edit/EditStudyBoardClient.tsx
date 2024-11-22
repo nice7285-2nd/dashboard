@@ -75,7 +75,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [temporaryLink, setTemporaryLink] = useState<TemporaryLink | null>(null);
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
-  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH' ,'zIndexUp', 'zIndexDown'];
+  const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown'];
   const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
   const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
@@ -973,44 +973,10 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         {isRender('erase') && <ToolIcon tool="erase" icon="/icon-erase.svg" onClick={() => hndToolChange('erase')} currTool={tool} />}
         {isRender('alignV') && <ToolIcon tool="alignV" icon="/icon-alignv.svg" onClick={hndAlignNodesV} currTool={tool} />}
         {isRender('alignH') && <ToolIcon tool="alignH" icon="/icon-alignh.svg" onClick={hndAlignNodesH} currTool={tool} />}
-        {isRender('move') && (
-          <>
-            <ToolIcon 
-              tool="zIndexUp" 
-              icon={<ArrowUpIcon className="h-5 w-5" />} 
-              onClick={() => adjustZIndex('up')} 
-              currTool={tool} 
-              // label="앞으로"
-            />
-            <ToolIcon 
-              tool="zIndexDown" 
-              icon={<ArrowDownIcon className="h-5 w-5" />} 
-              onClick={() => adjustZIndex('down')} 
-              currTool={tool} 
-              // label="뒤로"
-            />
-          </>
-        )}        
-        {isRender('rec') && (
-          <div className="flex flex-col items-center">
-            <ToolIcon 
-              tool="rec" 
-              icon={isRec ? "/icon-rec-stop.svg" : "/icon-rec-start.svg"} 
-              onClick={isRec ? hndStopRec : hndStartRec} 
-              currTool={tool}
-              label={recordingTime}
-            />
-          </div>
-        )}
-        {isRender('move') && (
-          <ToolIcon 
-            tool="alignText" 
-            icon={<Bars3BottomLeftIcon className="h-5 w-5" />} 
-            onClick={alignNodeText} 
-            currTool={tool} 
-            // label="왼쪽정렬"
-          />
-        )}
+        {isRender('zIndexUp') && <ToolIcon tool="zIndexUp" icon={<ArrowUpIcon className="h-5 w-5" />} onClick={() => adjustZIndex('up')} currTool={tool} />}
+        {isRender('zIndexDown') && <ToolIcon tool="zIndexDown" icon={<ArrowDownIcon className="h-5 w-5" />} onClick={() => adjustZIndex('down')} currTool={tool} />}
+        {isRender('rec') && <ToolIcon tool="rec" icon={isRec ? "/icon-rec-stop.svg" : "/icon-rec-start.svg"} onClick={isRec ? hndStopRec : hndStartRec} currTool={tool} label={recordingTime} />}
+        {isRender('alignText') && <ToolIcon tool="alignText" icon={<Bars3BottomLeftIcon className="h-5 w-5" />} onClick={alignNodeText} currTool={tool} />}
         <ToolIcon tool="undo" icon={<ArrowUturnLeftIcon className="h-5 w-5" />} onClick={undo} currTool={tool} label={undoCount.toString()} disabled={undoCount === 0} />
         <ToolIcon tool="redo" icon={<ArrowUturnRightIcon className="h-5 w-5" />} onClick={redo} currTool={tool} label={redoCount.toString()} disabled={redoCount === 0} />
         <ToolIcon tool="voice" icon={isVoice ? "/icon-voice-on.svg" : "/icon-voice-off.svg"} onClick={() => setIsVoice(!isVoice)} currTool={isVoice ? 'voice' : ''} />
