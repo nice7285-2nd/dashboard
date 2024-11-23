@@ -3,7 +3,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 
 export async function POST(request: NextRequest) {
-  console.log('API 요청 시작');
 
   try {
     const formData = await request.formData();
@@ -57,9 +56,7 @@ export async function POST(request: NextRequest) {
       partSize: 5 * 1024 * 1024,
     });
 
-    console.log('S3 업로드 시작');
     await upload.done();
-    console.log('S3 업로드 완료');
 
     return NextResponse.json(
       { success: true, message: '파일이 성공적으로 업로드되었습니다.' },

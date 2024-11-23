@@ -78,10 +78,16 @@ export const drawResizeHandles = (
 ) => {
   const handleSize = 10;
   const positions = [
-    { x: -width / 2, y: -height / 2 },
-    { x: width / 2, y: -height / 2 },
-    { x: -width / 2, y: height / 2 },
-    { x: width / 2, y: height / 2 },
+    // 코너 핸들러
+    { x: -width / 2, y: -height / 2 },  // nw
+    { x: width / 2, y: -height / 2 },   // ne
+    { x: -width / 2, y: height / 2 },   // sw
+    { x: width / 2, y: height / 2 },    // se
+    // 상하좌우 핸들러 추가
+    { x: 0, y: -height / 2 },           // n
+    { x: 0, y: height / 2 },            // s
+    { x: -width / 2, y: 0 },            // w
+    { x: width / 2, y: 0 }              // e
   ];
 
   positions.forEach((pos) => {
@@ -118,6 +124,54 @@ export const getLinkPnt = (node: Node, side: Link['fromSide'] | Link['toSide']) 
   }
 };
 
+// 최적의 연결점을 찾는 함수 추가
+const getAddingLinkPoints = (fromNode: Node, toNode: Node, lineStyle: string) => {
+  const fromCenter = {
+    x: fromNode.x + fromNode.width / 2,
+    y: fromNode.y + fromNode.height / 2
+  };
+  const toCenter = {
+    x: toNode.x + toNode.width / 2,
+    y: toNode.y + toNode.height / 2
+  };
+
+  const dx = toCenter.x - fromCenter.x;
+  const dy = toCenter.y - fromCenter.y;
+
+  let fromPnt = { x: fromNode.x + fromNode.width / 2, y: fromNode.y };  // 기본값 설정
+  let toPnt = { x: toNode.x + toNode.width / 2, y: toNode.y };         // 기본값 설정
+
+  if (lineStyle === 'Describing') {
+    // Describing은 항상 상단-상단 연결
+    if (dx > 0) {
+      // 오른쪽으로 갈 때
+      fromPnt = { x: fromNode.x + fromNode.width, y: fromNode.y };
+      toPnt = { x: toNode.x, y: toNode.y };
+    } else {
+      // 왼쪽으로 갈 때
+      fromPnt = { x: fromNode.x, y: fromNode.y };
+      toPnt = { x: toNode.x + toNode.width, y: toNode.y };
+    }
+  } else {
+    // Adding 선은 항상 정확한 수평 또는 수직으로만 연결
+    if (fromNode.y + fromNode.height < toNode.y) {
+      fromPnt = { x: toNode.x + toNode.width / 2, y: fromNode.y + fromNode.height };
+      toPnt = { x: toNode.x + toNode.width / 2, y: toNode.y };
+    } else if (fromNode.x > toNode.x + toNode.width) {
+      fromPnt = { x: fromNode.x, y: toNode.y + toNode.height / 2 };
+      toPnt = { x: toNode.x + toNode.width, y: toNode.y + toNode.height / 2 };
+    } else if (fromNode.y > toNode.y + toNode.height) {
+      fromPnt = { x: toNode.x + toNode.width / 2, y: fromNode.y };
+      toPnt = { x: toNode.x + toNode.width / 2, y: toNode.y + toNode.height };
+    } else if (fromNode.x + fromNode.width < toNode.x) {
+      fromPnt = { x: fromNode.x + fromNode.width, y: toNode.y + toNode.height / 2 };
+      toPnt = { x: toNode.x, y: toNode.y + toNode.height / 2 };
+    }
+  }
+
+  return { fromPnt, toPnt };
+};
+
 export const drawLinks = (
   ctx: CanvasRenderingContext2D,
   nodes: Node[]
@@ -135,8 +189,10 @@ export const drawLinks = (
           toSide = 'topLeft';
         }
 
-        const fromPnt = getLinkPnt(node, fromSide);
-        const toPnt = getLinkPnt(toNode, toSide);
+        // const fromPnt = getLinkPnt(node, fromSide);
+        // const toPnt = getLinkPnt(toNode, toSide);
+
+        const { fromPnt, toPnt } = getAddingLinkPoints(node, toNode, link.lineStyle);
 
         ctx.save();
         ctx.beginPath();
@@ -146,7 +202,7 @@ export const drawLinks = (
           ctx.setLineDash([7, 6]);
           ctx.lineWidth = 7;
           ctx.lineTo(toPnt.x, toPnt.y);
-          ctx.strokeStyle = '#333';
+          ctx.strokeStyle = '#000';
           ctx.stroke();
         } else if (link.lineStyle === 'Describing' || link.lineStyle === 'Engaging') {
           ctx.strokeStyle = '#05f';
@@ -169,7 +225,7 @@ export const drawLinks = (
           ctx.setLineDash([]);
           ctx.lineWidth = 1;
           ctx.lineTo(toPnt.x, toPnt.y);
-          ctx.strokeStyle = '#333';
+          ctx.strokeStyle = '#000';
           ctx.stroke();
 
           // 화살표 그리기
@@ -180,7 +236,7 @@ export const drawLinks = (
           ctx.lineTo(toPnt.x - headlen * Math.cos(angle - Math.PI / 6), toPnt.y - headlen * Math.sin(angle - Math.PI / 6));
           ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
-          ctx.fillStyle = '#333';
+          ctx.fillStyle = '#000';
           ctx.fill();
         } else if (link.lineStyle === 'equal') {
           ctx.setLineDash([]);
@@ -190,7 +246,7 @@ export const drawLinks = (
           const angle = Math.atan2(toPnt.y - fromPnt.y, toPnt.x - fromPnt.x);
           const gap = 4; // 평행선 사이의 간격
 
-          ctx.strokeStyle = '#acf';
+          ctx.strokeStyle = '#9be';
 
           // 첫 번째 선
           ctx.beginPath();
@@ -205,7 +261,7 @@ export const drawLinks = (
           ctx.stroke();
         } else if (link.lineStyle === 'targeting') {
           ctx.setLineDash([]);
-          ctx.lineWidth = 7;
+          ctx.lineWidth = 6;
           
           // 화살표 크기
           const headlen = 20;
@@ -303,7 +359,7 @@ export const drawSelectionArea = (ctx: CanvasRenderingContext2D, area: Selection
   const width = Math.abs(endX - startX);
   const height = Math.abs(endY - startY);
 
-  // 반투명한 파란색 배경
+  // 반투명한 파란색 경
   ctx.fillStyle = 'rgba(66, 153, 225, 0.2)';  // 밝은 파란색, 투명도 0.2
   ctx.fillRect(left, top, width, height);
 
@@ -562,9 +618,11 @@ export const addNode = (
   let repeat = false;
   while (isOverlapp(newX, newY) && !repeat) {
     newX = newX + nodeWidth + MIN_GAP;
+    console.log('newX', newX);
+    console.log('newY', newY);
     if (newX + nodeWidth > canvasWidth) {
       newX = findAlignedPos(existXPoss, 0, nodeWidth);
-      newY = findAlignedPos(existYPoss, newY + nodeHeight + MIN_GAP, nodeHeight);
+      newY = newY + nodeHeight + MIN_GAP;
       // if (newY + nodeHeight > canvasHeight) {
       //   if (!repeat) {
       //     newY = snapToGrid(1);
@@ -581,8 +639,8 @@ export const addNode = (
     return { newNode: null, newMaxZIndex: newZIndex };
   }
 
-  newNode.x = newX;
-  newNode.y = newY;
+  newNode.x = newX
+  newNode.y = newY
 
   return { newNode, newMaxZIndex: newZIndex };
 };
@@ -592,6 +650,7 @@ export const getClickedNodeAndHandle = (nodes: Node[], x: number, y: number) => 
 
   for (const node of sortedNodes) {
     if (node.selected) {
+      // 회전 핸들러 체크
       const rotateHandleX = node.x + node.width / 2;
       const rotateHandleY = node.y - 20;
       if (Math.sqrt((x - rotateHandleX) ** 2 + (y - rotateHandleY) ** 2) <= 5) {
@@ -600,14 +659,25 @@ export const getClickedNodeAndHandle = (nodes: Node[], x: number, y: number) => 
 
       const handleSize = 10;
       const handles = [
+        // 코너 핸들러
         { x: node.x, y: node.y, dir: 'nw' },
         { x: node.x + node.width, y: node.y, dir: 'ne' },
         { x: node.x, y: node.y + node.height, dir: 'sw' },
         { x: node.x + node.width, y: node.y + node.height, dir: 'se' },
+        // 상하좌우 핸들러 추가
+        { x: node.x + node.width / 2, y: node.y, dir: 'n' },
+        { x: node.x + node.width / 2, y: node.y + node.height, dir: 's' },
+        { x: node.x, y: node.y + node.height / 2, dir: 'w' },
+        { x: node.x + node.width, y: node.y + node.height / 2, dir: 'e' }
       ];
 
       for (const handle of handles) {
-        if (x >= handle.x - handleSize / 2 && x <= handle.x + handleSize / 2 && y >= handle.y - handleSize / 2 && y <= handle.y + handleSize / 2) {
+        if (
+          x >= handle.x - handleSize / 2 && 
+          x <= handle.x + handleSize / 2 && 
+          y >= handle.y - handleSize / 2 && 
+          y <= handle.y + handleSize / 2
+        ) {
           return { node, handle: handle.dir };
         }
       }
@@ -770,7 +840,7 @@ export const saveCanvas = async (
   setShowSavePopup(false);
   
   if (!author || !email) {
-    toast.error('사용자 정보가 없습니다.');
+    toast.error('사자 정보가 습니다.');
     return;
   }
 

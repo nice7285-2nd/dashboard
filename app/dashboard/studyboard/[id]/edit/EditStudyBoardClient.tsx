@@ -76,7 +76,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const MAX_HISTORY_LENGTH = 30; // 적절한 값으로 조정
 
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown', 'alignText'];
-  const hiddenToolsInEditMode = ['draw', 'erase', 'rec'];
+  const hiddenToolsInEditMode = ['draw', 'erase'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
   const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
   const nodeBorderColors = [{ value: "#0055FFFF", label: "밝은파랑" }, { value: "#FD5500FF", label: "빨강" }, { value: "#FFFFFF00", label: "투명" }];
@@ -688,8 +688,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         // S3 URL 생성
         const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${lessonData.rows[0].path}`;
         
-        console.log('s3Url', s3Url);
-
         // S3에서 파일 내용 읽기
         const fileResponse = await fetch(s3Url);
         if (!fileResponse.ok) {

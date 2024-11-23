@@ -4,7 +4,17 @@ import { join } from 'path';
 
 const uploadDir = join(process.cwd(), 'public', 'uploads');
 
+// Route Segment Config
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+export const revalidate = 0;
+
 export async function POST(req: Request) {
+  req.signal.addEventListener('abort', () => {
+    console.log('Request aborted');
+  });
+
   console.log('POST 요청 시작');
   try {
     await mkdir(uploadDir, { recursive: true });
