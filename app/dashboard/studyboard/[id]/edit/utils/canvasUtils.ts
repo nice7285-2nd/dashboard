@@ -153,7 +153,7 @@ const getAddingLinkPoints = (fromNode: Node, toNode: Node, lineStyle: string) =>
       toPnt = { x: toNode.x + toNode.width, y: toNode.y };
     }
   } else {
-    // Adding 선은 항상 정확한 수평 또는 수직으로만 연결
+    // Describing 이외 선은 항상 정확한 수평 또는 수직으로만 연결
     if (fromNode.y + fromNode.height < toNode.y) {
       fromPnt = { x: toNode.x + toNode.width / 2, y: fromNode.y + fromNode.height };
       toPnt = { x: toNode.x + toNode.width / 2, y: toNode.y };
