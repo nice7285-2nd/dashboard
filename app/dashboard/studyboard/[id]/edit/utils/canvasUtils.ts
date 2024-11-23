@@ -31,13 +31,23 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   const minWidth = Math.max(node.width, 180);
   const minHeight = Math.max(node.height, 100);
 
-  ctx.fillStyle = node.backgroundColor || '#ffffff';
-  drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
-  ctx.fill();
-
-  ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
-  ctx.lineWidth = node.borderColor === '#FD5500FF' ? 4 : 1;
-  ctx.stroke();
+  if (node.nodeShape === 'ellipse') {
+    // 타원 그리기
+    ctx.beginPath();
+    ctx.ellipse(0, 0, minWidth/2, minHeight/2, 0, 0, 2 * Math.PI);
+    ctx.setLineDash([6, 4]); // 점선 설정
+    ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
+    ctx.lineWidth = node.borderColor === '#FD5500FF' ? 2 : 2;
+    ctx.stroke();
+  } else {
+    // 기존 사각형 그리기
+    ctx.fillStyle = node.backgroundColor || '#ffffff';
+    drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
+    ctx.fill();
+    ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
+    ctx.lineWidth = node.borderColor === '#FD5500FF' ? 4 : 1;
+    ctx.stroke();
+  }
 
   // 텍스트 정렬 설정
   ctx.textAlign = (node.textAlign as CanvasTextAlign) || 'center';
@@ -527,10 +537,20 @@ export const addNode = (
   canvasWidth: number,
   canvasHeight: number,
   maxZIndex: number,
-  nodeShape: string
+  nodeShape: string,
+  nodeBorderColor: string
 ): { newNode: Node | null; newMaxZIndex: number } => {
-  const nodeWidth = nodeShape === 'single' ? 180 : 360;
-  const nodeHeight = nodeShape === 'single' ? 100 : 200;
+  let nodeWidth = 180;
+  let nodeHeight = 100;
+  
+  if (nodeShape === 'ellipse') {
+    nodeWidth = 180;
+    nodeHeight = 100;
+  } else if (nodeShape === 'group') {
+    nodeWidth = 360;
+    nodeHeight = 200;
+  }
+
   const gridSize = 1;
   const MIN_GAP = 40; // 노드 간 최소 간격
 
@@ -584,7 +604,7 @@ export const addNode = (
     links: [],
     zIndex: newZIndex,
     backgroundColor: nodeShape === 'single' ? '#FFF' : '#90EE90',
-    borderColor: '#05f',
+    borderColor: nodeBorderColor,
     nodeShape: nodeShape
   };
 

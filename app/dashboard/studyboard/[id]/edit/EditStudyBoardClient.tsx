@@ -77,7 +77,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown', 'alignText'];
   const hiddenToolsInEditMode = ['draw', 'erase'];
-  const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }];
+  const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }, { value: "ellipse", label: "타원" }];
   const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
   const nodeBorderColors = [{ value: "#0055FFFF", label: "밝은파랑" }, { value: "#FD5500FF", label: "빨강" }, { value: "#FFFFFF00", label: "투명" }];
   const penColors = [{ value: "#000000", label: "검정" }, { value: "#FF4500", label: "빨강" }, { value: "#0000FF", label: "파랑" }];
@@ -121,7 +121,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       canvasRect.width,
       canvasRect.height,
       maxZIndex,
-      nodeShape
+      nodeShape,
+      nodeBorderColor  // 테두리 색상 파라미터 추가
     );
 
     if (!newNode) {
@@ -503,11 +504,14 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   
   const hndNodeShapeChange = (shape: string) => {
     setNodeShape(shape);
+    if (shape === 'ellipse') {
+      setNodeBorderColor('#FD5500FF');  // 빨간색으로 설정
+    }
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, shape: shape } : node
     ));
   };
-
+  
   const hndNodeColorChange = (color: string) => {
     setNodeColor(color);
     setNodes((prevNodes) => prevNodes.map((node) => 
