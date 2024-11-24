@@ -60,7 +60,7 @@ export default async function LessonsTable({
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
                     <PlayLesson id={lesson.id} disabled={false} />
-                    <EditLesson id={lesson.id} disabled={email !== lesson.email} />
+                    <EditLesson id={lesson.id} disabled={false} />
                     <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
                   </div>
                 </div>
@@ -113,7 +113,7 @@ export default async function LessonsTable({
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
                       <PlayLesson id={lesson.id} disabled={false} />
-                      <EditLesson id={lesson.id} disabled={email !== lesson.email} />
+                      <EditLesson id={lesson.id} disabled={false} />
                       <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
                     </div>
                   </td>
