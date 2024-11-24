@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsbone-app
+  namespace: default
+  labels:
+    app: fsbone-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fsbone-app
+  template:
+    metadata:
+      labels:
+        app: fsbone-app
+    spec:
+      containers:
+      - name: fsbone-app
+        image: your-ecr-repository:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets

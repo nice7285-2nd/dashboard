@@ -34,3 +34,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# k8s
+k8s/secret.yml
+k8s/*.secret.yml
