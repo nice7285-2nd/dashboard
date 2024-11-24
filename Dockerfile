@@ -23,26 +23,27 @@ COPY prisma ./prisma/
 # 소스 파일 복사
 COPY . .
 
-# 빌드 시점 환경 변수 설정
-ARG DATABASE_URL
-ARG POSTGRES_URL
-ARG POSTGRES_PRISMA_URL
-ARG POSTGRES_URL_NON_POOLING
-ARG POSTGRES_USER
-ARG POSTGRES_HOST
-ARG POSTGRES_PASSWORD
-ARG POSTGRES_DATABASE
+# 환경 변수 직접 설정
+ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV NEXT_PUBLIC_DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_PRISMA_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_URL_NON_POOLING="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_USER="default"
+ENV POSTGRES_HOST="ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech"
+ENV POSTGRES_PASSWORD="fIs4yN3tPvoH"
+ENV POSTGRES_DATABASE="verceldb"
 
-# 런타임 환경 변수 설정
-ENV DATABASE_URL=${DATABASE_URL}
-ENV NEXT_PUBLIC_DATABASE_URL=${DATABASE_URL}
-ENV POSTGRES_URL=${POSTGRES_URL}
-ENV POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}
-ENV POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
-ENV POSTGRES_USER=${POSTGRES_USER}
-ENV POSTGRES_HOST=${POSTGRES_HOST}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-ENV POSTGRES_DATABASE=${POSTGRES_DATABASE}
+# .env 파일 생성
+RUN echo "DATABASE_URL=$DATABASE_URL" > .env && \
+    echo "NEXT_PUBLIC_DATABASE_URL=$NEXT_PUBLIC_DATABASE_URL" >> .env && \
+    echo "POSTGRES_URL=$POSTGRES_URL" >> .env && \
+    echo "POSTGRES_PRISMA_URL=$POSTGRES_PRISMA_URL" >> .env && \
+    echo "POSTGRES_URL_NON_POOLING=$POSTGRES_URL_NON_POOLING" >> .env && \
+    echo "POSTGRES_USER=$POSTGRES_USER" >> .env && \
+    echo "POSTGRES_HOST=$POSTGRES_HOST" >> .env && \
+    echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env && \
+    echo "POSTGRES_DATABASE=$POSTGRES_DATABASE" >> .env
 
 # Prisma 클라이언트 생성
 RUN npx prisma generate
