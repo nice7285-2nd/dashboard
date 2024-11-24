@@ -507,6 +507,9 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     if (shape === 'ellipse') {
       setNodeBorderColor('#FD5500FF');  // 빨간색으로 설정
     }
+    else {
+      setNodeBorderColor('#0055FFFF');
+    }
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, shape: shape } : node
     ));
