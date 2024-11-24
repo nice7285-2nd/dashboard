@@ -17,7 +17,10 @@ RUN apk add --no-cache \
 COPY package*.json ./
 RUN npm install
 
-# 소스 파일 복사
+# .env 파일 먼저 복사
+COPY .env .env
+
+# 나머지 소스 파일 복사
 COPY . .
 
 # 빌드 시 필요한 환경 변수 설정
@@ -29,6 +32,9 @@ ENV POSTGRES_USER="default"
 ENV POSTGRES_HOST="ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech"
 ENV POSTGRES_PASSWORD="fIs4yN3tPvoH"
 ENV POSTGRES_DATABASE="verceldb"
+
+# Prisma 생성
+RUN npx prisma generate
 
 # Next.js 빌드
 RUN npm run build
