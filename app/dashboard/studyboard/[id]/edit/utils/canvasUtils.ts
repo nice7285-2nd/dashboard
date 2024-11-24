@@ -860,7 +860,7 @@ export const saveCanvas = async (
   setShowSavePopup(false);
   
   if (!author || !email) {
-    toast.error('사자 정보가 습니다.');
+    toast.error('사용자 정보가 없습니다.');
     return;
   }
 
@@ -877,7 +877,8 @@ export const saveCanvas = async (
       height
     };
 
-    const filename = `${new Date().toLocaleString('ko-KR', { 
+    const currentTime = new Date();
+    const filename = `${currentTime.toLocaleString('ko-KR', { 
       timeZone: 'Asia/Seoul', year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',fractionalSecondDigits: 3, hour12: false
     }).replace(/[^\d]/g, '')}.json`;
     const filedir = `lessons`;
@@ -898,6 +899,7 @@ export const saveCanvas = async (
       dbFormData.append('email', email);
       dbFormData.append('title', title);
       dbFormData.append('path', filePath);
+      dbFormData.append('created_at', currentTime.toISOString()); // 현재 시간 추가
       const result = await createLesson(dbFormData);
 
       if (result.message === 'Created Lesson.') {

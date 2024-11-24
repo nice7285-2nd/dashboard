@@ -9,6 +9,7 @@ const FormSchema = z.object({
   path: z.string(),
   author: z.string(),
   email: z.string(),
+  created_at: z.string(),
 });
 
 const StudyRecSchema = z.object({
@@ -19,18 +20,19 @@ const StudyRecSchema = z.object({
 });
 
 export async function createLesson(formData: FormData) {
-  const { author, email, title, path } = FormSchema.parse({
+  const { author, email, title, path, created_at } = FormSchema.parse({
     title: formData.get('title'),
     path: formData.get('path'),
     author: formData.get('author'),
     email: formData.get('email'),
+    created_at: formData.get('created_at'),
   });
 
   try {
     await pool.query(
       `INSERT INTO lessons (title, path, author, email, created_at)
-       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP(3))`,
-      [title, path, author, email]
+       VALUES ($1, $2, $3, $4, $5::timestamp)`,
+      [title, path, author, email, created_at]
     );
   } catch (error) {
     return {
