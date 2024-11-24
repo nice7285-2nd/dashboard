@@ -15,17 +15,16 @@ RUN apk add --no-cache \
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
-COPY prisma ./prisma/
 RUN npm install
 
 # .env 파일 복사
 COPY .env .env
 
+# 소스 파일 복사
+COPY . .
+
 # Prisma 생성
 RUN npx prisma generate
-
-# 나머지 소스 파일 복사
-COPY . .
 
 # 빌드 시 필요한 환경 변수 설정
 ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
