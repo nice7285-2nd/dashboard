@@ -2,26 +2,6 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Build arguments
-ARG DATABASE_URL
-ARG POSTGRES_URL
-ARG POSTGRES_PRISMA_URL
-ARG POSTGRES_URL_NON_POOLING
-ARG POSTGRES_USER
-ARG POSTGRES_HOST
-ARG POSTGRES_PASSWORD
-ARG POSTGRES_DATABASE
-
-# 환경 변수 설정
-ENV DATABASE_URL=${DATABASE_URL}
-ENV POSTGRES_URL=${POSTGRES_URL}
-ENV POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}
-ENV POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
-ENV POSTGRES_USER=${POSTGRES_USER}
-ENV POSTGRES_HOST=${POSTGRES_HOST}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-ENV POSTGRES_DATABASE=${POSTGRES_DATABASE}
-
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
     python3 \
@@ -37,11 +17,24 @@ RUN apk add --no-cache \
 COPY package*.json ./
 RUN npm install
 
+# Prisma 스키마 복사
+COPY prisma ./prisma/
+
+# 환경 변수 설정을 위한 .env 파일 생성
+RUN echo "DATABASE_URL=${DATABASE_URL}" > .env && \
+    echo "POSTGRES_URL=${POSTGRES_URL}" >> .env && \
+    echo "POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}" >> .env && \
+    echo "POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}" >> .env && \
+    echo "POSTGRES_USER=${POSTGRES_USER}" >> .env && \
+    echo "POSTGRES_HOST=${POSTGRES_HOST}" >> .env && \
+    echo "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" >> .env && \
+    echo "POSTGRES_DATABASE=${POSTGRES_DATABASE}" >> .env
+
+# Prisma 클라이언트 생성
+RUN npx prisma generate
+
 # 소스 파일 복사
 COPY . .
-
-# Prisma 생성
-RUN npx prisma generate
 
 # Next.js 빌드
 RUN npm run build
