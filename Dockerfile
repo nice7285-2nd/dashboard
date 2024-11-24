@@ -21,8 +21,13 @@ RUN npm install
 COPY . .
 
 # 빌드 시 필요한 환경 변수 설정
-ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
-ENV NEXT_PUBLIC_API_URL="http://localhost:3000"
+ENV POSTGRES_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_PRISMA_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_URL_NON_POOLING="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV POSTGRES_USER="default"
+ENV POSTGRES_HOST="ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech"
+ENV POSTGRES_PASSWORD="fIs4yN3tPvoH"
+ENV POSTGRES_DATABASE="verceldb"
 
 # Next.js 빌드
 RUN npm run build
