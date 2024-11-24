@@ -7,11 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 여기에 모델 정의가 필요합니다
-// 예시:
+model StudyRecord {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Lesson {
   id        Int      @id @default(autoincrement())
   title     String
+  content   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
