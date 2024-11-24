@@ -2,15 +2,25 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Build arguments
+ARG DATABASE_URL
+ARG POSTGRES_URL
+ARG POSTGRES_PRISMA_URL
+ARG POSTGRES_URL_NON_POOLING
+ARG POSTGRES_USER
+ARG POSTGRES_HOST
+ARG POSTGRES_PASSWORD
+ARG POSTGRES_DATABASE
+
 # 환경 변수 설정
-ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
-ENV POSTGRES_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
-ENV POSTGRES_PRISMA_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
-ENV POSTGRES_URL_NON_POOLING="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
-ENV POSTGRES_USER="default"
-ENV POSTGRES_HOST="ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech"
-ENV POSTGRES_PASSWORD="fIs4yN3tPvoH"
-ENV POSTGRES_DATABASE="verceldb"
+ENV DATABASE_URL=${DATABASE_URL}
+ENV POSTGRES_URL=${POSTGRES_URL}
+ENV POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL}
+ENV POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}
+ENV POSTGRES_USER=${POSTGRES_USER}
+ENV POSTGRES_HOST=${POSTGRES_HOST}
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+ENV POSTGRES_DATABASE=${POSTGRES_DATABASE}
 
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \

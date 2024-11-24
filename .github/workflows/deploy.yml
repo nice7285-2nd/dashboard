@@ -9,9 +9,23 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
-    - name: Build Docker image
+    - name: Build and push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: fsbone-app
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        docker build -t your-app:${{ github.sha }} .
+        docker build \
+          --build-arg DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          --build-arg POSTGRES_URL="${{ secrets.POSTGRES_URL }}" \
+          --build-arg POSTGRES_PRISMA_URL="${{ secrets.POSTGRES_PRISMA_URL }}" \
+          --build-arg POSTGRES_URL_NON_POOLING="${{ secrets.POSTGRES_URL_NON_POOLING }}" \
+          --build-arg POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
+          --build-arg POSTGRES_HOST="${{ secrets.POSTGRES_HOST }}" \
+          --build-arg POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
+          --build-arg POSTGRES_DATABASE="${{ secrets.POSTGRES_DATABASE }}" \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -23,15 +37,6 @@ jobs:
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
-        
-    - name: Push to ECR
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: your-repository
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        docker tag your-app:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         
     - name: Update kube config
       run: aws eks update-kubeconfig --name your-cluster-name --region ap-northeast-2
