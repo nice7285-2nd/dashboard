@@ -1,17 +1,28 @@
-name: Deploy to Kubernetes
+name: Deploy to EKS
 on:
   push:
     branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
     - name: Build and push Docker image
       env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
       run: |
@@ -24,24 +35,16 @@ jobs:
           --build-arg POSTGRES_HOST="${{ secrets.POSTGRES_HOST }}" \
           --build-arg POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
           --build-arg POSTGRES_DATABASE="${{ secrets.POSTGRES_DATABASE }}" \
-          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-2
-        
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-        
-    - name: Update kube config
-      run: aws eks update-kubeconfig --name your-cluster-name --region ap-northeast-2
-        
+          -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
+        docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+
+    - name: Update kubeconfig
+      run: aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
+
     - name: Deploy to EKS
+      env:
+        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
+        ECR_REPOSITORY: fsbone-app
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        kubectl apply -f k8s/deployment.yml
-        kubectl set image deployment/your-app your-app=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
