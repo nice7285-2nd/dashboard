@@ -16,6 +16,20 @@ const nextConfig = {
   optimizeFonts: true,
   reactStrictMode: false,
   // 다른 필요한 설정들...
-};
+  experimental: {
+    serverActions: true,
+  },
+  env: {
+    DATABASE_URL: "postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require",
+    NEXT_PUBLIC_DATABASE_URL: "postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require",
+    POSTGRES_URL: "postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require",
+    POSTGRES_PRISMA_URL: "postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require",
+    POSTGRES_URL_NON_POOLING: "postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require",
+    POSTGRES_USER: "default",
+    POSTGRES_HOST: "ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech",
+    POSTGRES_PASSWORD: "fIs4yN3tPvoH",
+    POSTGRES_DATABASE: "verceldb"
+  }
+}
 
 module.exports = nextConfig;
