@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/backend/db';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { PrismaClient } from '@prisma/client';
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION as string,
@@ -9,6 +10,8 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
   },
 });
+
+const prisma = new PrismaClient();
 
 export async function DELETE(request: Request) {
   try {
@@ -35,7 +38,11 @@ export async function DELETE(request: Request) {
     }
 
     // Vercel Postgres의 sql`` 대신 pool.query 사용
-    await pool.query('DELETE FROM studyreclist WHERE id = $1', [id]);
+    await prisma.studyreclist.delete({
+      where: {
+        id: parseInt(id)
+      }
+    });
 
     return NextResponse.json({ 
       message: '비디오가 성공적으로 삭제되었습니다.',
