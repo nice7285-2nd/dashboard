@@ -43,4 +43,4 @@ k8s/*.secret.yml
 .env
 .env.local
 .env.*.local
-
+.env.production
