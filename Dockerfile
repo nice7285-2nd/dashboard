@@ -11,36 +11,24 @@ ARG DATABASE_NAME
 ARG DATABASE_PORT
 
 # 환경 변수를 시스템에 설정
-ENV DATABASE_URL=$DATABASE_URL \
-    DATABASE_HOST=$DATABASE_HOST \
-    DATABASE_USER=$DATABASE_USER \
-    DATABASE_PASSWORD=$DATABASE_PASSWORD \
-    DATABASE_NAME=$DATABASE_NAME \
-    DATABASE_PORT=$DATABASE_PORT \
-    NEXT_PUBLIC_DATABASE_URL=$DATABASE_URL \
-    NEXT_PUBLIC_DATABASE_HOST=$DATABASE_HOST \
-    NEXT_PUBLIC_DATABASE_USER=$DATABASE_USER \
-    NEXT_PUBLIC_DATABASE_PASSWORD=$DATABASE_PASSWORD \
-    NEXT_PUBLIC_DATABASE_NAME=$DATABASE_NAME \
-    NEXT_PUBLIC_DATABASE_PORT=$DATABASE_PORT
+ENV DATABASE_URL=$DATABASE_URL
+ENV DATABASE_HOST=$DATABASE_HOST
+ENV DATABASE_USER=$DATABASE_USER
+ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
+ENV DATABASE_NAME=$DATABASE_NAME
+ENV DATABASE_PORT=$DATABASE_PORT
 
-# 환경 변수 확인
-RUN echo "Database URL format check: $(echo $DATABASE_URL | cut -d':' -f1)"
+# .env 파일 생성
+RUN echo "DATABASE_URL=$DATABASE_URL" > .env && \
+    echo "DATABASE_HOST=$DATABASE_HOST" >> .env && \
+    echo "DATABASE_USER=$DATABASE_USER" >> .env && \
+    echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env && \
+    echo "DATABASE_NAME=$DATABASE_NAME" >> .env && \
+    echo "DATABASE_PORT=$DATABASE_PORT" >> .env && \
+    echo "Created .env file with database credentials"
 
-# 필요한 시스템 패키지 설치
-RUN apk add --no-cache \
-    python3 \
-    make \
-    g++ \
-    build-base \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev \
-    pixman-dev \
-    pangomm-dev \
-    libjpeg-turbo-dev \
-    freetype-dev
+# .env.local 파일도 생성
+RUN cp .env .env.local
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
