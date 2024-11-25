@@ -3,32 +3,38 @@ FROM node:18-alpine
 WORKDIR /app
 
 # 환경 변수 정의
-ARG DATABASE_URL
-ARG DATABASE_HOST
-ARG DATABASE_USER
-ARG DATABASE_PASSWORD
-ARG DATABASE_NAME
-ARG DATABASE_PORT
+ARG DB_HOST
+ARG DB_USER
+ARG DB_PASSWORD
+ARG DB_NAME
+ARG DB_PORT
 
 # 환경 변수를 시스템에 설정
-ENV DATABASE_URL=$DATABASE_URL
-ENV DATABASE_HOST=$DATABASE_HOST
-ENV DATABASE_USER=$DATABASE_USER
-ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
-ENV DATABASE_NAME=$DATABASE_NAME
-ENV DATABASE_PORT=$DATABASE_PORT
+ENV DB_HOST=$DB_HOST
+ENV DB_USER=$DB_USER
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV DB_NAME=$DB_NAME
+ENV DB_PORT=$DB_PORT
 
-# .env 파일 생성
-RUN echo "DATABASE_URL=$DATABASE_URL" > .env && \
-    echo "DATABASE_HOST=$DATABASE_HOST" >> .env && \
-    echo "DATABASE_USER=$DATABASE_USER" >> .env && \
-    echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env && \
-    echo "DATABASE_NAME=$DATABASE_NAME" >> .env && \
-    echo "DATABASE_PORT=$DATABASE_PORT" >> .env && \
-    echo "Created .env file with database credentials"
+# 필요한 시스템 패키지 설치
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    build-base \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    python3-dev \
+    py3-pip
 
-# .env.local 파일도 생성
-RUN cp .env .env.local
+# Python 심볼릭 링크 생성
+RUN ln -sf python3 /usr/bin/python
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
