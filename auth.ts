@@ -127,11 +127,25 @@ export const { auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   events: {
     async signIn({ user }) {
       logger.info('사용자 로그인', { user });
     },
   },
-  debug: true
+  debug: true,
+  useSecureCookies: true,
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: true,
+        domain: '.fsbone.com'
+      }
+    }
+  }
 });
