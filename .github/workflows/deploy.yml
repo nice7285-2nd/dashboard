@@ -22,6 +22,8 @@ jobs:
 
     - name: Debug environment variables
       env:
+        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        AUTH_URL: ${{ secrets.AUTH_URL }}
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
         DATABASE_USER: ${{ secrets.DATABASE_USER }}
@@ -30,6 +32,8 @@ jobs:
         DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
       run: |
         echo "Checking environment variables..."
+        echo "AUTH_SECRET exists: ${{ secrets.AUTH_SECRET != '' }}"
+        echo "AUTH_URL exists: ${{ secrets.AUTH_URL != '' }}"
         echo "DATABASE_URL exists: ${{ secrets.DATABASE_URL != '' }}"
         echo "DATABASE_HOST exists: ${{ secrets.DATABASE_HOST != '' }}"
         echo "DATABASE_USER exists: ${{ secrets.DATABASE_USER != '' }}"
@@ -45,6 +49,8 @@ jobs:
       run: |
         echo "Building Docker image..."
         docker build \
+          --build-arg AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
+          --build-arg AUTH_URL=${{ secrets.AUTH_URL }} \
           --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
           --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
           --build-arg DATABASE_USER=${{ secrets.DATABASE_USER }} \
