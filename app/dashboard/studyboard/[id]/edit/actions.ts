@@ -1,7 +1,7 @@
 'use server'
 
 import { z } from 'zod';
-import { pool } from '@/backend/db';
+import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 const FormSchema = z.object({
@@ -19,6 +19,8 @@ const StudyRecSchema = z.object({
   email: z.string(),
 });
 
+const prisma = new PrismaClient();
+
 export async function createLesson(formData: FormData) {
   const { author, email, title, path, created_at } = FormSchema.parse({
     title: formData.get('title'),
@@ -29,11 +31,15 @@ export async function createLesson(formData: FormData) {
   });
 
   try {
-    await pool.query(
-      `INSERT INTO lessons (title, path, author, email, created_at)
-       VALUES ($1, $2, $3, $4, $5::timestamp)`,
-      [title, path, author, email, created_at]
-    );
+    await prisma.lesson.create({
+      data: {
+        title,
+        path,
+        author,
+        email,
+        createdAt: new Date(created_at),
+      },
+    });
   } catch (error) {
     return {
       message: 'Database Error: Failed to Create Lesson.',
@@ -53,11 +59,14 @@ export async function createStudyRec(formData: FormData) {
   });
 
   try {
-    await pool.query(
-      `INSERT INTO studyRecList (title, path, author, email)
-       VALUES ($1, $2, $3, $4)`,
-      [title, path, author, email]
-    );
+    await prisma.studyreclist.create({
+      data: {
+        title,
+        path,
+        author,
+        email,
+      },
+    });
   } catch (error) {
     return {
       message: 'Database Error: Failed to Create StudyRec.',
