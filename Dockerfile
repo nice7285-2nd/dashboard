@@ -10,20 +10,13 @@ ARG DATABASE_PASSWORD
 ARG DATABASE_NAME
 ARG DATABASE_PORT
 
-# 디버깅을 위한 환경 변수 출력
-RUN echo "Build args received:"
-RUN set | grep DATABASE || true
-
-# 환경 변수 설정 (따옴표 제거)
-RUN echo "DATABASE_URL=$DATABASE_URL" > .env && \
-    echo "DATABASE_HOST=$DATABASE_HOST" >> .env && \
-    echo "DATABASE_USER=$DATABASE_USER" >> .env && \
-    echo "DATABASE_PASSWORD=$DATABASE_PASSWORD" >> .env && \
-    echo "DATABASE_NAME=$DATABASE_NAME" >> .env && \
-    echo "DATABASE_PORT=$DATABASE_PORT" >> .env
-
-# 환경 변수 확인 (값 숨기지 않음)
-RUN echo "Contents of .env file:" && cat .env
+# 환경 변수를 시스템에 설정
+ENV DATABASE_URL=$DATABASE_URL \
+    DATABASE_HOST=$DATABASE_HOST \
+    DATABASE_USER=$DATABASE_USER \
+    DATABASE_PASSWORD=$DATABASE_PASSWORD \
+    DATABASE_NAME=$DATABASE_NAME \
+    DATABASE_PORT=$DATABASE_PORT
 
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
