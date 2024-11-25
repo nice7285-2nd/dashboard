@@ -6,6 +6,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXT_PUBLIC_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      POSTGRES_URL: ${{ secrets.DATABASE_URL }}
+      POSTGRES_PRISMA_URL: ${{ secrets.DATABASE_URL }}
     steps:
     - uses: actions/checkout@v2
 
@@ -25,27 +30,11 @@ jobs:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
         docker build \
           --build-arg DATABASE_URL="${DATABASE_URL}" \
+          --build-arg NEXT_PUBLIC_DATABASE_URL="${DATABASE_URL}" \
           --build-arg POSTGRES_URL="${DATABASE_URL}" \
           --build-arg POSTGRES_PRISMA_URL="${DATABASE_URL}" \
-          --build-arg POSTGRES_URL_NON_POOLING="${DATABASE_URL}" \
-          --build-arg POSTGRES_USER="default" \
-          --build-arg POSTGRES_HOST="ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech" \
-          --build-arg POSTGRES_PASSWORD="fIs4yN3tPvoH" \
-          --build-arg POSTGRES_DATABASE="verceldb" \
           -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
         docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-
-    - name: Update kubeconfig
-      run: aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
-
-    - name: Deploy to EKS
-      env:
-        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
-        ECR_REPOSITORY: fsbone-app
-        IMAGE_TAG: ${{ github.sha }}
-      run: |
-        kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
