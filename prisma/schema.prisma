@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model StudyRecord {
+model Studyreclist {
   id        Int      @id @default(autoincrement())
   title     String
   content   String?
