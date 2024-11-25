@@ -91,8 +91,9 @@ data:
         Match               kube.*
         Region              ap-northeast-2
         Log_Group_Name      /aws/eks/fsbone-cluster/logs
-        Log_Stream_Prefix   ${HOST_NAME}
+        Log_Stream_Name     ${POD_NAME}
         Auto_Create_Group   true
+        Auto_Create_Stream  true
 
   parsers.conf: |
     [PARSER]

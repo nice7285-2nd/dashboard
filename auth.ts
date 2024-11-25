@@ -16,26 +16,28 @@ declare module 'next-auth' {
   }
 }
 
-// 로깅 함수 추가
+// 로깅 함수 수정
 const logger = {
   info: (message: string, ...args: any[]) => {
-    console.log(JSON.stringify({
-      level: 'info',
-      message,
+    const logData = {
+      message: message,
       data: args,
       timestamp: new Date().toISOString(),
-      service: 'auth'
-    }));
+      service: 'auth',
+      level: 'info'
+    };
+    console.log(JSON.stringify(logData));
   },
   error: (message: string, error?: any) => {
-    console.error(JSON.stringify({
-      level: 'error',
-      message,
+    const logData = {
+      message: message,
       error: error?.message || error,
       stack: error?.stack,
       timestamp: new Date().toISOString(),
-      service: 'auth'
-    }));
+      service: 'auth',
+      level: 'error'
+    };
+    console.error(JSON.stringify(logData));
   }
 };
 
