@@ -10,7 +10,7 @@ ARG DATABASE_NAME
 ARG DATABASE_PORT
 
 # 환경 변수를 시스템에 설정
-ENV DATABASE_HOST=$DATABASE_HOST    
+ENV DATABASE_HOST=$DATABASE_HOST
 ENV DATABASE_USER=$DATABASE_USER
 ENV DATABASE_PASSWORD=$DATABASE_PASSWORD
 ENV DATABASE_NAME=$DATABASE_NAME
@@ -36,6 +36,9 @@ RUN apk add --no-cache \
 # Python 심볼릭 링크 생성
 RUN ln -sf python3 /usr/bin/python
 
+# PM2 전역 설치
+RUN npm install -g pm2
+
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
 RUN npm install --build-from-source
@@ -54,4 +57,5 @@ RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# PM2로 실행
+CMD ["pm2-runtime", "start", "npm", "--", "start"]

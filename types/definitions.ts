@@ -13,7 +13,7 @@ export type User = {
 export type ProjectTable = {
   id: string;
   name: string;
-  website_url: string;
+  websiteUrl: string;
 };
 
 
@@ -22,7 +22,7 @@ export type LessonsTable = {
   author: string;
   email: string;
   title: string;
-  created_at: Date;
+  createdAt: Date;
   path: string;
 };
 
@@ -32,9 +32,9 @@ export type UsersTable = {
   name: string;
   email: string;
   role: string;
-  created_at: Date;
-  login_at: Date;
-  profile_image_url: string;
+  createdAt: Date;
+  loginAt: Date;
+  profileImageUrl: string;
 };  
 
 
