@@ -16,9 +16,9 @@ const nextConfig = {
   optimizeFonts: true,
   reactStrictMode: false,
   // 다른 필요한 설정들...
-  experimental: {
-    serverActions: true,
-  },
+  // experimental: {
+  //   serverActions: true,
+  // },
   env: {
     DATABASE_URL: process.env.DATABASE_URL,
     DATABASE_HOST: process.env.DATABASE_HOST,

@@ -42,27 +42,14 @@ jobs:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
-        DATABASE_USER: ${{ secrets.DATABASE_USER }}
-        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
       run: |
-        echo "Building with these environment variables:"
-        echo "DATABASE_URL length: ${#DATABASE_URL}"
-        echo "DATABASE_HOST length: ${#DATABASE_HOST}"
-        echo "DATABASE_USER length: ${#DATABASE_USER}"
-        echo "DATABASE_PASSWORD length: ${#DATABASE_PASSWORD}"
-        echo "DATABASE_NAME length: ${#DATABASE_NAME}"
-        echo "DATABASE_PORT length: ${#DATABASE_PORT}"
-        
+        echo "Building Docker image..."
         docker build \
-          --build-arg DATABASE_URL="${DATABASE_URL}" \
-          --build-arg DATABASE_HOST="${DATABASE_HOST}" \
-          --build-arg DATABASE_USER="${DATABASE_USER}" \
-          --build-arg DATABASE_PASSWORD="${DATABASE_PASSWORD}" \
-          --build-arg DATABASE_NAME="${DATABASE_NAME}" \
-          --build-arg DATABASE_PORT="${DATABASE_PORT}" \
+          --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
+          --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+          --build-arg DATABASE_USER=${{ secrets.DATABASE_USER }} \
+          --build-arg DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+          --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+          --build-arg DATABASE_PORT=${{ secrets.DATABASE_PORT }} \
           -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
         docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
