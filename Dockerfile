@@ -16,6 +16,9 @@ ENV DB_PASSWORD=$DB_PASSWORD
 ENV DB_NAME=$DB_NAME
 ENV DB_PORT=$DB_PORT
 
+# .env.local 파일도 생성
+RUN cp .env .env.local
+
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
     python3 \
