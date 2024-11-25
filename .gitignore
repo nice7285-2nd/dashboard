@@ -38,3 +38,9 @@ next-env.d.ts
 # k8s
 k8s/secret.yml
 k8s/*.secret.yml
+
+# env
+.env
+.env.local
+.env.*.local
+
