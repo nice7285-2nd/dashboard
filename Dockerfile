@@ -3,7 +3,8 @@ FROM node:18-alpine
 WORKDIR /app
 
 # 환경 변수 설정
-ENV DATABASE_URL="postgresql://postgres:Sj2497!!@fsbone-ft.c1eew0mcaf28.ap-northeast-2.rds.amazonaws.com:5432/postgres"
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 
 # 필요한 시스템 패키지 설치 (canvas 관련 패키지 포함)
 RUN apk add --no-cache \
@@ -29,6 +30,9 @@ COPY prisma ./prisma/
 
 # 소스 파일 복사
 COPY . .
+
+# Copy .env file
+COPY .env .env
 
 # Prisma 클라이언트 생성
 RUN npx prisma generate
