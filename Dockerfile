@@ -5,16 +5,24 @@ WORKDIR /app
 # 환경 변수 설정
 ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
 
-# 필요한 시스템 패키지 설치
+# 필요한 시스템 패키지 설치 (canvas 관련 패키지 포함)
 RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    build-base
+    build-base \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev \
+    pixman-dev \
+    pangomm-dev \
+    libjpeg-turbo-dev \
+    freetype-dev
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
-RUN npm install
+RUN npm install --build-from-source
 
 # Prisma 스키마 복사
 COPY prisma ./prisma/
