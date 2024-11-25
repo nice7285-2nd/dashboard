@@ -6,13 +6,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
-      DATABASE_USER: ${{ secrets.DATABASE_USER }}
-      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-      DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
     steps:
     - uses: actions/checkout@v2
 
@@ -32,8 +25,13 @@ jobs:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+        DATABASE_USER: ${{ secrets.DATABASE_USER }}
+        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
       run: |
-        echo "Building with DATABASE_URL: $DATABASE_URL"
         docker build \
           --build-arg DATABASE_URL="${DATABASE_URL}" \
           --build-arg DATABASE_HOST="${DATABASE_HOST}" \
