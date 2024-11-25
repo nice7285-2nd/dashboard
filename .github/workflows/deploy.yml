@@ -33,6 +33,7 @@ jobs:
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
       run: |
+        echo "Building with DATABASE_URL: $DATABASE_URL"
         docker build \
           --build-arg DATABASE_URL="${DATABASE_URL}" \
           --build-arg DB_HOST="${DB_HOST}" \
