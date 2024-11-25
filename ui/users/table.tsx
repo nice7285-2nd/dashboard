@@ -45,7 +45,7 @@ export default async function UsersTable({
                     <div className="flex items-center mb-2">
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mr-3">
                         <Image
-                          src={user.profile_image_url || '/default-profile.svg'}
+                          src={user.profileImageUrl || '/default-profile.svg'}
                           alt={user.name}
                           width={40}
                           height={40}
@@ -57,10 +57,10 @@ export default async function UsersTable({
                         <p className="text-sm text-gray-500">{user.email}</p>
                         <p className="text-sm text-gray-500">{user.role}</p>
                         <p className="text-sm text-gray-500">
-                          {formatDate(user.created_at)}
+                          {formatDate(user.createdAt)}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {formatDate(user.login_at)}
+                          {user.loginAt ? formatDate(user.loginAt) : ''}
                         </p>
                       </div>
                     </div>
@@ -112,7 +112,7 @@ export default async function UsersTable({
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                         <Image
-                          src={user.profile_image_url || '/default-profile.svg'}
+                          src={user.profileImageUrl || '/default-profile.svg'}
                           alt={user.name}
                           width={32}
                           height={32}
@@ -129,10 +129,10 @@ export default async function UsersTable({
                     {user.role}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {formatDate(user.created_at)}
+                    {formatDate(user.createdAt)}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {formatDate(user.login_at)}
+                    {user.loginAt ? formatDate(user.loginAt) : ''}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex gap-3">

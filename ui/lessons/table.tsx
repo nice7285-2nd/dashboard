@@ -46,7 +46,7 @@ export default async function LessonsTable({
                     <div className="flex items-center mb-2">
                       <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mr-2">
                         <Image
-                          src={lesson.profile_image_url || '/default-profile.svg'}
+                          src={lesson.user?.profileImageUrl || '/default-profile.svg'}
                           alt={lesson.author}
                           width={40}
                           height={40}
@@ -55,15 +55,15 @@ export default async function LessonsTable({
                       </div>
                       <p>{lesson.author}</p>
                       <p>{lesson.title}</p>
-                      <p>{formatDate(lesson.created_at)}</p>
+                      <p>{formatDate(lesson.createdAt)}</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between w-full pt-4">
                   <div className="flex justify-end gap-2">
-                    <PlayLesson id={lesson.id} disabled={false} />
-                    <EditLesson id={lesson.id} disabled={false} />
-                    <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
+                    <PlayLesson id={lesson.id.toString()} disabled={false} />
+                    <EditLesson id={lesson.id.toString()} disabled={false} />
+                    <DeleteLesson id={lesson.id.toString()} disabled={email !== lesson.email} />
                   </div>
                 </div>
               </div>
@@ -96,7 +96,7 @@ export default async function LessonsTable({
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                         <Image
-                          src={lesson.profile_image_url || '/default-profile.svg'}
+                          src={lesson.user?.profileImageUrl || '/default-profile.svg'}
                           alt={lesson.author}
                           width={32}
                           height={32}
@@ -110,13 +110,13 @@ export default async function LessonsTable({
                     {lesson.title}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {formatDate(lesson.created_at)}
+                    {formatDate(lesson.createdAt)}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     <div className="flex justify-end gap-3">
-                      <PlayLesson id={lesson.id} disabled={false} />
-                      <EditLesson id={lesson.id} disabled={false} />
-                      <DeleteLesson id={lesson.id} disabled={email !== lesson.email} />
+                      <PlayLesson id={lesson.id.toString()} disabled={false} />
+                      <EditLesson id={lesson.id.toString()} disabled={false} />
+                      <DeleteLesson id={lesson.id.toString()} disabled={email !== lesson.email} />
                     </div>
                   </td>
                 </tr>
