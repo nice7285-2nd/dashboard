@@ -36,8 +36,8 @@ yarn-error.log*
 next-env.d.ts
 
 # k8s
-k8s/secret.yml
-k8s/*.secret.yml
+k8s/secret.yaml
+k8s/*.secret.yaml
 
 # env
 .env
