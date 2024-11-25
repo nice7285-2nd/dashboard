@@ -8,11 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      DB_HOST: ${{ secrets.DB_HOST }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DB_PORT: ${{ secrets.DB_PORT }}
+      DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+      DATABASE_USER: ${{ secrets.DATABASE_USER }}
+      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+      DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
     steps:
     - uses: actions/checkout@v2
 
@@ -36,10 +36,10 @@ jobs:
         echo "Building with DATABASE_URL: $DATABASE_URL"
         docker build \
           --build-arg DATABASE_URL="${DATABASE_URL}" \
-          --build-arg DB_HOST="${DB_HOST}" \
-          --build-arg DB_USER="${DB_USER}" \
-          --build-arg DB_PASSWORD="${DB_PASSWORD}" \
-          --build-arg DB_NAME="${DB_NAME}" \
-          --build-arg DB_PORT="${DB_PORT}" \
+          --build-arg DATABASE_HOST="${DATABASE_HOST}" \
+          --build-arg DATABASE_USER="${DATABASE_USER}" \
+          --build-arg DATABASE_PASSWORD="${DATABASE_PASSWORD}" \
+          --build-arg DATABASE_NAME="${DATABASE_NAME}" \
+          --build-arg DATABASE_PORT="${DATABASE_PORT}" \
           -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
         docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
