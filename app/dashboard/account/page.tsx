@@ -7,7 +7,7 @@ import DeleteAccount from '@/ui/account/delete-account'
 import ProfileImageUploader from '@/ui/component/ProfileImageUploader';
 
 interface User {
-  profile_image_url?: string;
+  profileImageUrl?: string;
   name: string;
   email: string;
   role: string;
@@ -44,7 +44,7 @@ export default async function Page() {
         <h1 className="text-xl font-semibold mb-6">Your Account</h1>
         <div className="flex flex-col items-start space-y-4 mb-6">
           <ProfileImageUploader 
-            currentImageUrl={user.profile_image_url} 
+            currentImageUrl={user.profileImageUrl} 
             email={user.email}
           />
         </div>
