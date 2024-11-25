@@ -20,6 +20,23 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
+    - name: Debug environment variables
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+        DATABASE_USER: ${{ secrets.DATABASE_USER }}
+        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+      run: |
+        echo "Checking environment variables..."
+        echo "DATABASE_URL exists: ${{ secrets.DATABASE_URL != '' }}"
+        echo "DATABASE_HOST exists: ${{ secrets.DATABASE_HOST != '' }}"
+        echo "DATABASE_USER exists: ${{ secrets.DATABASE_USER != '' }}"
+        echo "DATABASE_PASSWORD exists: ${{ secrets.DATABASE_PASSWORD != '' }}"
+        echo "DATABASE_NAME exists: ${{ secrets.DATABASE_NAME != '' }}"
+        echo "DATABASE_PORT exists: ${{ secrets.DATABASE_PORT != '' }}"
+
     - name: Build and push Docker image
       env:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
@@ -32,6 +49,14 @@ jobs:
         DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
         DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
       run: |
+        echo "Building with these environment variables:"
+        echo "DATABASE_URL length: ${#DATABASE_URL}"
+        echo "DATABASE_HOST length: ${#DATABASE_HOST}"
+        echo "DATABASE_USER length: ${#DATABASE_USER}"
+        echo "DATABASE_PASSWORD length: ${#DATABASE_PASSWORD}"
+        echo "DATABASE_NAME length: ${#DATABASE_NAME}"
+        echo "DATABASE_PORT length: ${#DATABASE_PORT}"
+        
         docker build \
           --build-arg DATABASE_URL="${DATABASE_URL}" \
           --build-arg DATABASE_HOST="${DATABASE_HOST}" \
