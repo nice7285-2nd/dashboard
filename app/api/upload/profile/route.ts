@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pool } from '@/backend/db';
+import { PrismaClient } from '@prisma/client';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -12,6 +12,8 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
+
+const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
@@ -63,8 +65,11 @@ export async function POST(request: Request) {
     // S3 URL 생성
     const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filePath}`;
 
-    // DB 업데이트
-    await pool.query('UPDATE users SET profile_image_url = $1 WHERE email = $2', [imageUrl, email]);
+    // DB 업데이트 (Prisma 사용)
+    await prisma.users.update({
+      where: { email: email },
+      data: { profileImageUrl: imageUrl }
+    });
 
     return NextResponse.json({ 
       success: true, 

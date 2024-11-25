@@ -39,7 +39,7 @@ model Users {
   profileImageUrl String?   @map("profile_image_url") @db.Text
   role            String    @db.VarChar(20)
   name            String    @db.VarChar(255)
-  email           String    @db.Text
+  email           String    @db.Text @unique
   password        String    @db.Text
 
   @@map("users")
