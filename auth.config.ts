@@ -17,7 +17,8 @@ export const authConfig = {
       return true;
     },
   },
-  providers: [], // Add providers with an empty array for now
+  providers: [], // 실제 provider는 auth.ts에서 설정됨
+  trustHost: true,
   session: {
     strategy: "jwt",
     // maxAge: 30 * 24 * 60 * 60, // 30일 (초 단위)

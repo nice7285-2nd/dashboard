@@ -32,3 +32,11 @@ spec:
             name: app-config
         - secretRef:
             name: app-secrets
+        env:
+        - name: NEXTAUTH_URL
+          value: "https://www.fsbone.com"
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: fsbone-secrets
+              key: NEXTAUTH_SECRET
