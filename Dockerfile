@@ -30,13 +30,24 @@ COPY . .
 # Prisma 클라이언트 생성
 RUN npx prisma generate
 
+# 환경 변수 설정
+ENV DATABASE_URL=${DATABASE_URL}
+ENV DB_HOST=${DB_HOST}
+ENV DB_USER=${DB_USER}
+ENV DB_PASSWORD=${DB_PASSWORD}
+ENV DB_NAME=${DB_NAME}
+ENV DB_PORT=${DB_PORT}
+
 # Next.js 빌드 전에 환경 변수 파일 생성
-RUN echo "DATABASE_URL=${DATABASE_URL}\n\
-DB_HOST=${DB_HOST}\n\
-DB_USER=${DB_USER}\n\
-DB_PASSWORD=${DB_PASSWORD}\n\
-DB_NAME=${DB_NAME}\n\
-DB_PORT=${DB_PORT}" > .env.production.local
+RUN printf "DATABASE_URL=\"${DATABASE_URL}\"\n\
+DB_HOST=\"${DB_HOST}\"\n\
+DB_USER=\"${DB_USER}\"\n\
+DB_PASSWORD=\"${DB_PASSWORD}\"\n\
+DB_NAME=\"${DB_NAME}\"\n\
+DB_PORT=\"${DB_PORT}\"" > .env
+
+# Prisma 생성 전에 환경 변수 확인
+RUN echo "Current DATABASE_URL: $DATABASE_URL"
 
 # Next.js 빌드
 RUN npm run build
