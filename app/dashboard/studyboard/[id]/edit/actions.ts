@@ -9,7 +9,7 @@ const FormSchema = z.object({
   path: z.string(),
   author: z.string(),
   email: z.string(),
-  created_at: z.string(),
+  createdAt: z.string(),
 });
 
 const StudyRecSchema = z.object({
@@ -22,12 +22,12 @@ const StudyRecSchema = z.object({
 const prisma = new PrismaClient();
 
 export async function createLesson(formData: FormData) {
-  const { author, email, title, path, created_at } = FormSchema.parse({
+  const { author, email, title, path, createdAt } = FormSchema.parse({
     title: formData.get('title'),
     path: formData.get('path'),
     author: formData.get('author'),
     email: formData.get('email'),
-    created_at: formData.get('created_at'),
+    createdAt: formData.get('createdAt'),
   });
 
   try {
@@ -37,7 +37,7 @@ export async function createLesson(formData: FormData) {
         path,
         author,
         email,
-        createdAt: new Date(created_at),
+        createdAt: new Date(createdAt),
       },
     });
   } catch (error) {
