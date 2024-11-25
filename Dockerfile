@@ -3,7 +3,7 @@ FROM node:18-alpine
 WORKDIR /app
 
 # 환경 변수 설정
-ENV DATABASE_URL="postgres://default:fIs4yN3tPvoH@ep-polished-water-a17o20lb-pooler.ap-southeast-1.aws.neon.tech:5432/verceldb?sslmode=require"
+ENV DATABASE_URL="postgresql://postgres:Sj2497!!@fsbone-ft.c1eew0mcaf28.ap-northeast-2.rds.amazonaws.com:5432/postgres"
 
 # 필요한 시스템 패키지 설치 (canvas 관련 패키지 포함)
 RUN apk add --no-cache \
