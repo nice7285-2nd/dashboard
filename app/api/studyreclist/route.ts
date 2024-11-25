@@ -1,28 +1,18 @@
-import { pool } from '@/backend/db';
 import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
-export const revalidate = 0; // 이 줄을 추가합니다
+const prisma = new PrismaClient();
 
-type StudyRecListTable = {
-  id: string;
-  title: string;
-  path: string;
-  author: string;
-  email: string;
-  views: number;
-  profile_image_url: string;
-};
+export const revalidate = 0;
 
 export async function GET() {
   try {
-    const result = await pool.query<StudyRecListTable>(`
-      SELECT 
-        s.*,
-        u.profile_image_url
-      FROM studyreclist s
-      LEFT JOIN users u ON s.email = u.email
-      ORDER BY s.created_at DESC
-    `);
+    const result = await prisma.studyreclist.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Database Error:', error);
