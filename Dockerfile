@@ -31,9 +31,6 @@ COPY prisma ./prisma/
 # 소스 파일 복사
 COPY . .
 
-# Copy .env file
-COPY .env .env
-
 # Prisma 클라이언트 생성
 RUN npx prisma generate
 
