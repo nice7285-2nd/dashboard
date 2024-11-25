@@ -24,9 +24,6 @@ RUN npm install --build-from-source
 # Prisma 스키마 복사
 COPY prisma ./prisma/
 
-# 환경 변수 파일 복사
-COPY .env.production .env.production
-
 # 소스 파일 복사
 COPY . .
 
