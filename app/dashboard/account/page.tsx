@@ -11,10 +11,10 @@ interface User {
   name: string;
   email: string;
   role: string;
-  created_at: Date;
-  login_at: Date;
+  createdAt: Date;
+  loginAt: Date;
   id: string;
-  auth_key: string;
+  authKey: string;
 } 
 
 function formatDate(date: Date): string {
@@ -89,7 +89,7 @@ export default async function Page() {
             <input
               className="px-3 py-2 text-sm border border-gray-300 rounded-md"
               type="text"
-              value={formatDate(user.created_at)}
+              value={formatDate(user.createdAt)}
               readOnly
             />
           </div>
@@ -101,7 +101,7 @@ export default async function Page() {
             <input
               className="px-3 py-2 text-sm border border-gray-300 rounded-md"
               type="text"
-              value={formatDate(user.login_at)}
+              value={formatDate(user.loginAt)}
               readOnly
             />
           </div>

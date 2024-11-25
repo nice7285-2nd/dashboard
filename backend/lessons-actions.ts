@@ -1,10 +1,12 @@
 'use server';
 
 import { z } from 'zod';
-import { pool } from './db';
+import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+
+const prisma = new PrismaClient();
 
 const CreateLessonSchema = z.object({
   id: z.string().optional(),
@@ -42,14 +44,19 @@ export async function createLesson(prevState: LessonState, formData: FormData) {
   console.log(id, author, title, path);
 
   try {
-    await pool.query(
-      'INSERT INTO lessons (id, author, title, path) VALUES ($1, $2, $3, $4)',
-      [id, author, title, path]
-    );
+    await prisma.lesson.create({
+      data: {
+        id: id ? parseInt(id) : undefined,
+        author: author ?? '',
+        title,
+        path: path ?? '',
+        email: '',
+      },
+    });
   } catch (error) {
-    console.error('Database Error1:', error);
+    console.error('Database Error:', error);
     return {
-      message: 'Database Error1: Failed to Create Lesson.',
+      message: 'Database Error: Failed to Create Lesson.',
     };
   }
 
@@ -82,10 +89,13 @@ export async function updateLesson(
   const { title, path } = validatedFields.data;
 
   try {
-    await pool.query(
-      'UPDATE lessons SET title = $1, path = $2 WHERE id = $3',
-      [title, path, id]
-    );
+    await prisma.lesson.update({
+      where: { id: parseInt(id) },
+      data: {
+        title,
+        path,
+      },
+    });
   } catch (error) {
     return { message: 'Database Error: Failed to Update Lesson.' };
   }
@@ -104,17 +114,17 @@ const s3Client = new S3Client({
 
 export async function deleteLesson(id: string) {
   try {
-    const result = await pool.query(
-      'SELECT path FROM lessons WHERE id = $1',
-      [id]
-    );
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: parseInt(id) },
+      select: { path: true },
+    });
 
-    if (result.rows.length === 0) {
+    if (!lesson) {
       return { message: '레슨을 찾을 수 없습니다.' };
     }
 
-    const lessonPath = result.rows[0].path
-      .replace(/^\//, '')
+    const lessonPath = lesson.path
+      ?.replace(/^\//, '')
       .replace(/\\/g, '/');
 
     if (lessonPath) {
@@ -129,7 +139,10 @@ export async function deleteLesson(id: string) {
       }
     }
 
-    await pool.query('DELETE FROM lessons WHERE id = $1', [id]);
+    await prisma.lesson.delete({
+      where: { id: parseInt(id) },
+    });
+    
     revalidatePath('/dashboard/studyboard');
     return { message: '레슨과 관련 파일이 성공적으로 삭제되었습니다.' };
   } catch (error) {

@@ -1,12 +1,13 @@
 export type User = {
   id: string;
+  authKey: string;
+  createdAt: Date;
+  loginAt: Date | null;
+  profileImageUrl: string | null;
+  role: string;
   name: string;
   email: string;
-  role: string;
-  created_at: Date;
-  login_at: Date;
   password: string;
-  auth_key: string;
 };
 
 export type ProjectTable = {

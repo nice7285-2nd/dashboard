@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filePath}`;
 
     // DB 업데이트 (Prisma 사용)
-    await prisma.users.update({
+    await prisma.user.update({
       where: { email: email },
       data: { profileImageUrl: imageUrl }
     });

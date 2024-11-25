@@ -6,17 +6,18 @@ import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import { pool } from './db';
+import { PrismaClient } from '@prisma/client';
 import type { User } from '@/types/definitions';
 import { unstable_noStore as noStore } from 'next/cache';
 
+const prisma = new PrismaClient();
+
 export async function getUser(email: string): Promise<User | undefined> {
   try {
-    const result = await pool.query<User>(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-    return result.rows[0];
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    return user || undefined;
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
@@ -48,20 +49,24 @@ export async function signUp(
 
   try {
     // 이메일 중복 검사
-    const existingUser = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-    if (existingUser?.rows?.length > 0) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    if (existingUser) {
       return 'Email already exists.';
     }
 
     // 비밀번호 해싱 및 사용자 추가
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query(
-      'INSERT INTO users (name, email, role, password, auth_key) VALUES ($1, $2, $3, $4, $5)',
-      [name, email, 'manager', hashedPassword, authKey]
-    );
+    await prisma.user.create({
+      data: {
+        name,
+        email,
+        role: 'manager',
+        password: hashedPassword,
+        authKey
+      }
+    });
   } catch (error) {
     console.error('Database error:', error);
     return 'Failed to create user.';
@@ -93,7 +98,9 @@ export async function authenticate(
 export async function deleteUser(email: string) {
   console.info('deleteUser:', email);
   try {
-    await pool.query('DELETE FROM users WHERE email = $1', [email]);
+    await prisma.user.delete({
+      where: { email }
+    });
     return { message: 'Deleted User.' };
   } catch (error) {
     console.error('Database error:', error);
@@ -105,11 +112,10 @@ export async function fetchLoggedInUser(email: string) {
   noStore();
 
   try {
-    const result = await pool.query<User>(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-    return result.rows[0];
+    const user = await prisma.user.findUnique({
+      where: { email }
+    });
+    return user;
   } catch (error) {
     console.error('Failed to fetch user:', error);
     throw new Error('Failed to fetch user.');
