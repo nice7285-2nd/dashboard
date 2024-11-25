@@ -10,12 +10,10 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['fsbone.com', '3.37.136.30', '15.165.0.110'],
-      allowedForwardedHosts: ['fsbone.com', '3.37.136.30:80', '15.165.0.110:80'],
-    },
-  },
+  env: {
+    NEXTAUTH_URL: 'https://www.fsbone.com',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  }
 }
 
 module.exports = nextConfig;
