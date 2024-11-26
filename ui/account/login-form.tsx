@@ -34,7 +34,7 @@ export default function LoginForm() {
             회원가입이 정상적으로 완료 되었습니다.
           </div>
         )}
-        <h1 className="mb-3 text-xl">스터디를 위해 로그인 해 주세요.</h1>
+        <h1 className="mb-3 text-xl">스터디를 위해 로그인 해 주세요1.</h1>
         <div className="w-full">
           <div>
             <label
