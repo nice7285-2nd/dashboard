@@ -80,7 +80,20 @@ jobs:
         kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
         kubectl rollout restart deployment fsbone-app
         
-    - name: Verify deployment
+    - name: Debug deployment
+      if: ${{ failure() }}
       run: |
-        kubectl rollout status deployment/fsbone-app
+        echo "=== Deployment Status ==="
+        kubectl describe deployment fsbone-app
+        
+        echo "=== Pod Status ==="
         kubectl get pods -l app=fsbone-app
+        
+        echo "=== Pod Logs ==="
+        for pod in $(kubectl get pods -l app=fsbone-app -o jsonpath='{.items[*].metadata.name}'); do
+          echo "Logs for $pod:"
+          kubectl logs $pod --all-containers --tail=50
+        done
+        
+        echo "=== Events ==="
+        kubectl get events --sort-by='.lastTimestamp'
