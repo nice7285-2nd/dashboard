@@ -5,6 +5,11 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { User } from 'next-auth';
+import pino from 'pino';
+
+export const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+});
 
 const prisma = new PrismaClient({
   log: ['query', 'error', 'warn']
@@ -15,31 +20,6 @@ declare module 'next-auth' {
     role?: string;
   }
 }
-
-// 로깅 함수 수정
-const logger = {
-  info: (message: string, ...args: any[]) => {
-    const logData = {
-      message: message,
-      data: args,
-      timestamp: new Date().toISOString(),
-      service: 'auth',
-      level: 'info'
-    };
-    console.log(JSON.stringify(logData));
-  },
-  error: (message: string, error?: any) => {
-    const logData = {
-      message: message,
-      error: error?.message || error,
-      stack: error?.stack,
-      timestamp: new Date().toISOString(),
-      service: 'auth',
-      level: 'error'
-    };
-    console.error(JSON.stringify(logData));
-  }
-};
 
 async function getUser(email: string) {
   try {
