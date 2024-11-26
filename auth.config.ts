@@ -12,10 +12,17 @@ export const authConfig = {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page
       } else if (isLoggedIn) {
-        return Response.redirect(new URL('/dashboard', nextUrl));
+        return Response.redirect(new URL('/dashboard/lessons', nextUrl));
       }
       return true;
     },
   },
   providers: [], // Add providers with an empty array for now
+  session: {
+    strategy: "jwt",
+    // maxAge: 30 * 24 * 60 * 60, // 30일 (초 단위)
+    // 또는 더 짧게 설정할 수 있습니다:
+    // maxAge: 24 * 60 * 60, // 24시간
+    maxAge: 60 * 60, // 1시간
+  },
 } satisfies NextAuthConfig;
