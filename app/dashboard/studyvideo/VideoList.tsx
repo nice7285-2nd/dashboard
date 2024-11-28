@@ -124,7 +124,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
         <div style={{ position: 'relative' }}>
           <video 
             ref={videoRef} 
-            src={`https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com${video.videoUrl}`}
+            src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
             preload="metadata"
             style={{ 
               width: '100%', 
@@ -358,7 +358,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
-          placeholder="제목으로 검색"
+          placeholder="제목으로 검��"
           value={searchTerm}
           onChange={handleSearchChange}
           style={{
@@ -397,7 +397,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
               onCanPlay={() => setIsLoading(false)}
               width="100%"
               height="100%"
-              src={`https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+              src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
               controls
               autoPlay
               style={{ position: 'absolute', top: 0, left: 0 }}
