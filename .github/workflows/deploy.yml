@@ -105,3 +105,17 @@ jobs:
         
         echo "=== Events ==="
         kubectl get events --sort-by='.lastTimestamp'
+
+    - name: Build and push
+      env:
+        ECR_REPOSITORY: fsbone-app
+        NEXT_PUBLIC_AWS_REGION: ${{ secrets.AWS_REGION }}
+        NEXT_PUBLIC_AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        build-args: |
+          NEXT_PUBLIC_AWS_REGION=${{ secrets.AWS_REGION }}
+          NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
