@@ -29,7 +29,7 @@ const links = [
     icon: UsersIcon,
   },
   {
-    name: 'AI 테스트2',
+    name: 'AI 테스트',
     href: '/dashboard/ai-study',
     icon: ComputerDesktopIcon,
   },
