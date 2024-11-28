@@ -109,8 +109,6 @@ jobs:
     - name: Build and push
       env:
         ECR_REPOSITORY: fsbone-app
-        NEXT_PUBLIC_AWS_REGION: ${{ secrets.AWS_REGION }}
-        NEXT_PUBLIC_AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
       uses: docker/build-push-action@v2
       with:
         context: .
@@ -119,3 +117,6 @@ jobs:
         build-args: |
           NEXT_PUBLIC_AWS_REGION=${{ secrets.AWS_REGION }}
           NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
+          AWS_REGION=${{ secrets.AWS_REGION }}
+          AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
+        
