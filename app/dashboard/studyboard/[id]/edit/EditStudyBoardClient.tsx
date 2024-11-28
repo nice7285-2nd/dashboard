@@ -693,7 +693,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         const lessonData = await response.json();
         
         // S3 URL 생성
-        const s3Url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com${lessonData.rows[0].path}`;
+        const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${lessonData.rows[0].path}`;
         
         // S3에서 파일 내용 읽기
         const fileResponse = await fetch(s3Url);

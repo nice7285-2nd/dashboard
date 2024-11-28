@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       message: '교안 파일이 성공적으로 저장되었습니다.',
       filename,
-      url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`
+      url: `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${s3Key}`
     });
   } catch (error) {
     console.error('파일 저장 중 오류 발생:', error);

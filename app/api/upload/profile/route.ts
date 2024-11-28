@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     );
 
     // S3 URL 생성
-    const imageUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${filePath}`;
+    const imageUrl = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${filePath}`;
 
     // DB 업데이트 (Prisma 사용)
     await prisma.user.update({
