@@ -32,6 +32,10 @@ spec:
             secretKeyRef:
               name: fsbone-secrets
               key: NEXTAUTH_SECRET
+        - name: AWS_REGION
+          value: "ap-northeast-2"
+        - name: AWS_BUCKET_NAME
+          value: "fsbone-bucket"
         - name: NEXT_PUBLIC_AWS_REGION
           value: "ap-northeast-2"
         - name: NEXT_PUBLIC_AWS_BUCKET_NAME
@@ -61,6 +65,10 @@ spec:
             secretKeyRef:
               name: fsbone-secrets
               key: NEXTAUTH_SECRET
+        - name: AWS_REGION
+          value: "ap-northeast-2"
+        - name: AWS_BUCKET_NAME
+          value: "fsbone-bucket"
         - name: NEXT_PUBLIC_AWS_REGION
           value: "ap-northeast-2"
         - name: NEXT_PUBLIC_AWS_BUCKET_NAME
