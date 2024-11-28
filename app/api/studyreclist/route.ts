@@ -7,13 +7,12 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const result = await prisma.studyreclist.findMany({
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    return NextResponse.json(result);
+    const data = await prisma.studyreclist.findMany();
+    const processedData = data.map(video => ({
+      ...video,
+      fullUrl: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com${video.path}`
+    }));
+    return NextResponse.json(processedData);
   } catch (error) {
     console.error('Database Error:', error);
     return NextResponse.json(

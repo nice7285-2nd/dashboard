@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
 
-interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; profileImageUrl?: string; }
+interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; profileImageUrl?: string; fullUrl: string; }
 
 interface VideoListProps {
   userRole: string | undefined;
@@ -124,7 +124,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
         <div style={{ position: 'relative' }}>
           <video 
             ref={videoRef} 
-            src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
+            src={video.fullUrl}
             preload="metadata"
             style={{ 
               width: '100%', 
@@ -397,7 +397,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
               onCanPlay={() => setIsLoading(false)}
               width="100%"
               height="100%"
-              src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+              src={selectedVideo.fullUrl}
               controls
               autoPlay
               style={{ position: 'absolute', top: 0, left: 0 }}
