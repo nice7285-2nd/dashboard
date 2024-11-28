@@ -40,7 +40,7 @@ spec:
             secretKeyRef:
               name: fsbone-secrets
               key: NEXTAUTH_SECRET
-        - name: NEXAWS_REGION
+        - name: AWS_REGION
           value: "ap-northeast-2"
         - name: AWS_BUCKET_NAME
           value: "fsbone-bucket"

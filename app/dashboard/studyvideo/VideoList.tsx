@@ -358,7 +358,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
-          placeholder="제목으로 검��"
+          placeholder="제목으로 검색"
           value={searchTerm}
           onChange={handleSearchChange}
           style={{
