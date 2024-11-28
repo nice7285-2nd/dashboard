@@ -64,6 +64,10 @@ jobs:
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
       run: |
+        # 기본 빌더 설정s
+        docker buildx create --use
+        docker buildx inspect default --bootstrap
+        
         echo "Building Docker image..."
         docker build \
           --build-arg AUTH_URL=${{ secrets.AUTH_URL }} \
