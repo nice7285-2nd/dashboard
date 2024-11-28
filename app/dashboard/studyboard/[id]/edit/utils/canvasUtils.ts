@@ -899,7 +899,7 @@ export const saveCanvas = async (
       dbFormData.append('email', email);
       dbFormData.append('title', title);
       dbFormData.append('path', filePath);
-      dbFormData.append('created_at', currentTime.toISOString()); // 현재 시간 추가
+      dbFormData.append('createdAt', currentTime.toISOString()); // 현재 시간 추가
       const result = await createLesson(dbFormData);
 
       if (result.message === 'Created Lesson.') {
