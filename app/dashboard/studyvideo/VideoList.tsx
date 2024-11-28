@@ -216,9 +216,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         }
         const data = await response.json();
 
-        // console.log('서버에서 받은 데이터:', data);
-
-        const modifiedData = data.rows.map((video: any) => ({  
+        const modifiedData = (Array.isArray(data) ? data : data.rows || []).map((video: any) => ({  
           id: video.id || video.row,
           title: video.title || '제목 없음',
           author: video.author || '저자 없음',
