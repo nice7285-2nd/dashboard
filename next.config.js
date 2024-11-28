@@ -10,10 +10,6 @@ const nextConfig = {
       },
     ],
   },
-  env: {
-    NEXTAUTH_URL: 'https://www.fsbone.com',
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-  }
 }
 
 module.exports = nextConfig;
