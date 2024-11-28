@@ -338,7 +338,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         setVideos(prev => prev.filter(v => v.id !== id));
         setFilteredVideos(prev => prev.filter(v => v.id !== id));
         
-        showToast('비디오가 성공적으로 삭제되었습니다..', 'success');
+        showToast('비디오가 성공적으로 삭제되었습니다.', 'success');
       } catch (error) {
         console.error('삭제 중 오류 발생:', error);
         showToast(
