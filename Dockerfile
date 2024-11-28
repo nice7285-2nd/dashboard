@@ -32,6 +32,11 @@ ENV AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
 ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
+# 환경 변수 로그 출력
+RUN echo "Checking AWS Region: $AWS_REGION" && \
+    echo "Checking AWS Bucket: $AWS_BUCKET_NAME" && \
+    echo "Checking AWS Access Key: ${AWS_ACCESS_KEY_ID:0:5}..."
+
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
     python3 \

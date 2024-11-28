@@ -45,6 +45,13 @@ jobs:
         echo "Checking environment variables..."
         env | sort
 
+    - name: Check Environment Variables
+      run: |
+        echo "Checking AWS Region: $AWS_REGION"
+        echo "Checking AWS Bucket: $AWS_BUCKET_NAME"
+        # 민감한 정보는 일부만 표시
+        echo "Checking AWS Access Key: ${AWS_ACCESS_KEY_ID:0:5}..."
+
     - name: Build and push Docker image
       env:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
