@@ -55,6 +55,8 @@ jobs:
         echo "DATABASE_PORT exists: ${{ secrets.DATABASE_PORT != '' }}"
         echo "AWS_REGION exists: ${{ secrets.AWS_REGION != '' }}"
         echo "AWS_BUCKET_NAME exists: ${{ secrets.AWS_BUCKET_NAME != '' }}"
+        echo "AWS_ACCESS_KEY_ID exists: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
+        echo "AWS_SECRET_ACCESS_KEY exists: ${{ secrets.AWS_SECRET_ACCESS_KEY != '' }}"
 
     - name: Build and push Docker image
       env:
