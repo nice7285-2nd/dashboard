@@ -5,6 +5,10 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
+const region = process.env.AWS_REGION;
+const bucket = process.env.AWS_BUCKET_NAME;
+console.log('S3 Config:', { region, bucket });
+
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
