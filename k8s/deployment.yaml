@@ -42,3 +42,5 @@ spec:
               key: NEXTAUTH_SECRET
         - name: AWS_REGION
           value: "ap-northeast-2"
+        - name: AWS_BUCKET_NAME
+          value: "your-bucket-name"
