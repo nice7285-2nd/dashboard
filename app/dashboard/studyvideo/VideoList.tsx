@@ -77,7 +77,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
 
     videoElement.addEventListener('canplay', handleCanPlay);
 
-    const s3Url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com${video.videoUrl}`;
+    const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`;
 
     const absoluteUrl = video.videoUrl.startsWith('/')
       ? `${window.location.origin}${video.videoUrl}`
