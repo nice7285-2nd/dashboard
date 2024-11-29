@@ -54,9 +54,8 @@ jobs:
       uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}-
           ${{ runner.os }}-buildx-
 
     - name: Build and push Docker image
@@ -72,7 +71,9 @@ jobs:
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
         cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
+        platforms: linux/amd64
+        provenance: false
         build-args: |
           AUTH_URL=${{ secrets.AUTH_URL }}
           AUTH_SECRET=${{ secrets.AUTH_SECRET }}
@@ -90,10 +91,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }}
           NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
-        platforms: linux/amd64
-        provenance: false
-        no-cache-filters: |
-          node_modules
 
     - name: Deploy to EKS
       env:
@@ -103,11 +100,7 @@ jobs:
       run: |
         aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
         kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} --record
-        
-        # 병렬로 상태 확인
-        kubectl rollout status deployment/fsbone-app --timeout=180s &
-        PID=$!
-        wait $PID
+        kubectl rollout status deployment/fsbone-app --timeout=180s
 
     - name: Move cache
       run: |
