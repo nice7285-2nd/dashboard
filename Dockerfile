@@ -15,12 +15,11 @@ RUN apk add --no-cache \
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
-COPY yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN npm ci
 
 # 소스 복사 및 빌드
 COPY . .
-RUN yarn build
+RUN npm run build
 
 # 실행 스테이지
 FROM node:18-alpine AS runner
@@ -56,4 +55,4 @@ ENV AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
 
 EXPOSE 3000
 
-CMD ["yarn", "start"]
+CMD ["npm", "start"]
