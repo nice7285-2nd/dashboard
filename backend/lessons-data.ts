@@ -26,6 +26,8 @@ export async function fetchFilteredLessons(
       include: {
         user: {
           select: {
+            id: true,
+            name: true,
             profileImageUrl: true
           }
         }
@@ -35,7 +37,14 @@ export async function fetchFilteredLessons(
       }
     });
     
-    return lessons;
+    return lessons.map(lesson => ({
+      ...lesson,
+      id: lesson.id.toString(),
+      user: lesson.user ? {
+        ...lesson.user,
+        profileImageUrl: lesson.user.profileImageUrl || null
+      } : undefined
+    }));
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch lessons.');

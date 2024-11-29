@@ -24,6 +24,11 @@ export type LessonsTable = {
   title: string;
   createdAt: Date;
   path: string;
+  user?: {
+    id: string;
+    name: string;
+    profileImageUrl: string | null;
+  };
 };
 
 
