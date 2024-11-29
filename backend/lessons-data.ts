@@ -26,8 +26,6 @@ export async function fetchFilteredLessons(
       include: {
         user: {
           select: {
-            id: true,
-            name: true,
             profileImageUrl: true
           }
         }

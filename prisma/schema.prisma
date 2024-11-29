@@ -27,8 +27,7 @@ model Lesson {
   path      String    @db.VarChar(255)
   views     Int       @default(0)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  userId    String?   @db.Uuid @map("user_id")
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?     @relation(fields: [email], references: [email])
 
   @@map("lessons")
 }
