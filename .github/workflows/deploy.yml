@@ -48,22 +48,23 @@ jobs:
         env | sort
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
 
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
         restore-keys: |
+          ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}-
           ${{ runner.os }}-buildx-
 
     - name: Build and push Docker image
+      uses: docker/build-push-action@v4
       env:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
-      uses: docker/build-push-action@v2
       with:
         context: .
         push: true
@@ -89,11 +90,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }}
           NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
-
-    - name: Move cache
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+        platforms: linux/amd64
+        provenance: false
+        no-cache-filters: |
+          node_modules
 
     - name: Deploy to EKS
       env:
@@ -102,13 +102,17 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
-        kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+        kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} --record
         
-        echo "Waiting for deployment to complete..."
-        kubectl rollout status deployment/fsbone-app --timeout=300s
-        
-        echo "Running image:"
-        kubectl get pods -l app=fsbone-app -o jsonpath="{.items[*].spec.containers[*].image}"
+        # 병렬로 상태 확인
+        kubectl rollout status deployment/fsbone-app --timeout=180s &
+        PID=$!
+        wait $PID
+
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
 
     - name: Debug deployment
       if: ${{ failure() }}
