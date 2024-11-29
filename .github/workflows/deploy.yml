@@ -68,8 +68,8 @@ jobs:
         context: .
         push: true
         tags: |
-          ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-          ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
         build-args: |
