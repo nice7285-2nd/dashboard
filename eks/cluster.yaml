@@ -17,12 +17,12 @@ vpc:
 
 # 노드 그룹 설정
 managedNodeGroups:
-  - name: fsbone-nodes
-    instanceType: t3.medium  # 인스턴스 타입
-    minSize: 2              # 최소 노드 수
-    maxSize: 4              # 최대 노드 수
-    desiredCapacity: 2      # 희망 노드 수
-    volumeSize: 20          # EBS 볼륨 크기(GB)
+  - name: fsbone-nodes-small
+    instanceType: t3.small
+    minSize: 1
+    maxSize: 1
+    desiredCapacity: 1
+    volumeSize: 20
     privateNetworking: true
     labels: 
       role: worker
@@ -30,10 +30,10 @@ managedNodeGroups:
       nodegroup-role: worker
     iam:
       withAddonPolicies:
-        imageBuilder: true  # ECR 접근 권한
-        autoScaler: true    # 오토스케일링 권한
-        albIngress: true    # ALB 인그레스 권한
-        cloudWatch: true    # CloudWatch 권한
+        imageBuilder: true
+        autoScaler: true
+        albIngress: true
+        cloudWatch: true
 
 # 애드온 설정
 addons:
@@ -47,4 +47,4 @@ addons:
 # CloudWatch 로깅 설정
 cloudWatch:
   clusterLogging:
-    enableTypes: ["*"]    # 모든 로그 타입 활성화
+    enableTypes: ["*"]
