@@ -8,13 +8,6 @@ export const revalidate = 0;
 export async function GET() {
   try {
     const studyrecs = await prisma.studyreclist.findMany({
-      include: {
-        user: {
-          select: {
-            profileImageUrl: true
-          }
-        }
-      },
       orderBy: {
         createdAt: 'desc'
       }
@@ -23,10 +16,7 @@ export async function GET() {
     const flattenedResult = studyrecs.map(studyrec => ({
       ...studyrec,
       id: studyrec.id.toString(),
-      user: studyrec.user ? {
-        ...studyrec.user,
-        profileImageUrl: studyrec.user.profileImageUrl || null
-      } : undefined
+      profileImageUrl: '/default-profile.svg'
     }));
 
     return NextResponse.json(flattenedResult);
