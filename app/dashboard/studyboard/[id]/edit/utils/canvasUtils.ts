@@ -36,7 +36,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
     ctx.beginPath();
     ctx.ellipse(0, 0, minWidth/2, minHeight/2, 0, 0, 2 * Math.PI);
     ctx.setLineDash([5, 2]); // 점선 설정
-    ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
+    ctx.strokeStyle = node.borderColor;
     ctx.lineWidth = 1;
     ctx.stroke();
   } else {
@@ -44,7 +44,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
     ctx.fillStyle = node.backgroundColor || '#ffffff';
     drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
     ctx.fill();
-    ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
+    ctx.strokeStyle = node.borderColor;
     ctx.lineWidth = node.borderColor === '#FD5500FF' ? 4 : 1;
     ctx.stroke();
   }
