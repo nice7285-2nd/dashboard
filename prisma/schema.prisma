@@ -15,6 +15,7 @@ model Studyreclist {
   path      String    @db.VarChar(255)
   views     Int       @default(0)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  user      User      @relation(fields: [email], references: [email])
 
   @@map("studyreclist")
 }
@@ -43,6 +44,7 @@ model User {
   email           String    @db.Text @unique
   password        String    @db.Text
   lessons         Lesson[]
+  studyreclist    Studyreclist[]
 
   @@map("users")
 }
