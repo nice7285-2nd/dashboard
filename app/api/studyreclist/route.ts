@@ -20,12 +20,15 @@ export async function GET() {
       }
     });
 
+    console.log("studyrecs", studyrecs);  // 데이터 확인용
+
     const flattenedResult = studyrecs.map(studyrec => ({
       ...studyrec,
       id: studyrec.id.toString(),
-      user: {
-        profileImageUrl: studyrec.user?.profileImageUrl || null
-      }
+      user: studyrec.user ? {
+        ...studyrec.user,
+        profileImageUrl: studyrec.user.profileImageUrl || null
+      } : undefined
     }));
 
     return NextResponse.json(flattenedResult);
