@@ -451,7 +451,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                 </div>
 
                 <div className="mt-4 p-4 bg-gray-900 rounded-lg">
-                  <h4 className="font-medium mb-2">동영상 정보</h4>
+                  <h4 className="font-medium mb-2">동영상 정보1</h4>
                   <p className="text-sm text-gray-400 whitespace-pre-wrap">
                     {selectedVideo.title}
                   </p>
