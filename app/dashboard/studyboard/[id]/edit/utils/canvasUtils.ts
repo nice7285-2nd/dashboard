@@ -603,7 +603,7 @@ export const addNode = (
     selected: false,
     links: [],
     zIndex: newZIndex,
-    backgroundColor: nodeShape === 'single' ? '#FFF' : '#90EE90',
+    backgroundColor: nodeShape === 'single' ? '#FFFFFFFF' : '#CCFFCCFF',
     borderColor: nodeBorderColor,
     nodeShape: nodeShape
   };
