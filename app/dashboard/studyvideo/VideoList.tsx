@@ -230,8 +230,8 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           videoUrl: video.website_url || video.path || '#',
           createdAt: video.createdAt || null,
           user: {
-            profileImageUrl: video.profileImageUrl || null,
-          },
+            profileImageUrl: video.user?.profileImageUrl || null
+          }
         }));
 
         setVideos(modifiedData);
