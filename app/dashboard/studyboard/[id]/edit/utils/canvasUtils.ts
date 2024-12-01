@@ -45,7 +45,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
     drawRoundedRect(ctx, -minWidth / 2, -minHeight / 2, minWidth, minHeight, 0);
     ctx.fill();
     ctx.strokeStyle = node.borderColor;
-    ctx.lineWidth = node.borderColor === '#FD5500FF' ? 4 : 1;
+    ctx.lineWidth = node.borderColor === '#FF0000FF' ? 4 : 1;
     ctx.stroke();
   }
 
