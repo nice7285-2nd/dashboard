@@ -78,8 +78,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hiddenToolsInPlayMode = ['save', 'addNode', 'link', 'clear', 'alignV', 'alignH', 'zIndexUp', 'zIndexDown', 'alignText'];
   const hiddenToolsInEditMode = ['draw', 'erase'];
   const nodeShapes = [{ value: "single", label: "단일" }, { value: "group", label: "그룹" }, { value: "ellipse", label: "타원" }];
-  const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFD700FF", label: "오렌지" }, { value: "#AACCFFFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
-  const nodeBorderColors = [{ value: "#0055FFFF", label: "밝은파랑" }, { value: "#FF0000FF", label: "빨강" }, { value: "#FFFFFF00", label: "투명" }];
+  const nodeColors = [{ value: "#FFFFFFFF", label: "흰색" }, { value: "#FFE699FF", label: "오렌지" }, { value: "#BDD7EEFF", label: "밝은파랑" }, { value: "#90EE90FF", label: "밝은녹색" }, { value: "#FFFFFF00", label: "투명" }];
+  const nodeBorderColors = [{ value: "#5B9BD5FF", label: "밝은파랑" }, { value: "#FF0000FF", label: "빨강" }, { value: "#FFFFFF00", label: "투명" }];
   const penColors = [{ value: "#000000", label: "검정" }, { value: "#FF0000", label: "빨강" }, { value: "#0000FF", label: "파랑" }];
   const lineWidths = [{ value: "1", label: "얇게" }, { value: "2", label: "보통" }, { value: "4", label: "굵게" }, { value: "8", label: "매우 굵게" }];
   const eraserSizes = [{ value: "50", label: "작게" }, { value: "100", label: "보통" }, { value: "200", label: "크게" }];
@@ -508,7 +508,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       setNodeBorderColor('#FF0000FF');  // 빨간색으로 설정
     }
     else {
-      setNodeBorderColor('#0055FFFF');
+      setNodeBorderColor('#5B9BD5FF');
     }
     setNodes((prevNodes) => prevNodes.map((node) => 
       node.selected ? { ...node, shape: shape } : node
