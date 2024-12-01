@@ -510,7 +510,6 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
 
 const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const playerRef = useRef<ReactPlayer>(null);
 
   return (
     <div className="relative w-full h-full">
@@ -519,26 +518,15 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
           <CircularProgress />
         </div>
       )}
-      <ReactPlayer
-        ref={playerRef}
-        url={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
-        className="w-full h-full"
-        width="100%"
-        height="100%"
-        playing={true}
-        controls={true}
-        onReady={() => setIsLoading(false)}
-        onStart={() => setIsLoading(false)}
-        onBuffer={() => setIsLoading(true)}
-        onBufferEnd={() => setIsLoading(false)}
-        config={{
-          file: {
-            attributes: {
-              controlsList: 'nodownload',
-              onContextMenu: (e: React.MouseEvent) => e.preventDefault()
-            }
-          }
-        }}
+      <video
+        className="w-full h-full object-contain"
+        src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
+        controls
+        autoPlay
+        controlsList="nodownload"
+        onContextMenu={(e) => e.preventDefault()}
+        onLoadStart={() => setIsLoading(true)}
+        onCanPlay={() => setIsLoading(false)}
       />
     </div>
   );
