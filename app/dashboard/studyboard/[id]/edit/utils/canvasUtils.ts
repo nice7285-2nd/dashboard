@@ -282,7 +282,7 @@ export const drawLinks = (
           const endY = toPnt.y - (headlen - 7) * Math.sin(angle);
           
           ctx.lineTo(endX, endY);
-          ctx.strokeStyle = '#FF4500';
+          ctx.strokeStyle = '#FF0000';
           ctx.stroke();
 
           // 화살표 그리기
@@ -291,7 +291,7 @@ export const drawLinks = (
           ctx.lineTo(toPnt.x - headlen * Math.cos(angle - Math.PI / 6), toPnt.y - headlen * Math.sin(angle - Math.PI / 6));
           ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
-          ctx.fillStyle = '#FF4500';
+          ctx.fillStyle = '#FF0000';
           ctx.fill();
         }
 
