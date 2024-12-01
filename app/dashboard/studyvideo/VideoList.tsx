@@ -161,8 +161,8 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-base font-normal mb-1 truncate">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base font-normal mb-1 break-words pr-2">
                 {video.title}
               </h3>
               <div className="text-sm text-gray-600">
