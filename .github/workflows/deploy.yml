@@ -10,16 +10,12 @@ jobs:
       NEXTAUTH_URL: https://www.fsbone.com
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       AUTH_TRUST_HOST: true
-      ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
-      ECR_REPOSITORY: fsbone-app
     
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 1
+    - uses: actions/checkout@v2
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -27,24 +23,46 @@ jobs:
 
     - name: Login to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Debug environment variables
+      env:
+        AUTH_URL: ${{ secrets.AUTH_URL }}
+        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+        DATABASE_USER: ${{ secrets.DATABASE_USER }}
+        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        NEXT_PUBLIC_AWS_REGION: ${{ secrets.NEXT_PUBLIC_AWS_REGION }}
+        NEXT_PUBLIC_AWS_BUCKET_NAME: ${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
+      run: |
+        echo "Checking environment variables..."
+        env | sort
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      with:
-        buildkitd-flags: --debug
 
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
           ${{ runner.os }}-buildx-
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       env:
+        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
+        ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
       with:
         context: .
@@ -53,7 +71,7 @@ jobs:
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
         cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
         platforms: linux/amd64
         provenance: false
         build-args: |
@@ -73,9 +91,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }}
           NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
-        outputs: type=registry,push=true
 
     - name: Deploy to EKS
+      env:
+        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
+        ECR_REPOSITORY: fsbone-app
+        IMAGE_TAG: ${{ github.sha }}
       run: |
         aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
         kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} --record
@@ -86,15 +107,20 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
 
-    - name: Cleanup old images
-      if: success()
+    - name: Debug deployment
+      if: ${{ failure() }}
       run: |
-        KEEP_IMAGES=5
-        IMAGES=$(aws ecr describe-images --repository-name $ECR_REPOSITORY --query 'imageDetails[?!contains(imageTags[],`latest`)].imageDigest' --output text)
-        COUNT=$(echo "$IMAGES" | wc -w)
-        if [ "$COUNT" -gt "$KEEP_IMAGES" ]; then
-          IMAGES_TO_DELETE=$(echo "$IMAGES" | tr ' ' '\n' | head -n $(($COUNT - $KEEP_IMAGES)))
-          for digest in $IMAGES_TO_DELETE; do
-            aws ecr batch-delete-image --repository-name $ECR_REPOSITORY --image-ids imageDigest=$digest
-          done
-        fi
+        echo "=== Deployment Status ==="
+        kubectl describe deployment fsbone-app
+        
+        echo "=== Pod Status ==="
+        kubectl get pods -l app=fsbone-app
+        
+        echo "=== Pod Logs ==="
+        for pod in $(kubectl get pods -l app=fsbone-app -o jsonpath='{.items[*].metadata.name}'); do
+          echo "Logs for $pod:"
+          kubectl logs $pod --all-containers --tail=50
+        done
+        
+        echo "=== Events ==="
+        kubectl get events --sort-by='.lastTimestamp'
