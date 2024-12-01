@@ -385,8 +385,25 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       </div>
 
       {selectedVideo && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ position: 'relative', width: '80%', maxWidth: '1600px', aspectRatio: '16 / 9', backgroundColor: 'black' }}>
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%', 
+          backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          zIndex: 1000 
+        }}>
+          <div style={{ 
+            position: 'relative', 
+            width: '90%', 
+            height: '90vh', 
+            maxWidth: '1600px',
+            margin: 'auto' 
+          }}>
             {isLoading && (
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
                 <CircularProgress />
@@ -395,14 +412,34 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
             <video
               onLoadStart={() => setIsLoading(true)}
               onCanPlay={() => setIsLoading(false)}
-              width="100%"
-              height="100%"
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'contain' 
+              }}
               src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
               controls
               autoPlay
-              style={{ position: 'absolute', top: 0, left: 0 }}
             />
-            <button onClick={closeVideo} style={{ position: 'absolute', top: '-40px', right: '0', background: 'transparent', border: 'none', padding: '10px', cursor: 'pointer', fontSize: '24px', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '40px', height: '40px', borderRadius: '50%' }}>
+            <button 
+              onClick={closeVideo} 
+              style={{ 
+                position: 'absolute', 
+                top: '-40px', 
+                right: '0',
+                background: 'transparent', 
+                border: 'none', 
+                padding: '10px', 
+                cursor: 'pointer', 
+                fontSize: '24px', 
+                color: 'white', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                width: '40px', 
+                height: '40px', 
+                borderRadius: '50%' 
+              }}>
               &#10005;
             </button>
           </div>
