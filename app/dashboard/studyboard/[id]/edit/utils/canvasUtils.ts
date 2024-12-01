@@ -60,7 +60,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
 
   // 위쪽 텍스트
   ctx.font = 'bold 14px Arial';
-  ctx.fillStyle = '#f07500';
+  ctx.fillStyle = '#ED7D31';
   ctx.fillText(node.text1 || '', textX, -minHeight / 2 + 18);
 
   // 가운데 텍스트
