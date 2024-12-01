@@ -795,13 +795,6 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const nodeCtx = nodeCanvas.getContext('2d');
       const drawCtx = drawCanvas.getContext('2d');
       if (nodeCtx && drawCtx) {
-      // 기존 변환 초기화
-        nodeCtx.resetTransform();
-        drawCtx.resetTransform();
-        
-        // 선명한 렌더링을 위한 0.5픽셀 조정
-        nodeCtx.translate(0.5, 0.5);
-        drawCtx.translate(0.5, 0.5);        
         
         redrawNodesAndLinks(nodeCtx, nodes, drag ? null : selectionArea);      
         redrawDrawActions(drawCtx, drawActions);
