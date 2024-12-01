@@ -215,7 +215,7 @@ export const drawLinks = (
           ctx.strokeStyle = '#000';
           ctx.stroke();
         } else if (link.lineStyle === 'Describing' || link.lineStyle === 'Engaging') {
-          ctx.strokeStyle = '#05f';
+          ctx.strokeStyle = '#2F5597';
           ctx.lineWidth = 6;
           const angle = drawCurvedLine(ctx, fromPnt.x, fromPnt.y, toPnt.x, toPnt.y);
 
@@ -229,7 +229,7 @@ export const drawLinks = (
           ctx.lineTo(toPnt.x - headlen * Math.cos(angle + Math.PI / 6), toPnt.y - headlen * Math.sin(angle + Math.PI / 6));
           ctx.closePath();
           ctx.stroke();
-          ctx.fillStyle = '#acf';
+          ctx.fillStyle = '#5B9BD5';
           ctx.fill();          
         } else if (link.lineStyle === 'Adding') {
           ctx.setLineDash([]);
