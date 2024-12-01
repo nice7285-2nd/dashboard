@@ -96,10 +96,10 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
     };
   }, [video.videoUrl]);
 
-  const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const handleTimeUpdate = () => {
@@ -418,36 +418,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           <div className="flex flex-col lg:flex-row flex-1 max-h-[calc(100vh-80px)]">
             <div className="flex-1 flex flex-col">
               <div className="relative flex-1">
-                {isLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <CircularProgress />
-                  </div>
-                )}
-                <ReactPlayer
-                  url={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
-                  className="w-full h-full"
-                  width="100%"
-                  height="100%"
-                  playing={true}
-                  controls={true}
-                  pip={true}
-                  stopOnUnmount={true}
-                  playbackRate={1}
-                  volume={1}
-                  muted={false}
-                  onReady={() => setIsLoading(false)}
-                  onStart={() => setIsLoading(false)}
-                  onBuffer={() => setIsLoading(true)}
-                  onBufferEnd={() => setIsLoading(false)}
-                  config={{
-                    file: {
-                      attributes: {
-                        controlsList: 'nodownload',
-                        onContextMenu: (e: React.MouseEvent) => e.preventDefault()
-                      }
-                    }
-                  }}
-                />
+                <CustomVideoPlayer video={selectedVideo} />
               </div>
 
               <div className="lg:hidden bg-black p-4">
@@ -532,6 +503,342 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           onConfirm={handleConfirm} 
           onCancel={handleCancel} 
         />
+      )}
+    </div>
+  );
+};
+
+const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
+  const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [muted, setMuted] = useState(false);
+  const [played, setPlayed] = useState(0);
+  const [loaded, setLoaded] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [pip, setPip] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [seeking, setSeeking] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [loop, setLoop] = useState(false);
+  const [quality, setQuality] = useState('auto');
+  const [showSettings, setShowSettings] = useState(false);
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [subtitle, setSubtitle] = useState<string | null>(null);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+
+  const playerRef = useRef<ReactPlayer>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
+
+  // 키보드 단축키 설정
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      switch(e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault();
+          setPlaying(prev => !prev);
+          break;
+        case 'f':
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case 'm':
+          e.preventDefault();
+          toggleMute();
+          break;
+        case 'j':
+          e.preventDefault();
+          handleRewind();
+          break;
+        case 'l':
+          e.preventDefault();
+          handleFastForward();
+          break;
+        case 'arrowleft':
+          e.preventDefault();
+          handleSmallRewind();
+          break;
+        case 'arrowright':
+          e.preventDefault();
+          handleSmallForward();
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          handleVolumeChange(Math.min(volume + 0.1, 1));
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          handleVolumeChange(Math.max(volume - 0.1, 0));
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [volume, playing]);
+
+  // 컨트롤 자동 숨김
+  useEffect(() => {
+    const handleMouseMove = () => {
+      setShowControls(true);
+      setLastActivity(Date.now());
+      
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+      
+      controlsTimeoutRef.current = setTimeout(() => {
+        if (playing && Date.now() - lastActivity > 3000) {
+          setShowControls(false);
+        }
+      }, 3000);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, [playing, lastActivity]);
+
+  // 북마크 관리
+  const addBookmark = () => {
+    const currentTime = playerRef.current?.getCurrentTime() || 0;
+    setBookmarks(prev => [...prev, currentTime].sort((a, b) => a - b));
+  };
+
+  const removeBookmark = (time: number) => {
+    setBookmarks(prev => prev.filter(t => t !== time));
+  };
+
+  const jumpToBookmark = (time: number) => {
+    playerRef.current?.seekTo(time);
+  };
+
+  // 화질 설정
+  const qualities = ['auto', '1080p', '720p', '480p', '360p'];
+
+  // 자막 설정
+  const handleSubtitleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSubtitle(e.target?.result as string);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const toggleMute = () => setMuted(prev => !prev);
+  const toggleFullscreen = () => setFullscreen(prev => !prev);
+  const handleRewind = () => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 10);
+  const handleFastForward = () => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 10);
+  const handleSmallRewind = () => playerRef.current?.seekTo(playerRef.current.getCurrentTime() - 5);
+  const handleSmallForward = () => playerRef.current?.seekTo(playerRef.current.getCurrentTime() + 5);
+  const handleVolumeChange = (value: number) => setVolume(value);
+  const handleProgress = (state: { played: number; loaded: number }) => {
+    setPlayed(state.played);
+    setLoaded(state.loaded);
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div 
+      ref={playerContainerRef} 
+      className="relative group"
+      style={{
+        filter: `brightness(${brightness}%) contrast(${contrast}%)`
+      }}
+    >
+      <ReactPlayer
+        ref={playerRef}
+        url={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
+        width="100%"
+        height="100%"
+        playing={playing}
+        volume={volume}
+        muted={muted}
+        playbackRate={playbackRate}
+        pip={pip}
+        loop={loop}
+        onProgress={handleProgress}
+        onDuration={setDuration}
+        onBuffer={() => setBuffering(true)}
+        onBufferEnd={() => setBuffering(false)}
+        onError={(e) => console.error('비디오 재생 오류:', e)}
+        config={{
+          file: {
+            attributes: {
+              crossOrigin: "anonymous",
+            },
+            tracks: subtitle ? [
+              {
+                kind: 'subtitles',
+                src: URL.createObjectURL(new Blob([subtitle], { type: 'text/vtt' })),
+                srcLang: 'ko',
+                default: true,
+                label: '한국어',
+              }
+            ] : undefined,
+          }
+        }}
+      />
+
+      {/* 컨트롤 오버레이 */}
+      <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+        {/* 상단 컨트롤 바 */}
+        <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4">
+          <div className="flex justify-between items-center">
+            <div className="text-white text-lg font-medium">{video.title}</div>
+            <div className="flex items-center space-x-4">
+              {/* 설정 버튼 */}
+              <button 
+                onClick={() => setShowSettings(!showSettings)} 
+                className="text-white hover:text-red-500"
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 설정 메뉴 */}
+        {showSettings && (
+          <div className="absolute top-16 right-4 bg-black/90 rounded-lg p-4 text-white">
+            <div className="space-y-4">
+              {/* 화질 설정 */}
+              <div>
+                <label className="block mb-2">화질</label>
+                <select 
+                  value={quality} 
+                  onChange={(e) => setQuality(e.target.value)}
+                  className="bg-gray-800 rounded p-1"
+                >
+                  {qualities.map(q => (
+                    <option key={q} value={q}>{q}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 밝기 조절 */}
+              <div>
+                <label className="block mb-2">밝기</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={brightness}
+                  onChange={(e) => setBrightness(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+
+              {/* 대비 조절 */}
+              <div>
+                <label className="block mb-2">대비</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={contrast}
+                  onChange={(e) => setContrast(Number(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+
+              {/* 자막 업로드 */}
+              <div>
+                <label className="block mb-2">자막 업로드</label>
+                <input
+                  type="file"
+                  accept=".vtt,.srt"
+                  onChange={handleSubtitleUpload}
+                  className="text-sm"
+                />
+              </div>
+
+              {/* 반복 재생 */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={loop}
+                  onChange={(e) => setLoop(e.target.checked)}
+                  className="mr-2"
+                />
+                <label>반복 재생</label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 북마크 목록 */}
+        {showBookmarks && (
+          <div className="absolute top-16 left-4 bg-black/90 rounded-lg p-4 text-white">
+            <h3 className="mb-2">북마크</h3>
+            <div className="space-y-2">
+              {bookmarks.map((time) => (
+                <div key={time} className="flex items-center justify-between">
+                  <button
+                    onClick={() => jumpToBookmark(time)}
+                    className="text-white hover:text-red-500"
+                  >
+                    {formatTime(time)}
+                  </button>
+                  <button
+                    onClick={() => removeBookmark(time)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 하단 컨트롤 바 */}
+        {/* ... 기존 컨트롤 바 코드 ... */}
+        
+        {/* 추가 컨트롤 버튼들 */}
+        <div className="absolute bottom-20 right-4 flex flex-col space-y-2">
+          <button
+            onClick={addBookmark}
+            className="bg-white/10 hover:bg-white/20 p-2 rounded-full"
+            title="북마크 추가"
+          >
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </button>
+          
+          <button
+            onClick={() => setShowBookmarks(!showBookmarks)}
+            className="bg-white/10 hover:bg-white/20 p-2 rounded-full"
+            title="북마크 목록"
+          >
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* 버퍼링 인디케이터 */}
+      {buffering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent"/>
+        </div>
       )}
     </div>
   );
