@@ -250,13 +250,13 @@ export const drawLinks = (
           ctx.fill();
         } else if (link.lineStyle === 'equal') {
           ctx.setLineDash([]);
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           
           // 각도 계산
           const angle = Math.atan2(toPnt.y - fromPnt.y, toPnt.x - fromPnt.x);
           const gap = 4; // 평행선 사이의 간격
 
-          ctx.strokeStyle = '#9be';
+          ctx.strokeStyle = '#5B9BD5';
 
           // 첫 번째 선
           ctx.beginPath();
