@@ -414,26 +414,58 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
             </button>
           </div>
 
-          <div className="flex flex-1 max-h-[calc(100vh-80px)]">
-            <div className="flex-1 relative">
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <CircularProgress />
+          <div className="flex flex-col lg:flex-row flex-1 max-h-[calc(100vh-80px)]">
+            <div className="flex-1 flex flex-col">
+              <div className="relative flex-1">
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <CircularProgress />
+                  </div>
+                )}
+                <video
+                  onLoadStart={() => setIsLoading(true)}
+                  onCanPlay={() => setIsLoading(false)}
+                  className="w-full h-full object-contain"
+                  src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+                  controls
+                  autoPlay
+                  controlsList="nodownload"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              </div>
+
+              <div className="lg:hidden bg-black p-4">
+                <div className="text-white">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                      <Image 
+                        src={selectedVideo.user?.profileImageUrl || '/default-profile.svg'} 
+                        alt={selectedVideo.author}
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="font-medium mb-1">{selectedVideo.author}</h3>
+                      <div className="text-sm text-gray-400">
+                        조회수 {selectedVideo.views.toLocaleString()}회 • 
+                        {selectedVideo.createdAt && getTimeAgo(selectedVideo.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-gray-900 rounded-lg">
+                    <h4 className="font-medium mb-2">동영상 정보</h4>
+                    <p className="text-sm text-gray-400 whitespace-pre-wrap">
+                      {selectedVideo.title}
+                    </p>
+                  </div>
                 </div>
-              )}
-              <video
-                onLoadStart={() => setIsLoading(true)}
-                onCanPlay={() => setIsLoading(false)}
-                className="w-full h-full object-contain"
-                src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
-                controls
-                autoPlay
-                controlsList="nodownload"
-                onContextMenu={(e) => e.preventDefault()}
-              />
+              </div>
             </div>
 
-            <div className="w-[400px] bg-black p-4 overflow-y-auto">
+            <div className="hidden lg:block w-[400px] bg-black p-4 overflow-y-auto">
               <div className="text-white">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
