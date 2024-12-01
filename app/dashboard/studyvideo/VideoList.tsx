@@ -318,7 +318,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         // 삭제할 비디오의 정보 찾기
         const videoToDelete = videos.find(v => v.id === id);
         if (!videoToDelete) {
-          throw new Error('비디���를 찾을 수 없습니다.');
+          throw new Error('비디오를 찾을 수 없습니다.');
         }
 
         // videoUrl에서 S3 키 추출 (앞의 '/' 제거)
