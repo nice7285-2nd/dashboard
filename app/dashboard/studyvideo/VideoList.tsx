@@ -7,6 +7,7 @@ import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
+import ReactPlayer from 'react-player';
 
 interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; user?: {
   profileImageUrl: string | null;
@@ -317,7 +318,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         // 삭제할 비디오의 정보 찾기
         const videoToDelete = videos.find(v => v.id === id);
         if (!videoToDelete) {
-          throw new Error('비디오를 찾을 수 없습니다.');
+          throw new Error('비디���를 찾을 수 없습니다.');
         }
 
         // videoUrl에서 S3 키 추출 (앞의 '/' 제거)
@@ -422,15 +423,30 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                     <CircularProgress />
                   </div>
                 )}
-                <video
-                  onLoadStart={() => setIsLoading(true)}
-                  onCanPlay={() => setIsLoading(false)}
-                  className="w-full h-full object-contain"
-                  src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
-                  controls
-                  autoPlay
-                  controlsList="nodownload"
-                  onContextMenu={(e) => e.preventDefault()}
+                <ReactPlayer
+                  url={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+                  className="w-full h-full"
+                  width="100%"
+                  height="100%"
+                  playing={true}
+                  controls={true}
+                  pip={true}
+                  stopOnUnmount={true}
+                  playbackRate={1}
+                  volume={1}
+                  muted={false}
+                  onReady={() => setIsLoading(false)}
+                  onStart={() => setIsLoading(false)}
+                  onBuffer={() => setIsLoading(true)}
+                  onBufferEnd={() => setIsLoading(false)}
+                  config={{
+                    file: {
+                      attributes: {
+                        controlsList: 'nodownload',
+                        onContextMenu: (e: React.MouseEvent) => e.preventDefault()
+                      }
+                    }
+                  }}
                 />
               </div>
 
