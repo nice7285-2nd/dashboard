@@ -7,13 +7,29 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const result = await prisma.studyreclist.findMany({
+    const studyrecs = await prisma.studyreclist.findMany({
+      include: {
+        user: {
+          select: {
+            profileImageUrl: true
+          }
+        }
+      },
       orderBy: {
         createdAt: 'desc'
       }
     });
 
-    return NextResponse.json(result);
+    const flattenedResult = studyrecs.map(studyrec => ({
+      ...studyrec,
+      id: studyrec.id.toString(),
+      user: studyrec.user ? {
+        ...studyrec.user,
+        profileImageUrl: studyrec.user.profileImageUrl || null
+      } : undefined
+    }));
+
+    return NextResponse.json(flattenedResult);
   } catch (error) {
     console.error('Database Error:', error);
     return NextResponse.json(

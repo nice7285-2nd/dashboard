@@ -31,6 +31,20 @@ export type LessonsTable = {
   };
 };
 
+export type StudyrecWithUser = {
+  id: number;
+  email: string;
+  author: string;
+  title: string;
+  path: string;
+  views: number;
+  createdAt: Date;
+  user?: {
+    id: string;
+    name: string;
+    profileImageUrl: string | null;
+  };
+};
 
 export type UsersTable = {
   id: string;
@@ -41,5 +55,4 @@ export type UsersTable = {
   loginAt: Date;
   profileImageUrl: string;
 };  
-
 
