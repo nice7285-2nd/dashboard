@@ -15,6 +15,26 @@ interface VideoListProps {
   email: string | undefined;
 }
 
+const getTimeAgo = (createdAt: string) => {
+  const now = new Date().getTime();
+  const created = new Date(createdAt).getTime();
+  const diff = now - created;
+
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
+
+  if (months > 0) {
+    return `${months}개월 전`;
+  } else if (days > 0) {
+    return `${days}일 전`;
+  } else if (hours > 0) {
+    return `${hours}시간 전`;
+  } else {
+    return '방금 전';
+  }
+};
+
 const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video: Video & { createdAt?: string }; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined; userEmail: string | undefined }) => {
   const [isHovering, setIsHovering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -36,26 +56,6 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
   const handleMouseLeave = () => {
     setIsHovering(false);
     videoRef.current?.pause();
-  };
-
-  const getTimeAgo = (createdAt: string) => {
-    const now = new Date().getTime();
-    const created = new Date(createdAt).getTime();
-    const diff = now - created;
-
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const months = Math.floor(days / 30);
-
-    if (months > 0) {
-      return `${months}개월 전`;
-    } else if (days > 0) {
-      return `${days}일 전`;
-    } else if (hours > 0) {
-      return `${hours}시간 전`;
-    } else {
-      return '방금 전';
-    }
   };
 
   useEffect(() => {
@@ -393,57 +393,71 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           left: 0, 
           width: '100%', 
           height: '100%', 
-          backgroundColor: 'rgba(0, 0, 0, 0.8)', 
+          backgroundColor: 'rgba(0, 0, 0, 0.95)', 
           display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
+          flexDirection: 'column', 
           zIndex: 1000 
         }}>
-          <div style={{ 
-            position: 'relative', 
-            width: '90%', 
-            height: '90vh', 
-            maxWidth: '1600px',
-            margin: 'auto' 
-          }}>
-            {isLoading && (
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                <CircularProgress />
-              </div>
-            )}
-            <video
-              onLoadStart={() => setIsLoading(true)}
-              onCanPlay={() => setIsLoading(false)}
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'contain' 
-              }}
-              src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
-              controls
-              autoPlay
-            />
+          <div className="flex justify-between items-center p-4 text-white">
+            <h2 className="text-xl font-medium">{selectedVideo.title}</h2>
             <button 
-              onClick={closeVideo} 
-              style={{ 
-                position: 'absolute', 
-                top: '-40px', 
-                right: '0',
-                background: 'transparent', 
-                border: 'none', 
-                padding: '10px', 
-                cursor: 'pointer', 
-                fontSize: '24px', 
-                color: 'white', 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                width: '40px', 
-                height: '40px', 
-                borderRadius: '50%' 
-              }}>
-              &#10005;
+              onClick={closeVideo}
+              className="hover:bg-gray-700 rounded-full p-2 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
+          </div>
+
+          <div className="flex flex-1 max-h-[calc(100vh-80px)]">
+            <div className="flex-1 relative">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CircularProgress />
+                </div>
+              )}
+              <video
+                onLoadStart={() => setIsLoading(true)}
+                onCanPlay={() => setIsLoading(false)}
+                className="w-full h-full object-contain"
+                src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${selectedVideo.videoUrl}`}
+                controls
+                autoPlay
+                controlsList="nodownload"
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            </div>
+
+            <div className="w-[400px] bg-black p-4 overflow-y-auto">
+              <div className="text-white">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                    <Image 
+                      src={selectedVideo.profileImageUrl || '/default-profile.svg'} 
+                      alt={selectedVideo.author}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">{selectedVideo.author}</h3>
+                    <div className="text-sm text-gray-400">
+                      조회수 {selectedVideo.views.toLocaleString()}회 • 
+                      {selectedVideo.createdAt && getTimeAgo(selectedVideo.createdAt)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-4 bg-gray-900 rounded-lg">
+                  <h4 className="font-medium mb-2">동영상 정보</h4>
+                  <p className="text-sm text-gray-400 whitespace-pre-wrap">
+                    {selectedVideo.title}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
