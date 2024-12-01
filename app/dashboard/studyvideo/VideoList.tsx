@@ -7,7 +7,6 @@ import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
-import ReactPlayer from 'react-player';
 
 interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; user?: {
   profileImageUrl: string | null;
@@ -224,7 +223,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         const modifiedData = (Array.isArray(data) ? data : data.rows || []).map((video: any) => ({  
           id: video.id || video.row,
           title: video.title || '제목 없음',
-          author: video.author || '저자 없음',
+          author: video.author || '저자 없��',
           email: video.email || '이메일 없음',
           path: video.path || '#',
           views: video.views || 0,
