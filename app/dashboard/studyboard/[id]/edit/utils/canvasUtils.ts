@@ -35,9 +35,9 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
     // 타원 그리기
     ctx.beginPath();
     ctx.ellipse(0, 0, minWidth/2, minHeight/2, 0, 0, 2 * Math.PI);
-    ctx.setLineDash([6, 4]); // 점선 설정
+    ctx.setLineDash([5, 2]); // 점선 설정
     ctx.strokeStyle = node.selected ? '#05f' : (node.borderColor || '#05f');
-    ctx.lineWidth = node.borderColor === '#FD5500FF' ? 2 : 2;
+    ctx.lineWidth = 1;
     ctx.stroke();
   } else {
     // 기존 사각형 그리기
