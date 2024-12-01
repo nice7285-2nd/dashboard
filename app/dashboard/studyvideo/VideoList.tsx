@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import ConfirmPopup from '@/ui/component/ConfirmPopup';
@@ -510,10 +510,116 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
 
 const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [playing, setPlaying] = useState(true);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [played, setPlayed] = useState(0);
+  const [loaded, setLoaded] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [seeking, setSeeking] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const [playbackRate, setPlaybackRate] = useState(1);
   const playerRef = useRef<ReactPlayer>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handlePlayPause = () => setPlaying(prev => !prev);
+  const handleVolumeChange = (newValue: number) => setVolume(newValue);
+  const handleToggleMute = () => setMuted(prev => !prev);
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayed(parseFloat(e.target.value));
+  };
+  const handleSeekMouseDown = () => setSeeking(true);
+  const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    setSeeking(false);
+    if (playerRef.current) {
+      playerRef.current.seekTo(parseFloat((e.target as HTMLInputElement).value));
+    }
+  };
+
+  const handleProgress = (state: { played: number; loaded: number }) => {
+    if (!seeking) {
+      setPlayed(state.played);
+      setLoaded(state.loaded);
+    }
+  };
+
+  const handleDuration = (duration: number) => {
+    setDuration(duration);
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      playerContainerRef.current?.requestFullscreen();
+      setFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setFullscreen(false);
+    }
+  };
+
+  const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    switch(e.key.toLowerCase()) {
+      case ' ':
+        e.preventDefault();
+        handlePlayPause();
+        break;
+      case 'f':
+        e.preventDefault();
+        toggleFullscreen();
+        break;
+      case 'm':
+        e.preventDefault();
+        handleToggleMute();
+        break;
+      case 'arrowleft':
+        e.preventDefault();
+        if (playerRef.current) {
+          playerRef.current.seekTo(playerRef.current.getCurrentTime() - 5);
+        }
+        break;
+      case 'arrowright':
+        e.preventDefault();
+        if (playerRef.current) {
+          playerRef.current.seekTo(playerRef.current.getCurrentTime() + 5);
+        }
+        break;
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+        e.preventDefault();
+        if (playerRef.current) {
+          playerRef.current.seekTo((parseInt(e.key) * duration) / 10);
+        }
+        break;
+    }
+  }, [duration]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [handleKeyPress]);
 
   return (
-    <div className="relative w-full h-full">
+    <div 
+      ref={playerContainerRef}
+      className="relative w-full h-full"
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
@@ -525,12 +631,18 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
         className="w-full h-full"
         width="100%"
         height="100%"
-        playing={true}
-        controls={true}
+        playing={playing}
+        volume={volume}
+        muted={muted}
+        playbackRate={playbackRate}
         onReady={() => setIsLoading(false)}
         onStart={() => setIsLoading(false)}
         onBuffer={() => setIsLoading(true)}
         onBufferEnd={() => setIsLoading(false)}
+        onProgress={handleProgress}
+        onDuration={handleDuration}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         config={{
           file: {
             attributes: {
@@ -540,6 +652,53 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
           }
         }}
       />
+      {showControls && (
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+          <div className="flex items-center gap-4 text-white">
+            <button onClick={handlePlayPause}>
+              {playing ? '⏸️' : '▶️'}
+            </button>
+            <button onClick={handleToggleMute}>
+              {muted ? '🔇' : '🔊'}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step="any"
+              value={volume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-24"
+            />
+            <span>{formatTime(duration * played)} / {formatTime(duration)}</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step="any"
+              value={played}
+              onMouseDown={handleSeekMouseDown}
+              onChange={handleSeekChange}
+              onMouseUp={handleSeekMouseUp}
+              className="flex-1"
+            />
+            <select
+              value={playbackRate}
+              onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+              className="bg-transparent text-white"
+            >
+              {[0.5, 1, 1.5, 2].map(rate => (
+                <option key={rate} value={rate}>
+                  {rate}x
+                </option>
+              ))}
+            </select>
+            <button onClick={toggleFullscreen}>
+              {fullscreen ? '⬆️' : '⬇️'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
