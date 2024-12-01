@@ -23,10 +23,9 @@ export async function GET() {
     const flattenedResult = studyrecs.map(studyrec => ({
       ...studyrec,
       id: studyrec.id.toString(),
-      user: studyrec.user ? {
-        ...studyrec.user,
-        profileImageUrl: studyrec.user.profileImageUrl || null
-      } : undefined
+      user: {
+        profileImageUrl: studyrec.user?.profileImageUrl || null
+      }
     }));
 
     return NextResponse.json(flattenedResult);
