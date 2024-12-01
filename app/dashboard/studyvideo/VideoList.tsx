@@ -151,7 +151,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
           </span>
         </div>
         <div className="flex justify-between items-start">
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
               <Image 
                 src={video.profileImageUrl || '/default-profile.svg'} 
@@ -161,8 +161,8 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
                 className="w-full h-full object-cover"
               />
             </div>
-            <div>
-              <h3 className="text-base font-normal mb-1">
+            <div className="min-w-0">
+              <h3 className="text-base font-normal mb-1 truncate">
                 {video.title}
               </h3>
               <div className="text-sm text-gray-600">
@@ -176,16 +176,18 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
             </div>
           </div>
           {(isOwner) && (
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(video.id);
-              }}
-              disabled={isDeleting}
-              className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700 disabled:opacity-50"
-            >
-              {isDeleting ? '삭제 중...' : '삭제'}
-            </button>
+            <div className="flex-shrink-0 ml-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(video.id);
+                }}
+                disabled={isDeleting}
+                className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700 disabled:opacity-50 whitespace-nowrap"
+              >
+                {isDeleting ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
           )}
         </div>
       </div>
