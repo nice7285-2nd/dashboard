@@ -8,7 +8,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
 
-interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; profileImageUrl?: string; }
+interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; path?: string; }
 
 interface VideoListProps {
   userRole: string | undefined;
@@ -154,7 +154,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
           <div className="flex gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
               <Image 
-                src={video.profileImageUrl || '/default-profile.svg'} 
+                src={video.path || '/default-profile.svg'} 
                 alt={video.author}
                 width={40}
                 height={40}
@@ -227,7 +227,6 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           views: video.views || 0,
           videoUrl: video.website_url || video.path || '#',
           createdAt: video.createdAt || null,
-          profileImageUrl: video.profileImageUrl || null,
         }));
 
         setVideos(modifiedData);
@@ -434,7 +433,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                     <Image 
-                      src={selectedVideo.profileImageUrl || '/default-profile.svg'} 
+                      src={selectedVideo.path || '/default-profile.svg'} 
                       alt={selectedVideo.author}
                       width={40}
                       height={40}
