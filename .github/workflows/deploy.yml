@@ -128,15 +128,17 @@ jobs:
     - name: Cleanup old images
       if: success()
       run: |
-        # latest 태그를 제외한 모든 이미지 삭제
+        echo "Fetching all images..."
+        # latest 태그와 현재 사용 중인 이미지를 제외한 모든 이미지 삭제
         IMAGES=$(aws ecr describe-images \
           --repository-name fsbone-app \
-          --query 'imageDetails[?!(contains(imageTags || [`none`], `latest`))].imageDigest' \
+          --query 'imageDetails[?!(contains(imageTags || [`none`], `latest`)) || imageTags == null].imageDigest' \
           --output text)
         
         if [ ! -z "$IMAGES" ]; then
-          echo "Deleting old images..."
+          echo "Deleting old images including untagged ones..."
           for digest in $IMAGES; do
+            echo "Deleting image: $digest"
             aws ecr batch-delete-image \
               --repository-name fsbone-app \
               --image-ids imageDigest=$digest
