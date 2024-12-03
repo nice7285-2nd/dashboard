@@ -131,7 +131,7 @@ jobs:
         # latest 태그를 제외한 모든 이미지 삭제
         IMAGES=$(aws ecr describe-images \
           --repository-name fsbone-app \
-          --query 'imageDetails[?!contains(imageTags[],`latest`)].imageDigest' \
+          --query 'imageDetails[?!(contains(imageTags || [`none`], `latest`))].imageDigest' \
           --output text)
         
         if [ ! -z "$IMAGES" ]; then

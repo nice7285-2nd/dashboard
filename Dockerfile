@@ -63,9 +63,6 @@ RUN npm install -g pm2
 COPY package*.json ./
 RUN npm install --build-from-source
 
-# Prisma 스키마 복사
-COPY prisma ./prisma/
-
 # 소스 파일 복사
 COPY . .
 
