@@ -124,3 +124,23 @@ jobs:
         
         echo "=== Events ==="
         kubectl get events --sort-by='.lastTimestamp'
+
+    - name: Cleanup old images
+      if: success()
+      run: |
+        # latest 태그를 제외한 모든 이미지 삭제
+        IMAGES=$(aws ecr describe-images \
+          --repository-name fsbone-app \
+          --query 'imageDetails[?!contains(imageTags[],`latest`)].imageDigest' \
+          --output text)
+        
+        if [ ! -z "$IMAGES" ]; then
+          echo "Deleting old images..."
+          for digest in $IMAGES; do
+            aws ecr batch-delete-image \
+              --repository-name fsbone-app \
+              --image-ids imageDigest=$digest
+          done
+        else
+          echo "No images to delete"
+        fi
