@@ -75,4 +75,4 @@ RUN npm run build
 EXPOSE 3000
 
 # PM2로 실행
-CMD ["pm2-runtime", "start", "npm", "--", "start"]
+CMD ["node", ".next/standalone/server.js"]

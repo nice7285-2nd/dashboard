@@ -1,4 +1,4 @@
-name: Deploy to EKS
+name: Deploy to ECS
 on:
   push:
     branches: [ main ]
@@ -92,38 +92,21 @@ jobs:
           NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }}
           NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
 
-    - name: Deploy to EKS
+    - name: Update ECS service
       env:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        aws eks update-kubeconfig --name fsbone-cluster --region ap-northeast-2
-        kubectl set image deployment/fsbone-app fsbone-app=${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} --record
-        kubectl rollout status deployment/fsbone-app --timeout=180s
+        aws ecs update-service \
+          --cluster fsbone-cluster \
+          --service fsbone-service \
+          --force-new-deployment
 
     - name: Move cache
       run: |
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
-
-    - name: Debug deployment
-      if: ${{ failure() }}
-      run: |
-        echo "=== Deployment Status ==="
-        kubectl describe deployment fsbone-app
-        
-        echo "=== Pod Status ==="
-        kubectl get pods -l app=fsbone-app
-        
-        echo "=== Pod Logs ==="
-        for pod in $(kubectl get pods -l app=fsbone-app -o jsonpath='{.items[*].metadata.name}'); do
-          echo "Logs for $pod:"
-          kubectl logs $pod --all-containers --tail=50
-        done
-        
-        echo "=== Events ==="
-        kubectl get events --sort-by='.lastTimestamp'
 
     - name: Cleanup old images
       if: success()

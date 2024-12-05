@@ -1,0 +1,36 @@
+{
+    "family": "fsbone-task",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": ["FARGATE"],
+    "cpu": "256",
+    "memory": "512",
+    "executionRoleArn": "arn:aws:iam::864981727549:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "fsbone-app",
+            "image": "864981727549.dkr.ecr.ap-northeast-2.amazonaws.com/fsbone-app:latest",
+            "portMappings": [
+                {
+                    "containerPort": 3000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "NODE_ENV",
+                    "value": "production"
+                }
+            ],
+            "command": ["node", ".next/standalone/server.js"],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/fsbone-task",
+                    "awslogs-region": "ap-northeast-2",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ]
+}
