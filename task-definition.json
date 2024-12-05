@@ -12,6 +12,7 @@
             "portMappings": [
                 {
                     "containerPort": 3000,
+                    "hostPort": 3000,
                     "protocol": "tcp"
                 }
             ],
@@ -20,9 +21,12 @@
                 {
                     "name": "NODE_ENV",
                     "value": "production"
+                },
+                {
+                    "name": "HOSTNAME",
+                    "value": "0.0.0.0"
                 }
             ],
-            "command": ["node", ".next/standalone/server.js"],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
