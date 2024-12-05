@@ -76,5 +76,9 @@ RUN npm run build
 
 EXPOSE 3000
 
-# PM2로 실행하는 대신 직접 호스트 지정
-CMD ["sh", "-c", "HOST=0.0.0.0 node .next/standalone/server.js"]
+# 환경 변수를 통한 바인딩
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+# 직접 node 실행
+CMD ["node", ".next/standalone/server.js"]
