@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  return NextResponse.json({ status: 'ok' }, { status: 200 });
+  try {
+    return new NextResponse("OK", { status: 200 });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    return new NextResponse("Error", { status: 500 });
+  }
 } 
