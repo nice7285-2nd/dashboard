@@ -28,11 +28,11 @@ const links = [
     href: '/dashboard/users',
     icon: UsersIcon,
   },
-  // {
-  //   name: 'AI 테스트',
-  //   href: '/dashboard/ai-study',
-  //   icon: ComputerDesktopIcon,
-  // },
+  {
+    name: 'AI 테스트',
+    href: '/dashboard/ai-study',
+    icon: ComputerDesktopIcon,
+  },
   { name: '사용자 계정', href: '/dashboard/account', icon: UserCircleIcon },
 ];
 
