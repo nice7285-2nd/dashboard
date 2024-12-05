@@ -12,10 +12,10 @@ jobs:
       AUTH_TRUST_HOST: true
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -23,109 +23,37 @@ jobs:
 
     - name: Login to Amazon ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Debug environment variables
-      env:
-        AUTH_URL: ${{ secrets.AUTH_URL }}
-        AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
-        NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
-        DATABASE_USER: ${{ secrets.DATABASE_USER }}
-        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
-        AWS_REGION: ${{ secrets.AWS_REGION }}
-        AWS_BUCKET_NAME: ${{ secrets.AWS_BUCKET_NAME }}
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        NEXT_PUBLIC_AWS_REGION: ${{ secrets.NEXT_PUBLIC_AWS_REGION }}
-        NEXT_PUBLIC_AWS_BUCKET_NAME: ${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
-      run: |
-        echo "Checking environment variables..."
-        env | sort
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
+    - name: Build and push image to ECR
       env:
         ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
         ECR_REPOSITORY: fsbone-app
-        IMAGE_TAG: ${{ github.sha }}
-      with:
-        context: .
-        push: true
-        tags: |
-          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
-        platforms: linux/amd64
-        provenance: false
-        build-args: |
-          AUTH_URL=${{ secrets.AUTH_URL }}
-          AUTH_SECRET=${{ secrets.AUTH_SECRET }}
-          NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }}
-          NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DATABASE_HOST=${{ secrets.DATABASE_HOST }}
-          DATABASE_USER=${{ secrets.DATABASE_USER }}
-          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-          DATABASE_NAME=${{ secrets.DATABASE_NAME }}
-          DATABASE_PORT=${{ secrets.DATABASE_PORT }}
-          AWS_REGION=${{ secrets.AWS_REGION }}
-          AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }}
-          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }}
-          NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }}
+        IMAGE_TAG: latest
+      run: |
+        docker build \
+          --build-arg AUTH_URL=${{ secrets.AUTH_URL }} \
+          --build-arg AUTH_SECRET=${{ secrets.AUTH_SECRET }} \
+          --build-arg NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
+          --build-arg NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+          --build-arg DATABASE_URL=${{ secrets.DATABASE_URL }} \
+          --build-arg DATABASE_HOST=${{ secrets.DATABASE_HOST }} \
+          --build-arg DATABASE_USER=${{ secrets.DATABASE_USER }} \
+          --build-arg DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }} \
+          --build-arg DATABASE_NAME=${{ secrets.DATABASE_NAME }} \
+          --build-arg DATABASE_PORT=${{ secrets.DATABASE_PORT }} \
+          --build-arg AWS_REGION=${{ secrets.AWS_REGION }} \
+          --build-arg AWS_BUCKET_NAME=${{ secrets.AWS_BUCKET_NAME }} \
+          --build-arg AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+          --build-arg AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+          --build-arg NEXT_PUBLIC_AWS_REGION=${{ secrets.NEXT_PUBLIC_AWS_REGION }} \
+          --build-arg NEXT_PUBLIC_AWS_BUCKET_NAME=${{ secrets.NEXT_PUBLIC_AWS_BUCKET_NAME }} \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Update ECS service
-      env:
-        ECR_REGISTRY: 864981727549.dkr.ecr.ap-northeast-2.amazonaws.com
-        ECR_REPOSITORY: fsbone-app
-        IMAGE_TAG: ${{ github.sha }}
       run: |
         aws ecs update-service \
           --cluster fsbone-cluster \
           --service fsbone-service \
           --force-new-deployment
-
-    - name: Move cache
-      run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache || true
-
-    - name: Cleanup old images
-      if: success()
-      run: |
-        echo "Fetching all images..."
-        # latest 태그와 현재 사용 중인 이미지를 제외한 모든 이미지 삭제
-        IMAGES=$(aws ecr describe-images \
-          --repository-name fsbone-app \
-          --query 'imageDetails[?!(contains(imageTags || [`none`], `latest`)) || imageTags == null].imageDigest' \
-          --output text)
-        
-        if [ ! -z "$IMAGES" ]; then
-          echo "Deleting old images including untagged ones..."
-          for digest in $IMAGES; do
-            echo "Deleting image: $digest"
-            aws ecr batch-delete-image \
-              --repository-name fsbone-app \
-              --image-ids imageDigest=$digest
-          done
-        else
-          echo "No images to delete"
-        fi
