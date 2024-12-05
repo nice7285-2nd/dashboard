@@ -1,14 +1,10 @@
 {
     "family": "fsbone-task",
-    "networkMode": "awsvpc",
-    "requiresCompatibilities": ["FARGATE"],
-    "cpu": "256",
-    "memory": "512",
-    "executionRoleArn": "arn:aws:iam::864981727549:role/ecsTaskExecutionRole",
     "containerDefinitions": [
         {
             "name": "fsbone-app",
             "image": "864981727549.dkr.ecr.ap-northeast-2.amazonaws.com/fsbone-app:latest",
+            "cpu": 0,
             "portMappings": [
                 {
                     "containerPort": 3000,
@@ -27,6 +23,8 @@
                     "value": "0.0.0.0"
                 }
             ],
+            "mountPoints": [],
+            "volumesFrom": [],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
@@ -36,5 +34,12 @@
                 }
             }
         }
-    ]
+    ],
+    "executionRoleArn": "arn:aws:iam::864981727549:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "256",
+    "memory": "512"
 }
