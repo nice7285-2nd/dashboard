@@ -76,5 +76,5 @@ RUN npm run build
 
 EXPOSE 3000
 
-# PM2로 실행
-CMD ["node", ".next/standalone/server.js"]
+# PM2로 실행하는 대신 직접 호스트 지정
+CMD ["sh", "-c", "HOST=0.0.0.0 node .next/standalone/server.js"]
