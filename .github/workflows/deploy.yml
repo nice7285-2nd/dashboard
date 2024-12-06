@@ -54,12 +54,16 @@ jobs:
     - name: Clean up old ECR images
       run: |
         # latest가 아닌 모든 이미지 삭제
-        aws ecr batch-delete-image \
+        IMAGES_TO_DELETE=$(aws ecr list-images \
           --repository-name fsbone-app \
-          --image-ids $(aws ecr list-images \
+          --query 'imageIds[?imageTag!=`latest`]' \
+          --output json)
+        
+        if [ "$IMAGES_TO_DELETE" != "[]" ]; then
+          aws ecr batch-delete-image \
             --repository-name fsbone-app \
-            --query 'imageIds[?imageTag!=`latest`]' \
-            --output json)
+            --image-ids "$IMAGES_TO_DELETE"
+        fi
 
     - name: Update ECS service
       run: |
