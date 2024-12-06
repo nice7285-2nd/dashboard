@@ -127,7 +127,7 @@ const VideoItem: React.FC<VideoItemProps> = ({ video, openVideo, onDelete, userR
             ref={videoRef} 
             src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
             preload="metadata"
-            className="w-full h-full aspect-video object-contain mb-2.5 transition-transform duration-300 rounded-lg bg-black"
+            className="w-full h-full aspect-video object-contain mb-2.5 transition-transform duration-300 rounded-lg"
             muted 
             loop 
             playsInline 
