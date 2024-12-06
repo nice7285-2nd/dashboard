@@ -201,24 +201,17 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
   }
 
   return (
-    <div style={{ margin: '0 auto', padding: '20px' }}>
-      <div style={{ marginBottom: '20px' }}>
+    <div className="mx-auto p-5">
+      <div className="mb-5">
         <input
           type="text"
           placeholder="제목으로 검색"
           value={searchTerm}
           onChange={handleSearchChange}
-          style={{
-            width: '100%',
-            padding: '10px',
-            fontSize: '16px',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            fontFamily: 'Noto Sans KR, sans-serif'
-          }}
+          className="w-full p-2.5 text-base border border-gray-300 rounded font-sans"
         />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-5">
         {filteredVideos.map((video) => (
           <VideoItem 
             key={video.id} 
@@ -232,17 +225,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
       </div>
 
       {selectedVideo && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          width: '100%', 
-          height: '100%', 
-          backgroundColor: '#f5f5f5', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          zIndex: 1000 
-        }}>
+        <div className="fixed inset-0 w-full h-full bg-slate-100 flex flex-col z-[1000]">
           <div className="flex justify-between items-center p-4 text-gray-800">
             <h2 className="text-xl font-medium">{selectedVideo.title}</h2>
             <button 
@@ -257,7 +240,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
 
           <div className="flex flex-col lg:flex-row flex-1 max-h-[calc(100vh-80px)]">
             <div className="flex-1 flex flex-col">
-              <div className="relative flex-1">
+              <div className="relative flex-1 p-4">
                 <CustomVideoPlayer video={selectedVideo} />
               </div>
 
