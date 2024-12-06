@@ -223,7 +223,7 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
         const modifiedData = (Array.isArray(data) ? data : data.rows || []).map((video: any) => ({  
           id: video.id || video.row,
           title: video.title || '제목 없음',
-          author: video.author || '저자 없��',
+          author: video.author || '저자 없음',
           email: video.email || '이메일 없음',
           path: video.path || '#',
           views: video.views || 0,
@@ -511,14 +511,14 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full flex items-center justify-center bg-black">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
         </div>
       )}
       <video
-        className="w-full h-full object-contain"
+        className="max-w-full max-h-[calc(100vh-200px)] object-contain"
         src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
         controls
         autoPlay
