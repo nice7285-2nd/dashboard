@@ -7,6 +7,7 @@ import ConfirmPopup from '@/ui/component/ConfirmPopup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
+import VideoItem from './VideoItem';
 
 interface Video { id: string; title: string; author: string; email: string; views: number; videoUrl: string; createdAt?: string; user?: {
   profileImageUrl: string | null;
@@ -35,165 +36,6 @@ const getTimeAgo = (createdAt: string) => {
   } else {
     return '방금 전';
   }
-};
-
-const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video: Video & { createdAt?: string }; openVideo: (video: Video) => void; onDelete: (id: string) => void; userRole: string | undefined; userEmail: string | undefined }) => {
-  const [isHovering, setIsHovering] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const isManager = userRole === 'admin';
-  const isOwner = userEmail === video.email;
-  const isNew = video.createdAt && (
-    new Date().getTime() - new Date(video.createdAt).getTime() < 24 * 60 * 60 * 1000
-  );
-  const [duration, setDuration] = useState<string>('');
-  const [currentTime, setCurrentTime] = useState<string>('0:00');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleMouseEnter = () => {
-    setIsHovering(true);
-    videoRef.current?.play();
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    videoRef.current?.pause();
-  };
-
-  useEffect(() => {
-    const videoElement = document.createElement('video');
-    
-    const handleCanPlay = () => {
-      videoElement.currentTime = Number.MAX_SAFE_INTEGER;
-      
-      setTimeout(() => {
-        const realDuration = videoElement.currentTime;
-        if (realDuration && !isNaN(realDuration)) {
-          const minutes = Math.floor(realDuration / 60);
-          const seconds = Math.floor(realDuration % 60);
-          setDuration(`${minutes}:${seconds.toString().padStart(2, '0')}`);
-          setIsLoading(false);
-        }
-      }, 100);
-    };
-
-    videoElement.addEventListener('canplay', handleCanPlay);
-
-    const s3Url = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`;
-
-    const absoluteUrl = video.videoUrl.startsWith('/')
-      ? `${window.location.origin}${video.videoUrl}`
-      : video.videoUrl;
-
-    // videoElement.src = absoluteUrl;
-    videoElement.src = s3Url;
-    videoElement.load();
-
-    return () => {
-      videoElement.removeEventListener('canplay', handleCanPlay);
-      videoElement.remove();
-    };
-  }, [video.videoUrl]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current && isHovering) {
-      setCurrentTime(formatTime(videoRef.current.currentTime));
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" height="200px" bgcolor="#f5f5f5">
-        <CircularProgress size={40} thickness={4} />
-      </Box>
-    );
-  }
-
-  return (
-    <div 
-      onClick={() => openVideo(video)} 
-      onMouseEnter={handleMouseEnter} 
-      onMouseLeave={handleMouseLeave}
-      style={{ position: 'relative' }}
-    >
-      <div className="flex-1">
-        <div style={{ position: 'relative' }}>
-          <video 
-            ref={videoRef} 
-            src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
-            preload="metadata"
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              aspectRatio: '16 / 9',
-              objectFit: 'contain',
-              marginBottom: '10px', 
-              transition: 'transform 0.3s ease',
-              borderRadius: '10px'
-            }} 
-            muted 
-            loop 
-            playsInline 
-            onTimeUpdate={handleTimeUpdate}
-          />
-          {isNew && (
-            <span className="absolute top-3 left-3 bg-emerald-500 bg-opacity-90 text-white text-[10px] px-2 py-1 rounded">
-              NEW
-            </span>
-          )}
-          <span className="absolute bottom-3 right-3 bg-black bg-opacity-50 text-white text-xs px-1.5 py-0.5 rounded">
-            {isHovering ? currentTime : duration}
-          </span>
-        </div>
-        <div className="flex justify-between items-start">
-          <div className="flex gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-              <Image 
-                src={video.user?.profileImageUrl || '/default-profile.svg'} 
-                alt={video.author}
-                width={40}
-                height={40}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-base font-normal mb-1 break-words pr-2">
-                {video.title}
-              </h3>
-              <div className="text-sm text-gray-600">
-                <div>{video.author}</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span>조회수 {video.views.toLocaleString()}회</span>
-                  <span>•</span>
-                  <span>{video.createdAt && getTimeAgo(video.createdAt)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          {(isOwner) && (
-            <div className="flex-shrink-0 ml-2">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(video.id);
-                }}
-                disabled={isDeleting}
-                className="bg-rose-600 bg-opacity-90 text-white border-none px-2 py-1 rounded cursor-pointer text-xs hover:bg-rose-700 disabled:opacity-50 whitespace-nowrap"
-              >
-                {isDeleting ? '삭제 중...' : '삭제'}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
@@ -396,16 +238,16 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
           left: 0, 
           width: '100%', 
           height: '100%', 
-          backgroundColor: 'rgba(0, 0, 0, 0.95)', 
+          backgroundColor: '#f5f5f5', 
           display: 'flex', 
           flexDirection: 'column', 
           zIndex: 1000 
         }}>
-          <div className="flex justify-between items-center p-4 text-white">
+          <div className="flex justify-between items-center p-4 text-gray-800">
             <h2 className="text-xl font-medium">{selectedVideo.title}</h2>
             <button 
               onClick={closeVideo}
-              className="hover:bg-gray-700 rounded-full p-2 transition-colors"
+              className="hover:bg-gray-200 rounded-full p-2 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -419,8 +261,8 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                 <CustomVideoPlayer video={selectedVideo} />
               </div>
 
-              <div className="lg:hidden bg-black p-4">
-                <div className="text-white">
+              <div className="lg:hidden bg-white p-4">
+                <div className="text-gray-800">
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                       <Image 
@@ -440,9 +282,9 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                     </div>
                   </div>
 
-                  <div className="mt-4 p-4 bg-gray-900 rounded-lg">
+                  <div className="mt-4 p-4 bg-gray-100 rounded-lg">
                     <h4 className="font-medium mb-2">동영상 정보</h4>
-                    <p className="text-sm text-gray-400 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
                       {selectedVideo.title}
                     </p>
                   </div>
@@ -450,8 +292,8 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
               </div>
             </div>
 
-            <div className="hidden lg:block w-[400px] bg-black p-4 overflow-y-auto">
-              <div className="text-white">
+            <div className="hidden lg:block w-[400px] bg-white p-4 overflow-y-auto">
+              <div className="text-gray-800">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                     <Image 
@@ -471,9 +313,9 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
                   </div>
                 </div>
 
-                <div className="mt-4 p-4 bg-gray-900 rounded-lg">
-                  <h4 className="font-medium mb-2">동영상 정보1</h4>
-                  <p className="text-sm text-gray-400 whitespace-pre-wrap">
+                <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                  <h4 className="font-medium mb-2">동영상 정보</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
                     {selectedVideo.title}
                   </p>
                 </div>
