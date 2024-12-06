@@ -53,26 +53,20 @@ jobs:
 
     - name: Clean up old ECR images
       run: |
-        # latest 태그를 제외한 모든 이미지 목록 가져오기
-        IMAGES_TO_DELETE=$(aws ecr describe-images \
+        # 현재 latest 태그의 다이제스트 가져오기
+        LATEST_DIGEST=$(aws ecr describe-images \
           --repository-name fsbone-app \
-          --query 'imageDetails[?imageTag!=`latest`].imageDigest' \
-          --output json)
+          --query 'imageDetails[?imageTag==`latest`].imageDigest' \
+          --output text)
         
-        # 삭제할 이미지가 있는지 확인
-        if [ "$(echo $IMAGES_TO_DELETE | jq 'length')" -gt 0 ]; then
-          for digest in $(echo "$IMAGES_TO_DELETE" | jq -r '.[]'); do
-            # latest 태그를 가진 이미지인지 한번 더 확인
-            if ! aws ecr describe-images \
+        # latest를 제외한 모든 이미지 삭제
+        if [ ! -z "$LATEST_DIGEST" ]; then
+          aws ecr batch-delete-image \
+            --repository-name fsbone-app \
+            --image-ids "$(aws ecr describe-images \
               --repository-name fsbone-app \
-              --image-ids imageDigest=$digest \
-              --query 'imageDetails[?imageTag==`latest`]' \
-              --output json | jq -e '.[0]' >/dev/null; then
-              aws ecr batch-delete-image \
-                --repository-name fsbone-app \
-                --image-ids imageDigest=$digest
-            fi
-          done
+              --query 'imageDetails[?imageDigest!=`'"$LATEST_DIGEST"'`].imageDigest' \
+              --output json | jq -r '.[] | "imageDigest="+.')"
         fi
 
     - name: Update ECS service
