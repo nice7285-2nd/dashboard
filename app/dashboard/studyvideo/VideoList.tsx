@@ -130,13 +130,13 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
             preload="metadata"
             style={{ 
               width: '100%', 
-              aspectRatio: '16 / 9', 
-              objectFit: 'cover', 
+              height: '100%',
+              aspectRatio: '16 / 9',
+              objectFit: 'contain',
               marginBottom: '10px', 
-              transition: 'transform 0.3s ease', 
-              // transform: isHovering ? 'scale(1.05)' : 'scale(1)', 
-              // boxShadow: isHovering ? '0 4px 8px rgba(0,0,0,0.1)' : 'none', 
-              borderRadius: '10px' 
+              transition: 'transform 0.3s ease',
+              borderRadius: '10px',
+              backgroundColor: 'black'
             }} 
             muted 
             loop 
