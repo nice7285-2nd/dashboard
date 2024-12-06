@@ -134,8 +134,8 @@ const VideoItem: React.FC<VideoItemProps> = ({ video, openVideo, onDelete, userR
               objectFit: 'contain',
               marginBottom: '10px', 
               transition: 'transform 0.3s ease',
-              borderRadius: '10px',
-              backgroundColor: 'black'
+              borderRadius: '10px'
+              // backgroundColor: 'black'
             }} 
             muted 
             loop 
