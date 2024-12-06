@@ -53,12 +53,15 @@ jobs:
 
     - name: Clean up old ECR images
       run: |
-        aws ecr batch-delete-image \
+        DIGESTS=$(aws ecr describe-images \
           --repository-name fsbone-app \
-          --image-ids "$(aws ecr describe-images \
+          --query 'imageDetails[?imageTag!=`latest`].imageDigest' \
+          --output json)
+        for digest in $(echo "$DIGESTS" | jq -r '.[]'); do
+          aws ecr batch-delete-image \
             --repository-name fsbone-app \
-            --query 'imageDetails[?imageTag!=`latest`].{imageDigest:imageDigest}' \
-            --output json | jq -r '.[] | "imageDigest=\(.imageDigest)"')"
+            --image-ids imageDigest=$digest
+        done
 
     - name: Update ECS service
       run: |
