@@ -135,8 +135,7 @@ const VideoItem = ({ video, openVideo, onDelete, userRole, userEmail }: { video:
               objectFit: 'contain',
               marginBottom: '10px', 
               transition: 'transform 0.3s ease',
-              borderRadius: '10px',
-              backgroundColor: 'black'
+              borderRadius: '10px'
             }} 
             muted 
             loop 
