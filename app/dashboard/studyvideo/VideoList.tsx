@@ -352,7 +352,7 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="relative w-full h-[calc(100vh-120px)] flex items-center justify-center bg-black">
+    <div className="relative w-full h-[calc(100vh-120px)] flex items-center justify-center">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
