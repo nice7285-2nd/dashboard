@@ -53,21 +53,13 @@ jobs:
 
     - name: Clean up old ECR images
       run: |
-        # 현재 latest 태그의 다이제스트 가져오기
-        LATEST_DIGEST=$(aws ecr describe-images \
+        # latest가 아닌 모든 이미지 삭제
+        aws ecr batch-delete-image \
           --repository-name fsbone-app \
-          --query 'imageDetails[?imageTag==`latest`].imageDigest' \
-          --output text)
-        
-        # latest를 제외한 모든 이미지 삭제
-        if [ ! -z "$LATEST_DIGEST" ]; then
-          aws ecr batch-delete-image \
+          --image-ids $(aws ecr list-images \
             --repository-name fsbone-app \
-            --image-ids "$(aws ecr describe-images \
-              --repository-name fsbone-app \
-              --query 'imageDetails[?imageDigest!=`'"$LATEST_DIGEST"'`].imageDigest' \
-              --output json | jq -r '.[] | "imageDigest="+.')"
-        fi
+            --query 'imageIds[?imageTag!=`latest`]' \
+            --output json)
 
     - name: Update ECS service
       run: |
