@@ -509,32 +509,17 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
 
 const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    if (containerRef.current) {
-      setContainerSize({
-        width: containerRef.current.clientWidth,
-        height: containerRef.current.clientHeight
-      });
-    }
-  }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center bg-black"
-    >
+    <div className="relative w-full h-[calc(100vh-120px)] flex items-center justify-center bg-black">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
         </div>
       )}
-      <div className="relative w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center p-4">
         <video
-          className="max-w-[90%] max-h-[90%] object-contain"
-          style={{ margin: 'auto' }}
+          className="w-auto h-auto max-w-full max-h-full object-contain"
           src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
           controls
           autoPlay
