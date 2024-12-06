@@ -56,9 +56,9 @@ jobs:
         aws ecr batch-delete-image \
           --repository-name fsbone-app \
           --image-ids "$(aws ecr describe-images \
-          --repository-name fsbone-app \
-          --query 'imageDetails[?imageTag!=`latest`].imageDigest' \
-          --output json | jq -r '.[] | "imageDigest="+.')"
+            --repository-name fsbone-app \
+            --query 'imageDetails[?imageTag!=`latest`].{imageDigest:imageDigest}' \
+            --output json | jq -r '.[] | "imageDigest=\(.imageDigest)"')"
 
     - name: Update ECS service
       run: |
