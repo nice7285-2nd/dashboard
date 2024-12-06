@@ -13,6 +13,13 @@
                 }
             ],
             "essential": true,
+            "healthCheck": {
+                "command": ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"],
+                "interval": 10,
+                "timeout": 5,
+                "retries": 3,
+                "startPeriod": 10
+            },
             "environment": [
                 {
                     "name": "NODE_ENV",

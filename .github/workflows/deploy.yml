@@ -65,6 +65,12 @@ jobs:
             --image-ids "$IMAGES_TO_DELETE"
         fi
 
+    - name: Update task definition
+      run: |
+        aws ecs register-task-definition \
+          --family fsbone-task \
+          --cli-input-json file://task-definition.json
+
     - name: Update ECS service
       run: |
         aws ecs update-service \
