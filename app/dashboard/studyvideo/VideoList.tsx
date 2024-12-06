@@ -509,24 +509,41 @@ const VideoList: React.FC<VideoListProps> = ({ userRole, email }) => {
 
 const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerSize({
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight
+      });
+    }
+  }, []);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-black">
+    <div 
+      ref={containerRef}
+      className="relative w-full h-full flex items-center justify-center bg-black"
+    >
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
           <CircularProgress />
         </div>
       )}
-      <video
-        className="max-w-full max-h-[calc(100vh-200px)] object-contain"
-        src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
-        controls
-        autoPlay
-        controlsList="nodownload"
-        onContextMenu={(e) => e.preventDefault()}
-        onLoadStart={() => setIsLoading(true)}
-        onCanPlay={() => setIsLoading(false)}
-      />
+      <div className="relative w-full h-full flex items-center justify-center">
+        <video
+          className="max-w-[90%] max-h-[90%] object-contain"
+          style={{ margin: 'auto' }}
+          src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
+          controls
+          autoPlay
+          controlsList="nodownload"
+          onContextMenu={(e) => e.preventDefault()}
+          onLoadStart={() => setIsLoading(true)}
+          onCanPlay={() => setIsLoading(false)}
+        />
+      </div>
     </div>
   );
 };
