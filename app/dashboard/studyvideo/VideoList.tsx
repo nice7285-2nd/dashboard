@@ -517,7 +517,7 @@ const CustomVideoPlayer: React.FC<{ video: Video }> = ({ video }) => {
           <CircularProgress />
         </div>
       )}
-      <div className="relative w-full h-full flex items-center justify-center p-4">
+      <div className="relative w-full h-full flex items-center justify-center">
         <video
           className="w-auto h-auto max-w-full max-h-full object-contain"
           src={`https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com${video.videoUrl}`}
