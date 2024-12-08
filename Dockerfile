@@ -36,32 +36,17 @@ ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
 ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 ENV NEXT_PUBLIC_AWS_REGION=$NEXT_PUBLIC_AWS_REGION
 ENV NEXT_PUBLIC_AWS_BUCKET_NAME=$NEXT_PUBLIC_AWS_BUCKET_NAME
-ENV HOSTNAME=0.0.0.0
-ENV PORT=3000
 ENV DATABASE_URL=$DATABASE_URL
 
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
-    python3 \
     make \
     g++ \
-    build-base \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev \
-    pixman-dev \
-    pangomm-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    python3-dev \
-    py3-pip
+    python3 \
+    build-base
 
 # Python 심볼릭 링크 생성
 RUN ln -sf python3 /usr/bin/python
-
-# PM2 전역 설치
-RUN npm install -g pm2
 
 # 패키지 파일 복사 및 설치
 COPY package*.json ./
@@ -77,10 +62,6 @@ RUN npx prisma generate
 RUN npm run build
 
 EXPOSE 3000
-
-# 환경 변수를 통한 바인딩
-ENV HOST=0.0.0.0
-ENV PORT=3000
 
 # 직접 node 실행
 CMD ["node", ".next/standalone/server.js"]

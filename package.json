@@ -29,7 +29,6 @@
     "bcrypt": "^5.1.1",
     "browserslist": "^4.24.0",
     "caniuse-lite": "^1.0.30001664",
-    "canvas": "^2.11.2",
     "clsx": "^2.0.0",
     "formidable": "^3.5.1",
     "jquery": "^3.7.1",
