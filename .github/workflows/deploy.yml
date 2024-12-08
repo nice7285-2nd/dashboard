@@ -6,10 +6,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      NEXTAUTH_URL: https://www.fsbone.com
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-      AUTH_TRUST_HOST: true
     
     steps:
     - uses: actions/checkout@v3
