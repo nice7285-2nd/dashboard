@@ -8,18 +8,18 @@ import SaveLessonPopup from '@/ui/component/SaveLessonPopup';
 import SaveRecPopup from '@/ui/component/SaveRecPopup';
 import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NSelector from '@/ui/component/NSelector';
-import { isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from './utils/canvasUtils';
-import { startRec, stopRec, saveRec, startRecTimer, stopRecTimer } from './utils/recUtils';
+import { isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from '@/utils/canvasUtils';
+import { startRec, stopRec, saveRec, startRecTimer, stopRecTimer } from '@/utils/recUtils';
 import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
 import { CircularProgress, Box } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { deleteSelectedNodes } from './utils/canvasUtils';
-import { startEdit, finishEdit, cancelEdit } from './utils/canvasUtils';
-import { alignNodesV, alignNodesH } from './utils/canvasUtils';
-import { saveCanvas } from './utils/canvasUtils';
-import { finishEditLink } from './utils/canvasUtils';
-import { hndTouchStart, hndTouchMove, hndTouchEnd } from './utils/touchHandlers';
+import { deleteSelectedNodes } from '@/utils/canvasUtils';
+import { startEdit, finishEdit, cancelEdit } from '@/utils/canvasUtils';
+import { alignNodesV, alignNodesH } from '@/utils/canvasUtils';
+import { saveCanvas } from '@/utils/canvasUtils';
+import { finishEditLink } from '@/utils/canvasUtils';
+import { hndTouchStart, hndTouchMove, hndTouchEnd } from '@/utils/touchHandlers';
 
 interface EditStudyBoardClientProps {params: { id: string }; author: string | null; email: string | null;}
 const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, author, email }) => {

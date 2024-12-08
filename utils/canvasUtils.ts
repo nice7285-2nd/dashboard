@@ -1,5 +1,5 @@
-import { Node, SelectionArea, DrawAction, Link, EditLink } from '../types';
-import { createLesson } from '../actions';
+import { Node, SelectionArea, DrawAction, Link, EditLink } from './types';
+import { createLesson } from './actions';
 import { toast } from 'react-toastify';
 
 export const drawRoundedRect = (

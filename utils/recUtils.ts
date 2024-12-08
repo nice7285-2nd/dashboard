@@ -1,5 +1,5 @@
 import { toast } from 'react-toastify';
-import { createStudyRec } from '../actions';
+import { createStudyRec } from './actions';
 
 export const formatRecordingTime = (startTime: number): string => {
   const elapsedTime = Date.now() - startTime;
