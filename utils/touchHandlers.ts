@@ -1,5 +1,5 @@
 import { getTouchPos } from './canvasUtils';
-import { Node, Tool } from '../types';
+import { Node, Tool } from './types';
 
 export const hndTouchStart = (
   e: React.TouchEvent<HTMLCanvasElement>,
