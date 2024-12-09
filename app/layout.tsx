@@ -9,6 +9,9 @@ export const metadata: Metadata = {
     default: 'Fishbone',
   },
   description: 'Fishbone',
+  icons: {
+    icon: '/favicon.ico?v=2',
+  },
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
 };
 

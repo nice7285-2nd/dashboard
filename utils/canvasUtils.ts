@@ -32,7 +32,7 @@ export const drawNode = (ctx: CanvasRenderingContext2D, node: Node) => {
   const minHeight = Math.max(node.height, 100);
 
   if (node.nodeShape === 'ellipse') {
-    // 타원 그리기
+    // 타원 그리���
     ctx.beginPath();
     ctx.ellipse(0, 0, minWidth/2, minHeight/2, 0, 0, 2 * Math.PI);
     ctx.setLineDash([5, 2]); // 점선 설정
@@ -865,7 +865,7 @@ export const saveCanvas = async (
   }
 
   // 저장 중임을 알리는 toast
-  const toastId = toast.loading('교안을 저장하는 중입니다...', {
+  const toastId = toast.loading('교안 저장하는 중입니다...', {
     position: "bottom-right",
   });
 
@@ -927,5 +927,3 @@ export const saveCanvas = async (
     });
   }
 };
-
- 

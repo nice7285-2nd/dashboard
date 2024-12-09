@@ -1,0 +1,18 @@
+<svg width="31.4" height="24" viewBox="3.5 3.5 22 17" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+  
+  <!-- 노드들 -->
+  <circle cx="12" cy="7" r="3.5" fill="#FFA500"/>
+  <circle cx="22" cy="7" r="3.5" fill="#FFA500"/>
+  <circle cx="7" cy="17" r="3.5" fill="#FFA500"/>
+  <circle cx="17" cy="17" r="3.5" fill="#FFA500"/>
+  
+  <!-- 연결선 -->
+  <path d="
+    M12 7 L7 17
+    M12 7 L17 17
+    M22 7 L17 17"
+    stroke="#FFA500"
+    stroke-width="1.5"
+    stroke-linecap="round"
+  />
+</svg>

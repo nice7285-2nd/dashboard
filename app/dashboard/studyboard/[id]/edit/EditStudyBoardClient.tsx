@@ -10,7 +10,7 @@ import ClearConfirmPopup from '@/ui/component/ClearConfirmPopup';
 import NSelector from '@/ui/component/NSelector';
 import { isNodeInSelectionArea, getLinkPnt, getCurvedLinkTopPnt, getSolidLinkTopPnt, drawLinks, addNode, getClickedNodeAndHandle, getClickedNode, getNodeSide, getTouchPos, isDragSignificant, redrawNodesAndLinks, redrawDrawActions } from '@/utils/canvasUtils';
 import { startRec, stopRec, saveRec, startRecTimer, stopRecTimer } from '@/utils/recUtils';
-import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from './types';
+import { Tool, Node, DragState, SelectionArea, DrawAction, Link, TemporaryLink, EditLink } from '../../../../../utils/types';
 import { CircularProgress, Box } from '@mui/material';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -89,6 +89,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const [recordingTime, setRecordingTime] = useState<string>('00:00');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+  const [englishText, setEnglishText] = useState('');
 
   // 전체 지우기 함수
   const clearAll = () => {
@@ -138,6 +139,59 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     setLastNode(newNode);
 
     if (nodeShape === 'single') {startEdit(newNode, setEditNode, setEditText);}
+  };
+
+  const hndAddNodesFromText = (e: KeyboardEvent) => {
+    if (e.key === 'Enter' && englishText.trim()) {
+      if (!canvasRef.current) return;
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+
+      const words = englishText.trim().split(/\s+/);
+      let currentNodes = [...nodes];
+      let currentMaxZIndex = maxZIndex;
+      
+      words.forEach((word, index) => {
+        const { newNode, newMaxZIndex } = addNode(
+          currentNodes,
+          canvasRect.width, 
+          canvasRect.height,
+          currentMaxZIndex + index,
+          'single',
+          '#5B9BD5FF'
+        );
+
+        if (!newNode) {
+          toast.error('노드를 추가할 공간이 없습니다.');
+          return;
+        }
+
+        const node: Node = {
+          id: Date.now() + index,
+          x: newNode.x,
+          y: newNode.y,
+          width: newNode.width,
+          height: newNode.height,
+          text1: '',
+          text2: word,
+          text3: '',
+          textAlign: '',
+          links: [],
+          selected: false,
+          zIndex: newNode.zIndex,
+          backgroundColor: '#FFE699FF',
+          borderColor: '#5B9BD5FF',
+          nodeShape: 'single',
+          rotation: 0
+        };
+
+        currentNodes = [...currentNodes, node];
+        currentMaxZIndex = newMaxZIndex;
+      });
+
+      setNodes(currentNodes);
+      setMaxZIndex(currentMaxZIndex);
+      setEnglishText('');
+    }
   };
 
   const hndDeleteSelectedNodes = () => {
@@ -533,7 +587,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   const hndLineWidthChange = (lineWidth: string) => {setLineWidth(lineWidth);};
   const hndEraserSizeChange = (eraserSize: string) => {setEraserSize(Number(eraserSize));};
 
-  // 히토리에 현재 상태 추가 함수 수정
+  // 히토리에 현재 상태 가 함수 수정
   const addToHistory = () => {
     setHistory(prevHistory => {
       // 새로운 상태를 추가합니다.
@@ -970,6 +1024,18 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           )}
         </div>
       </div>
+      <div className="w-full mt-[10px]">
+        <div className="bg-white rounded-lg p-2">
+          <input
+            type="text"
+            value={englishText}
+            onChange={(e) => setEnglishText(e.target.value)}
+            onKeyDown={(e) => hndAddNodesFromText(e)}
+            className="w-full px-4 py-2 text-lg rounded-lg border border-gray-300 focus:outline-none focus:ring-0"
+            placeholder="Enter English sentence and press Enter..."
+          />
+        </div>
+      </div>      
       <div className="pt-[20px] pb-[20px] rounded-[10px] flex flex-wrap justify-center items-center z-[10] gap-[10px]">
         {isRender('save') && <ToolIcon tool="save" icon={<CloudArrowUpIcon className="h-6 w-6" />} onClick={hndSaveClick} currTool={tool} />}
         {isRender('move') && <ToolIcon tool="move" icon="/icon-move.svg" onClick={() => hndToolChange('move')} currTool={tool} />}
@@ -1000,6 +1066,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       {showSaveRecPopup && <SaveRecPopup author={author || ''} email={email || ''} onSave={hndSaveRec} onCancel={() => setShowSaveRecPopup(false)} />}
       {showClearConfirmPopup && <ClearConfirmPopup onConfirm={clearAll} onCancel={() => setShowClearConfirmPopup(false)} />}
       <ToastContainer position="bottom-right" autoClose={1000} />
+
     </div>
   );
 };
