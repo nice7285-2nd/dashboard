@@ -1,25 +1,25 @@
 <svg width="32" height="32" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-  <!-- 배경 둥근 사각형 -->
-  <rect 
-    x="0" 
-    y="0" 
-    width="32" 
-    height="32" 
-    rx="6"
-    fill="#8B5CF6"
+  <!-- 물고기 몸통 -->
+  <path d="
+    M4 16 
+    C4 10, 12 4, 22 4
+    C28 4, 30 10, 30 16
+    C30 22, 28 28, 22 28
+    C12 28, 4 22, 4 16
+    Z" 
+    fill="#FFA500"
   />
   
-  <!-- FB 텍스트 -->
-  <text
-    x="16"
-    y="16"
-    font-family="Arial"
-    font-size="28"
-    font-weight="bold"
-    fill="white"
-    text-anchor="middle"
-    alignment-baseline="central"
-  >
-    F
-  </text>
+  <!-- 물고기 꼬리 -->
+  <path d="
+    M4 16 
+    L0 8
+    L0 24
+    Z" 
+    fill="#FFA500"
+  />
+  
+  <!-- 물고기 눈 -->
+  <circle cx="24" cy="16" r="4.5" fill="white"/>
+  <circle cx="24" cy="16" r="2.5" fill="black"/>
 </svg>
