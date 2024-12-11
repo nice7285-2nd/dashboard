@@ -20,6 +20,6 @@
   />
   
   <!-- 물고기 눈 -->
-  <circle cx="24" cy="16" r="4.5" fill="white"/>
-  <circle cx="24" cy="16" r="2.5" fill="black"/>
+  <circle cx="23" cy="16" r="5.5" fill="white"/>
+  <circle cx="23" cy="16" r="3.5" fill="black"/>
 </svg>
