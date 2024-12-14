@@ -40,6 +40,9 @@ ENV DATABASE_URL=$DATABASE_URL
 
 # 필요한 시스템 패키지 설치
 RUN apk add --no-cache \
+    openssl \
+    openssl-dev \
+    libc6-compat \
     make \
     g++ \
     python3 \
