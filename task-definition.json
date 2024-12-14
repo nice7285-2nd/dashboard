@@ -32,6 +32,10 @@
                 {
                     "name": "PORT",
                     "value": "3000"
+                },
+                {
+                    "name": "DEBUG",
+                    "value": "*"
                 }
             ],
             "mountPoints": [],
@@ -41,7 +45,9 @@
                 "options": {
                     "awslogs-group": "/ecs/fsbone-task",
                     "awslogs-region": "ap-northeast-2",
-                    "awslogs-stream-prefix": "ecs"
+                    "awslogs-stream-prefix": "ecs",
+                    "mode": "non-blocking",
+                    "max-buffer-size": "4m"
                 }
             }
         }
