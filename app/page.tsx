@@ -14,8 +14,8 @@ export default function Page() {
         </div>
       </div>
       <div className="flex flex-col gap-4 mt-4 grow md:flex-row">
-        <div className="flex flex-col justify-center gap-6 px-6 py-10 rounded-lg bg-gray-50 md:w-3/5 md:px-20">
-          <p className="text-xl text-gray-800 md:text-3xl md:leading-normal">
+        <div className="flex flex-col justify-center gap-6 px-6 py-10 rounded-lg bg-gray-50 md:w-2/5 md:px-10">
+          <p className="text-xl text-gray-800 md:text-2xl md:leading-normal">
             <strong>환영합니다.</strong> <br />
             Fishbone Workbooks를 통한 스터디 사이트 입니다.
           </p>
@@ -35,20 +35,22 @@ export default function Page() {
           </div>
         </div>
         <div className="flex items-center justify-center p-6 md:w-4/5 md:px-70 md:py-12">
-          <Image
-            src="/fishbone-image.png"
-            width={1000}
-            height={760}
-            className="hidden md:block"
-            alt="Screenshots of the dashboard project showing desktop version"
-          />
-          <Image
-            src="/fishbone-image.png"
-            width={560}
-            height={620}
-            className="block md:hidden"
-            alt="Screenshot of the dashboard project showing mobile version"
-          />
+          <div className="relative w-full h-full flex justify-center">
+            <Image
+              src="/fishbone-desktop.png"
+              fill
+              sizes="(max-width: 768px) 100vw, 80vw"
+              className="hidden md:block object-contain"
+              alt="Screenshots of the dashboard project showing desktop version"
+            />
+            <Image
+              src="/fishbone-mobile.png"
+              width={560}
+              height={620}
+              className="block md:hidden mx-auto"
+              alt="Screenshot of the dashboard project showing mobile version"
+            />
+          </div>
         </div>
       </div>
     </main>
