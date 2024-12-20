@@ -141,55 +141,87 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     if (nodeShape === 'single') {startEdit(newNode, setEditNode, setEditText);}
   };
 
-  const hndAddNodesFromText = (e: KeyboardEvent) => {
+  const hndAddNodesFromText = async (e: KeyboardEvent) => {
     if (e.key === 'Enter' && englishText.trim()) {
       if (!canvasRef.current) return;
       const canvasRect = canvasRef.current.getBoundingClientRect();
 
-      const words = englishText.trim().split(/\s+/);
-      let currentNodes = [...nodes];
-      let currentMaxZIndex = maxZIndex;
-      
-      words.forEach((word, index) => {
-        const { newNode, newMaxZIndex } = addNode(
-          currentNodes,
-          canvasRect.width, 
-          canvasRect.height,
-          currentMaxZIndex + index,
-          'single',
-          '#5B9BD5FF'
-        );
+      try {
+        // 패턴 검색 API 호출
+        const response = await fetch('/api/suggest-patterns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text1: '',  // 문장 성분
+            text2: englishText.trim()
+          })
+        });
 
-        if (!newNode) {
-          toast.error('노드를 추가할 공간이 없습니다.');
-          return;
+        const suggestions = await response.json();
+        console.log('Found patterns:', suggestions); // 디버깅용
+
+        if (suggestions.nodes && suggestions.nodes.length > 0) {
+          // 패턴이 있는 경우
+          console.log('Applying patterns:', suggestions.nodes);
+          const newNodes = suggestions.nodes.map(pattern => ({
+            id: Date.now() + Math.random(),
+            x: pattern.x || 100,
+            y: pattern.y || 100,
+            width: pattern.width || 150,
+            height: pattern.height || 80,
+            text1: pattern.text1 || '',
+            text2: pattern.text2,
+            text3: pattern.text3 || '',
+            textAlign: '',
+            links: [],
+            selected: false,
+            zIndex: maxZIndex + 1,
+            backgroundColor: '#FFE699FF',
+            borderColor: '#5B9BD5FF',
+            nodeShape: pattern.nodeShape || 'single',
+            rotation: 0
+          }));
+
+          setNodes(prev => [...prev, ...newNodes]);
+          setMaxZIndex(maxZIndex + newNodes.length);
+          toast.success('패턴을 적용했습니다.');
+        } else {
+          // 패턴이 없는 경우 기존 방식으로 처리
+          console.log('No patterns found, using default creation');
+          const words = englishText.trim().split(/\s+/);
+          let currentNodes = [...nodes];
+          let currentMaxZIndex = maxZIndex;
+
+          for (const word of words) {
+            const { newNode } = addNode(
+              currentNodes,
+              canvasRect.width,
+              canvasRect.height,
+              currentMaxZIndex + currentNodes.length,
+              'single',
+              '#5B9BD5FF'
+            );
+
+            if (!newNode) {
+              toast.error('노드를 추가할 공간이 없습니다.');
+              continue;
+            }
+
+            currentNodes = [...currentNodes, {
+              ...newNode,
+              text2: word,
+              backgroundColor: '#FFE699FF'
+            }];
+          }
+
+          setNodes(currentNodes);
+          setMaxZIndex(currentMaxZIndex + words.length);
         }
+      } catch (error) {
+        console.error('Error in pattern search:', error);
+        toast.error('패턴 검색 중 오류가 발생했습니다.');
+      }
 
-        const node: Node = {
-          id: Date.now() + index,
-          x: newNode.x,
-          y: newNode.y,
-          width: newNode.width,
-          height: newNode.height,
-          text1: '',
-          text2: word,
-          text3: '',
-          textAlign: '',
-          links: [],
-          selected: false,
-          zIndex: newNode.zIndex,
-          backgroundColor: '#FFE699FF',
-          borderColor: '#5B9BD5FF',
-          nodeShape: 'single',
-          rotation: 0
-        };
-
-        currentNodes = [...currentNodes, node];
-        currentMaxZIndex = newMaxZIndex;
-      });
-
-      setNodes(currentNodes);
-      setMaxZIndex(currentMaxZIndex);
       setEnglishText('');
     }
   };
@@ -716,7 +748,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     );
   };
 
-  // 컴포넌트 정리 시 타이머 정리 추가
+  // 컴포���트 정리 시 타이머 정리 추가
   useEffect(() => {
     return () => {
       if (timerRef.current) {

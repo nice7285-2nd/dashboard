@@ -1,0 +1,13 @@
+name: Analyze Patterns Batch
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'  # 매 1분마다 실행
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger analysis batch
+        run: |
+          curl -X POST https://www.fsbone.com/api/analyze-batch 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "analyze-patterns": "ts-node functions/analyzePatterns.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

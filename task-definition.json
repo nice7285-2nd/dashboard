@@ -36,6 +36,14 @@
                 {
                     "name": "DEBUG",
                     "value": "*"
+                },
+                {
+                    "name": "AWS_S3_BUCKET",
+                    "value": "fsbone-bucket"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://..."
                 }
             ],
             "mountPoints": [],

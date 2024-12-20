@@ -27,6 +27,7 @@ model Lesson {
   title     String    @db.VarChar(255)
   path      String    @db.VarChar(255)
   views     Int       @default(0)
+  analysis  String    @default("N") @db.VarChar(1)
   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
   user      User?     @relation(fields: [email], references: [email])
 
@@ -47,4 +48,30 @@ model User {
   studyreclist    Studyreclist[]
 
   @@map("users")
+}
+
+model NodePattern {
+  id        Int      @id @default(autoincrement())
+  text1     String
+  text2     String
+  text3     String?
+  nodeShape String?
+  x         Float
+  y         Float
+  frequency Int      @default(1)
+  lessonId  Int
+  
+  @@unique([text1, text2])
+}
+
+model ConnectionPattern {
+  id            Int      @id @default(autoincrement())
+  sourceText1   String
+  targetText1   String
+  lineStyle     String
+  frequency     Int      @default(1)
+  lessonId      Int
+  createdAt     DateTime @default(now())
+
+  @@unique([sourceText1, targetText1])
 }
