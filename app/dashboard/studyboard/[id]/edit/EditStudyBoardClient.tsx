@@ -143,83 +143,73 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
 
   const hndAddNodesFromText = async (e: KeyboardEvent) => {
     if (e.key === 'Enter' && englishText.trim()) {
-      if (!canvasRef.current) return;
-      const canvasRect = canvasRef.current.getBoundingClientRect();
-
       try {
-        // 패턴 검색 API 호출
         const response = await fetch('/api/suggest-patterns', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            text1: '',  // 문장 성분
+            text1: '',
             text2: englishText.trim()
           })
         });
 
         const suggestions = await response.json();
-        console.log('Found patterns:', suggestions); // 디버깅용
+        console.log('Pattern suggestions:', suggestions);
 
         if (suggestions.nodes && suggestions.nodes.length > 0) {
-          // 패턴이 있는 경우
-          console.log('Applying patterns:', suggestions.nodes);
-          const newNodes = suggestions.nodes.map(pattern => ({
-            id: Date.now() + Math.random(),
-            x: pattern.x || 100,
-            y: pattern.y || 100,
-            width: pattern.width || 150,
-            height: pattern.height || 80,
-            text1: pattern.text1 || '',
-            text2: pattern.text2,
-            text3: pattern.text3 || '',
-            textAlign: '',
-            links: [],
-            selected: false,
-            zIndex: maxZIndex + 1,
-            backgroundColor: '#FFE699FF',
-            borderColor: '#5B9BD5FF',
-            nodeShape: pattern.nodeShape || 'single',
-            rotation: 0
-          }));
+          // 새 노드 생성 (고유 ID 부여)
+          const newNodes = suggestions.nodes.map(pattern => {
+            const nodeId = Date.now() + Math.random();
+            console.log('Creating node with ID:', nodeId, 'text1:', pattern.text1);
+            return {
+              id: nodeId,
+              x: pattern.x || 100,
+              y: pattern.y || 100,
+              width: pattern.width || 150,
+              height: pattern.height || 80,
+              text1: pattern.text1,
+              text2: pattern.text2,
+              text3: pattern.text3 || '',
+              textAlign: '',
+              links: [],
+              selected: false,
+              zIndex: maxZIndex + 1,
+              backgroundColor: pattern.backgroundColor || '#FFE699FF',
+              borderColor: pattern.borderColor || '#5B9BD5FF',
+              nodeShape: pattern.nodeShape || 'single',
+              rotation: 0
+            };
+          });
 
-          setNodes(prev => [...prev, ...newNodes]);
-          setMaxZIndex(maxZIndex + newNodes.length);
-          toast.success('패턴을 적용했습니다.');
-        } else {
-          // 패턴이 없는 경우 기존 방식으로 처리
-          console.log('No patterns found, using default creation');
-          const words = englishText.trim().split(/\s+/);
-          let currentNodes = [...nodes];
-          let currentMaxZIndex = maxZIndex;
+          // 연결 패턴 적용
+          if (suggestions.connections && suggestions.connections.length > 0) {
+            suggestions.connections.forEach(conn => {
+              console.log('Processing connection:', conn);
+              const sourceNode = newNodes.find(n => n.text1 === conn.sourceText1);
+              const targetNode = newNodes.find(n => n.text1 === conn.targetText1);
 
-          for (const word of words) {
-            const { newNode } = addNode(
-              currentNodes,
-              canvasRect.width,
-              canvasRect.height,
-              currentMaxZIndex + currentNodes.length,
-              'single',
-              '#5B9BD5FF'
-            );
+              console.log('Found source node:', sourceNode?.text1);
+              console.log('Found target node:', targetNode?.text1);
 
-            if (!newNode) {
-              toast.error('노드를 추가할 공간이 없습니다.');
-              continue;
-            }
-
-            currentNodes = [...currentNodes, {
-              ...newNode,
-              text2: word,
-              backgroundColor: '#FFE699FF'
-            }];
+              if (sourceNode && targetNode) {
+                const link = {
+                  id: targetNode.id.toString(),
+                  lineStyle: conn.lineStyle,
+                  fromSide: 'right',
+                  toSide: 'left'
+                };
+                console.log('Adding link:', link);
+                sourceNode.links.push(link);
+              }
+            });
           }
 
-          setNodes(currentNodes);
-          setMaxZIndex(currentMaxZIndex + words.length);
+          console.log('Final nodes with links:', newNodes);
+          setNodes(prev => [...prev, ...newNodes]);
+          setMaxZIndex(maxZIndex + newNodes.length);
         }
       } catch (error) {
         console.error('Error in pattern search:', error);
-        toast.error('패턴 검색 중 오류가 발생했습니다.');
       }
 
       setEnglishText('');
@@ -695,7 +685,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
       const textToRead = selectedTexts.join(' ');
       const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'en-US'; // 영어로 설정
-      utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 기본값)
+      utterance.rate = 1.0; // 말하기 속도 설정 (1.0이 본값)
       utterance.pitch = 1.0; // 음높이 설정 (1.0이 본)
       window.speechSynthesis.speak(utterance);
     }
@@ -748,7 +738,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
     );
   };
 
-  // 컴포���트 정리 시 타이머 정리 추가
+  // 컴포트 정리 시 타이머 정리 추가
   useEffect(() => {
     return () => {
       if (timerRef.current) {

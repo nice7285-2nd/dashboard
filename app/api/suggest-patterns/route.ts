@@ -67,9 +67,32 @@ export async function POST(request: Request) {
 
     console.log('Found patterns:', allPatterns);
 
+    // 찾은 노드들 간의 연결 패턴 검색
+    const connections = await prisma.connectionPattern.findMany({
+      where: {
+        OR: [
+          // 찾은 패턴이 source인 경우
+          {
+            sourceText1: {
+              in: allPatterns.map(p => p.text1)
+            }
+          },
+          // 찾은 패턴이 target인 경우
+          {
+            targetText1: {
+              in: allPatterns.map(p => p.text1)
+            }
+          }
+        ]
+      },
+      orderBy: {
+        frequency: 'desc'
+      }
+    });
+
     return NextResponse.json({
       nodes: allPatterns,
-      connections: []
+      connections: connections
     });
 
   } catch (error) {
