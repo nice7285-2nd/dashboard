@@ -157,54 +157,51 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         console.log('Pattern suggestions:', suggestions);
 
         if (suggestions.nodes && suggestions.nodes.length > 0) {
-          // 새 노드 생성 (고유 ID 부여)
-          const newNodes = suggestions.nodes.map(pattern => {
-            const nodeId = Date.now() + Math.random();
-            console.log('Creating node with ID:', nodeId, 'text1:', pattern.text1);
-            return {
-              id: nodeId,
-              x: pattern.x || 100,
-              y: pattern.y || 100,
-              width: pattern.width || 150,
-              height: pattern.height || 80,
-              text1: pattern.text1,
-              text2: pattern.text2,
-              text3: pattern.text3 || '',
-              textAlign: '',
-              links: [],
-              selected: false,
-              zIndex: maxZIndex + 1,
-              backgroundColor: pattern.backgroundColor || '#FFE699FF',
-              borderColor: pattern.borderColor || '#5B9BD5FF',
-              nodeShape: pattern.nodeShape || 'single',
-              rotation: 0
-            };
-          });
+          const newNodes = suggestions.nodes.map(pattern => ({
+            id: Date.now() + Math.random(),
+            x: pattern.x || 100,
+            y: pattern.y || 100,
+            width: pattern.width || 150,
+            height: pattern.height || 80,
+            text1: pattern.text1,
+            text2: pattern.text2,
+            text3: pattern.text3 || '',
+            textAlign: '',
+            links: [],
+            selected: false,
+            zIndex: maxZIndex + 1,
+            backgroundColor: pattern.backgroundColor || '#FFE699FF',
+            borderColor: pattern.borderColor || '#5B9BD5FF',
+            nodeShape: pattern.nodeShape || 'single',
+            rotation: 0
+          }));
 
           // 연결 패턴 적용
           if (suggestions.connections && suggestions.connections.length > 0) {
             suggestions.connections.forEach(conn => {
-              console.log('Processing connection:', conn);
               const sourceNode = newNodes.find(n => n.text1 === conn.sourceText1);
               const targetNode = newNodes.find(n => n.text1 === conn.targetText1);
 
-              console.log('Found source node:', sourceNode?.text1);
-              console.log('Found target node:', targetNode?.text1);
+              console.log('Creating connection:', {
+                source: sourceNode,
+                target: targetNode,
+                lineStyle: conn.lineStyle,
+                fromSide: 'right',
+                toSide: 'left'
+              });
 
               if (sourceNode && targetNode) {
-                const link = {
+                sourceNode.links.push({
                   id: targetNode.id.toString(),
                   lineStyle: conn.lineStyle,
                   fromSide: 'right',
-                  toSide: 'left'
-                };
-                console.log('Adding link:', link);
-                sourceNode.links.push(link);
+                  toSide: 'left',
+                  text: conn.text || ''
+                });
               }
             });
           }
 
-          console.log('Final nodes with links:', newNodes);
           setNodes(prev => [...prev, ...newNodes]);
           setMaxZIndex(maxZIndex + newNodes.length);
         }
@@ -256,6 +253,8 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   }, [nodes, editNode]);
 
   const hndMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    console.log('Mouse down event:', e.clientX, e.clientY);
+    
     if (tool === 'move') {
       const { offsetX, offsetY } = e.nativeEvent;
       const clickedNode = getClickedNode(nodes, offsetX, offsetY);
@@ -306,7 +305,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         else {
           const selectedNodes = nodes.filter((n) => n.selected);
           if (selectedNodes.length > 1 && node.selected) {
-            // 여러 노드가 선택된 경우
+            // 여�� 노드가 선택된 경우
             setDrag({node: {id: -1, x: x, y: y, width: 0, height: 0, text1: '', text2: '', text3: '', textAlign: '', links: [], zIndex: 0, backgroundColor: '', borderColor: '', selected: false, nodeShape: nodeShape },offsetX: x, offsetY: y, selectedNodes: selectedNodes});
           } else {
             setDrag({ node, offsetX: x - node.x, offsetY: y - node.y });
@@ -375,7 +374,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
           ctx.lineJoin = 'round';
           ctx.stroke();
           
-          // 다시 기본 모드로 복귀
+          // 다시 기본 모드로 복
           ctx.globalCompositeOperation = 'source-over';
                     
           // 현재 그리기 점 추가
@@ -774,7 +773,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
         // S3에서 파일 내용 읽기
         const fileResponse = await fetch(s3Url);
         if (!fileResponse.ok) {
-          throw new Error('파일을 찾을 수 없습니다');
+          throw new Error('파���을 찾을 수 없습니다');
         }
 
         const fileData = await fileResponse.json();
@@ -852,7 +851,7 @@ const EditStudyBoardClient: React.FC<EditStudyBoardClientProps> = ({ params, aut
   }, [nodes, drawActions, selectionArea]);
 
   useEffect(() => {
-    // 브라우저 환경에서만 실행되도록 합니다.
+    // 브라우저 환경에서만 실행되���록 합니다.
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       originalSpeakRef.current = window.speechSynthesis.speak.bind(window.speechSynthesis);
     }

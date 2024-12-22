@@ -182,14 +182,11 @@ const getAddingLinkPoints = (fromNode: Node, toNode: Node, lineStyle: string) =>
   return { fromPnt, toPnt };
 };
 
-export const drawLinks = (
-  ctx: CanvasRenderingContext2D,
-  nodes: Node[]
-) => {
+export const drawLinks = (ctx: CanvasRenderingContext2D, nodes: Node[]) => {
   nodes.forEach((node) => {
     node.links.forEach((link) => {
-      const fromPnt = getLinkPnt(node, link.fromSide);
       const toNode = nodes.find(n => n.id === Number(link.id));
+      
       if (toNode) {
         let fromSide = link.fromSide;
         let toSide = link.toSide;
@@ -198,9 +195,6 @@ export const drawLinks = (
           fromSide = 'topRight';
           toSide = 'topLeft';
         }
-
-        // const fromPnt = getLinkPnt(node, fromSide);
-        // const toPnt = getLinkPnt(toNode, toSide);
 
         const { fromPnt, toPnt } = getAddingLinkPoints(node, toNode, link.lineStyle);
 
@@ -413,7 +407,7 @@ export const drawDraws = (
           ctx.stroke();          
 
         } else if (action.type === 'erase') {
-          // destination-out 사용하여 비트맵 완전히 지우기
+          // destination-out 사용하여 비트��� 완전히 지우기
           ctx.globalCompositeOperation = 'destination-out';
           ctx.beginPath();
           ctx.arc(pnt.x, pnt.y, action.lineWidth / 2, 0, Math.PI * 2);

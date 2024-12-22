@@ -67,17 +67,17 @@ export async function POST(request: Request) {
 
     console.log('Found patterns:', allPatterns);
 
-    // 찾은 노드들 간의 연결 패턴 검색
+    // 연결 패턴 검색 (인접한 패턴들 간의 연결만)
+    console.log('Search criteria:', allPatterns.map(p => p.text1));
+
     const connections = await prisma.connectionPattern.findMany({
       where: {
-        OR: [
-          // 찾은 패턴이 source인 경우
+        AND: [
           {
             sourceText1: {
               in: allPatterns.map(p => p.text1)
             }
           },
-          // 찾은 패턴이 target인 경우
           {
             targetText1: {
               in: allPatterns.map(p => p.text1)
@@ -85,10 +85,18 @@ export async function POST(request: Request) {
           }
         ]
       },
+      distinct: ['sourceText1', 'targetText1'],  // 중복 제거
       orderBy: {
         frequency: 'desc'
       }
     });
+
+    console.log('Found connections detail:', connections.map(c => ({
+      source: c.sourceText1,
+      target: c.targetText1,
+      lineStyle: c.lineStyle,
+      text: c.text
+    })));
 
     return NextResponse.json({
       nodes: allPatterns,

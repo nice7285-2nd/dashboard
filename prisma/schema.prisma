@@ -51,15 +51,17 @@ model User {
 }
 
 model NodePattern {
-  id        Int      @id @default(autoincrement())
-  text1     String
-  text2     String
-  text3     String?
-  nodeShape String?
-  x         Float
-  y         Float
-  frequency Int      @default(1)
-  lessonId  Int
+  id              Int      @id @default(autoincrement())
+  text1           String
+  text2           String
+  text3           String?
+  nodeShape       String?
+  x               Float
+  y               Float
+  frequency       Int      @default(1)
+  lessonId        Int
+  backgroundColor String?
+  borderColor     String?
   
   @@unique([text1, text2])
 }
@@ -69,6 +71,7 @@ model ConnectionPattern {
   sourceText1   String
   targetText1   String
   lineStyle     String
+  text          String?
   frequency     Int      @default(1)
   lessonId      Int
   createdAt     DateTime @default(now())

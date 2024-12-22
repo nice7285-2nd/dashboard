@@ -46,7 +46,9 @@ export async function POST() {
                 }
               },
               update: {
-                frequency: { increment: 1 }
+                frequency: { increment: 1 },
+                backgroundColor: node.backgroundColor || '#FFE699FF',  // 배경색 업데이트
+                borderColor: node.borderColor || '#5B9BD5FF'          // 테두리색 업데이트
               },
               create: {
                 text1: node.text1,
@@ -56,7 +58,9 @@ export async function POST() {
                 lessonId: lesson.id,
                 x: node.x,
                 y: node.y,
-                frequency: 1
+                frequency: 1,
+                backgroundColor: node.backgroundColor || '#FFE699FF',  // 배경색 저장
+                borderColor: node.borderColor || '#5B9BD5FF'          // 테두리색 저장
               }
             });
 
@@ -81,6 +85,7 @@ export async function POST() {
                     sourceText1: node.text1,
                     targetText1: targetNode.text1,
                     lineStyle: link.lineStyle,
+                    text: link.text || '',  // 연결선 텍스트 저장
                     lessonId: lesson.id,
                     frequency: 1
                   }
